@@ -1,0 +1,21 @@
+{
+  "name": "web-socket-scrabble",
+  "version": "1.0.0",
+  "description": "Real-time multiplayer Scrabble game using WebSockets",
+  "main": "dist/server/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server/index.js",
+    "dev": "tsc --watch & nodemon dist/server/index.js"
+  },
+  "dependencies": {
+    "ws": "^8.16.0",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "@types/ws": "^8.5.10",
+    "@types/uuid": "^9.0.7",
+    "@types/node": "^20.10.0"
+  }
+}

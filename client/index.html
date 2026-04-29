@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scrabble - WebSocket Multiplayer</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- LOBBY SCREEN -->
+  <div id="lobby-screen" class="screen active">
+    <div class="lobby-container">
+      <h1 class="lobby-title">🎯 Scrabble</h1>
+      <p class="lobby-subtitle">Real-time Multiplayer Word Game</p>
+      
+      <div class="lobby-form">
+        <div class="form-group">
+          <label for="username-input">Username</label>
+          <input type="text" id="username-input" placeholder="Enter your username" maxlength="20" value="">
+        </div>
+        
+        <div class="lobby-actions">
+          <button id="create-game-btn" class="btn btn-accent">Create Game</button>
+          <button id="join-game-btn" class="btn btn-outlined">Join Game</button>
+        </div>
+      </div>
+
+      <!-- Create Game Modal -->
+      <div id="create-modal" class="modal hidden">
+        <div class="modal-content">
+          <h2>Create Game</h2>
+          <div class="form-group">
+            <label>Number of Players</label>
+            <div class="btn-group">
+              <button class="btn btn-sm player-count-btn" data-count="1">1 (vs AI)</button>
+              <button class="btn btn-sm player-count-btn active" data-count="2">2</button>
+              <button class="btn btn-sm player-count-btn" data-count="3">3</button>
+              <button class="btn btn-sm player-count-btn" data-count="4">4</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>AI Difficulty</label>
+            <div class="btn-group" id="ai-difficulty-group">
+              <button class="btn btn-sm ai-diff-btn" data-diff="easy">Easy</button>
+              <button class="btn btn-sm ai-diff-btn active" data-diff="medium">Medium</button>
+              <button class="btn btn-sm ai-diff-btn" data-diff="hard">Hard</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Time Limit</label>
+            <div class="btn-group">
+              <button class="btn btn-sm time-btn" data-time="15">15 min</button>
+              <button class="btn btn-sm time-btn active" data-time="45">45 min</button>
+              <button class="btn btn-sm time-btn" data-time="0">Unlimited</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Game Type</label>
+            <div class="btn-group">
+              <button class="btn btn-sm type-btn active" data-type="friend">Friend Match</button>
+              <button class="btn btn-sm type-btn" data-type="ranked">Ranked</button>
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button id="cancel-create-btn" class="btn btn-outlined">Cancel</button>
+            <button id="confirm-create-btn" class="btn btn-accent">Create</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Join Game Modal -->
+      <div id="join-modal" class="modal hidden">
+        <div class="modal-content">
+          <h2>Join Game</h2>
+          <div class="form-group">
+            <label for="room-code-input">Room Code</label>
+            <input type="text" id="room-code-input" placeholder="Enter room code" maxlength="8">
+          </div>
+          <div id="room-list" class="room-list">
+            <p class="text-muted">No open rooms available</p>
+          </div>
+          <div class="modal-actions">
+            <button id="cancel-join-btn" class="btn btn-outlined">Cancel</button>
+            <button id="confirm-join-btn" class="btn btn-accent">Join</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WAITING ROOM SCREEN -->
+  <div id="waiting-screen" class="screen">
+    <div class="waiting-container">
+      <h2>Waiting Room</h2>
+      <p class="room-code-display">Room Code: <span id="room-code-text">-------</span></p>
+      <div id="waiting-players" class="waiting-players"></div>
+      <div class="waiting-actions">
+        <button id="leave-room-btn" class="btn btn-outlined">Leave</button>
+        <button id="start-game-btn" class="btn btn-accent" disabled>Start Game</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GAME SCREEN -->
+  <div id="game-screen" class="screen">
+    <div class="game-layout">
+      <!-- LEFT PANEL - Board -->
+      <div class="left-panel">
+        <div class="board-container">
+          <div class="board-wrapper">
+            <!-- Column headers -->
+            <div class="board-col-headers">
+              <div class="header-spacer"></div>
+              <div class="col-header">A</div><div class="col-header">B</div>
+              <div class="col-header">C</div><div class="col-header">D</div>
+              <div class="col-header">E</div><div class="col-header">F</div>
+              <div class="col-header">G</div><div class="col-header">H</div>
+              <div class="col-header">I</div><div class="col-header">J</div>
+              <div class="col-header">K</div><div class="col-header">L</div>
+              <div class="col-header">M</div><div class="col-header">N</div>
+              <div class="col-header">O</div>
+            </div>
+            
+            <!-- Board grid -->
+            <div class="board-body">
+              <div class="board-row-headers">
+                <div class="row-header">1</div><div class="row-header">2</div>
+                <div class="row-header">3</div><div class="row-header">4</div>
+                <div class="row-header">5</div><div class="row-header">6</div>
+                <div class="row-header">7</div><div class="row-header">8</div>
+                <div class="row-header">9</div><div class="row-header">10</div>
+                <div class="row-header">11</div><div class="row-header">12</div>
+                <div class="row-header">13</div><div class="row-header">14</div>
+                <div class="row-header">15</div>
+              </div>
+              <div id="board-grid" class="board-grid"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tile Rack -->
+        <div class="rack-container">
+          <button id="shuffle-btn" class="rack-btn" title="Shuffle tiles">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>
+            </svg>
+          </button>
+          <div id="tile-rack" class="tile-rack"></div>
+          <button id="sort-btn" class="rack-btn" title="Sort tiles A-Z">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 5v14M5 12l7 7 7-7"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Action Buttons -->
+        <div id="game-actions" class="game-actions">
+          <button id="recall-btn" class="btn btn-outlined">Recall</button>
+          <button id="pass-btn" class="btn btn-warning-outlined">Pass / Exchange</button>
+          <button id="submit-btn" class="btn btn-success">Submit</button>
+        </div>
+        <div id="endgame-actions" class="game-actions hidden">
+          <button id="back-menu-btn" class="btn btn-outlined">Back To Menu</button>
+          <button id="rematch-btn" class="btn btn-success">Rematch</button>
+          <button id="summary-btn" class="btn btn-outlined">Round Summary</button>
+        </div>
+      </div>
+
+      <!-- RIGHT PANEL - Game Info -->
+      <div class="right-panel">
+        <!-- Game Info Header -->
+        <div class="game-info-card">
+          <p class="info-text">Word Validation • English US</p>
+          <p class="info-text"><span id="time-limit-text">45 Minutes</span> Game • <span id="game-type-text">Friend Match</span></p>
+        </div>
+
+        <!-- Player Scoreboard -->
+        <div id="player-scoreboard" class="player-scoreboard"></div>
+
+        <!-- Tile Bag Counter -->
+        <div class="tile-bag-info">
+          <div class="bag-count">
+            <span class="bag-icon">🎒</span>
+            <span>Tile Bag</span>
+            <span id="tile-bag-count" class="bag-number">100</span>
+          </div>
+          <div id="player-rack-counts" class="rack-counts"></div>
+        </div>
+
+        <!-- Chat / Turn History -->
+        <div class="chat-history-panel">
+          <div class="tab-toggle">
+            <button id="chat-tab-btn" class="tab-btn active">
+              <span>💬</span> Chat
+            </button>
+            <div class="toggle-switch">
+              <input type="checkbox" id="tab-toggle" class="toggle-input">
+              <label for="tab-toggle" class="toggle-label"></label>
+            </div>
+            <button id="history-tab-btn" class="tab-btn">
+              <span>📋</span> Turn History
+            </button>
+          </div>
+          
+          <!-- Chat Panel -->
+          <div id="chat-panel" class="tab-panel active">
+            <div id="chat-messages" class="chat-messages"></div>
+            <div class="chat-input-area">
+              <input type="text" id="chat-input" placeholder="Type a message..." maxlength="200">
+              <button id="send-chat-btn" class="btn btn-sm btn-accent">Send</button>
+            </div>
+          </div>
+
+          <!-- Turn History Panel -->
+          <div id="history-panel" class="tab-panel">
+            <div id="turn-history" class="turn-history"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Exchange Tiles Modal -->
+  <div id="exchange-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2>Exchange Tiles</h2>
+      <p class="text-muted">Select tiles to exchange</p>
+      <div id="exchange-rack" class="exchange-rack"></div>
+      <div class="modal-actions">
+        <button id="cancel-exchange-btn" class="btn btn-outlined">Cancel</button>
+        <button id="pass-only-btn" class="btn btn-warning-outlined">Just Pass</button>
+        <button id="confirm-exchange-btn" class="btn btn-accent">Exchange Selected</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Blank Tile Modal -->
+  <div id="blank-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2>Choose Letter for Blank Tile</h2>
+      <div id="blank-letter-grid" class="blank-letter-grid"></div>
+    </div>
+  </div>
+
+  <!-- Round Summary Modal -->
+  <div id="summary-modal" class="modal hidden">
+    <div class="modal-content modal-wide">
+      <h2>Round Summary</h2>
+      <div id="summary-content" class="summary-content"></div>
+      <div class="modal-actions">
+        <button id="close-summary-btn" class="btn btn-outlined">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script src="js/board.js"></script>
+  <script src="js/rack.js"></script>
+  <script src="js/scoreboard.js"></script>
+  <script src="js/chat.js"></script>
+  <script src="js/lobby.js"></script>
+</body>
+</html>
