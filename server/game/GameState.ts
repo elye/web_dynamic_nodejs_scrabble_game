@@ -288,6 +288,45 @@ export class GameState {
     };
   }
 
+  previewScoreTentative(placements: { letter: string; points: number; isBlank: boolean; chosenLetter?: string; row: number; col: number }[]): { valid: boolean; score: number; isLegitimate: boolean; words?: string[] } {
+    if (placements.length === 0) {
+      return { valid: false, score: 0, isLegitimate: false };
+    }
+
+    const placed: PlacedTile[] = placements.map(p => ({
+      tile: {
+        id: '',
+        letter: p.isBlank ? (p.chosenLetter || '?') : p.letter,
+        points: p.points,
+        isBlank: p.isBlank,
+        chosenLetter: p.chosenLetter,
+      } as Tile,
+      row: p.row,
+      col: p.col,
+    }));
+
+    const validation = this.board.validatePlacement(placed);
+    if (!validation.valid) {
+      return { valid: false, score: 0, isLegitimate: false };
+    }
+
+    const wordsFormed = this.board.findWordsFormed(placed);
+    if (wordsFormed.length === 0) {
+      return { valid: false, score: 0, isLegitimate: false };
+    }
+
+    const wordStrings = wordsFormed.map(w => w.word);
+    const dictValidation = this.validator.validateWords(wordStrings);
+    const { totalScore } = calculateTurnScore(wordsFormed, placed.length);
+
+    return {
+      valid: dictValidation.valid,
+      score: totalScore,
+      isLegitimate: true,
+      words: wordStrings,
+    };
+  }
+
   submitWord(playerId: string): { 
     success: boolean; 
     error?: string; 

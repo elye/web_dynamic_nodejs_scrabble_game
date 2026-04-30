@@ -163,7 +163,7 @@ export function setupWebSocketHandlers(wss: WebSocket.Server, gameManager: GameM
 
           case 'PREVIEW_SCORE': {
             if (!playerId) return;
-            gameManager.handlePreviewScore(playerId);
+            gameManager.handlePreviewScore(playerId, message.placements);
             break;
           }
 

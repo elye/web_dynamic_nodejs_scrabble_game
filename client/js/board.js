@@ -108,9 +108,9 @@ function handleCellClick(row, col) {
     // Notify server to recall just this one tile (only if it's my turn)
     if (isMyTurn() && window.ws && window.ws.readyState === WebSocket.OPEN) {
       window.ws.send(JSON.stringify({ type: 'RECALL_TILE', tileId: tile.tileId }));
-      // Re-request score preview
-      setTimeout(requestScorePreview, 150);
     }
+    // Re-request score preview
+    setTimeout(requestScorePreview, 150);
     return;
   }
   
@@ -145,9 +145,9 @@ function handleTileDrop(tileId, row, col) {
         row: row,
         col: col,
       }));
-      // Re-request score preview
-      setTimeout(requestScorePreview, 150);
     }
+    // Re-request score preview
+    setTimeout(requestScorePreview, 150);
     return;
   }
   
@@ -188,6 +188,9 @@ function placeTileOnBoard(tile, row, col) {
       chosenLetter: tile.chosenLetter,
     }));
     // Request score preview after a short delay for server to process
+    setTimeout(requestScorePreview, 100);
+  } else {
+    // Request tentative score preview during opponent's turn
     setTimeout(requestScorePreview, 100);
   }
 }
@@ -352,8 +355,8 @@ function returnBoardTileToRackAt(tileId, atIndex) {
   // Notify server to recall just this one tile
   if (window.ws && window.ws.readyState === WebSocket.OPEN) {
     window.ws.send(JSON.stringify({ type: 'RECALL_TILE', tileId: tile.tileId }));
-    setTimeout(requestScorePreview, 150);
   }
+  setTimeout(requestScorePreview, 150);
 }
 
 function returnBoardTileToRack(tileId) {
@@ -375,14 +378,27 @@ function returnBoardTileToRack(tileId) {
   // Notify server to recall just this one tile
   if (window.ws && window.ws.readyState === WebSocket.OPEN) {
     window.ws.send(JSON.stringify({ type: 'RECALL_TILE', tileId: tile.tileId }));
-    setTimeout(requestScorePreview, 150);
   }
+  setTimeout(requestScorePreview, 150);
 }
 
 // Score hint overlay
 function requestScorePreview() {
   if (window.ws && window.ws.readyState === WebSocket.OPEN && pendingTiles.length > 0) {
-    window.ws.send(JSON.stringify({ type: 'PREVIEW_SCORE' }));
+    if (isMyTurn()) {
+      window.ws.send(JSON.stringify({ type: 'PREVIEW_SCORE' }));
+    } else {
+      // Send placements for tentative preview during opponent's turn
+      const placements = pendingTiles.map(t => ({
+        letter: t.letter,
+        points: t.points,
+        isBlank: t.isBlank || false,
+        chosenLetter: t.chosenLetter,
+        row: t.row,
+        col: t.col,
+      }));
+      window.ws.send(JSON.stringify({ type: 'PREVIEW_SCORE', placements }));
+    }
   } else {
     removeScoreHint();
   }

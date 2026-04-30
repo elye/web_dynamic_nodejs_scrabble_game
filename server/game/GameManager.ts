@@ -255,13 +255,20 @@ export class GameManager {
     }
   }
 
-  handlePreviewScore(playerId: string): void {
+  handlePreviewScore(playerId: string, placements?: any[]): void {
     const roomId = this.playerRooms.get(playerId);
     if (!roomId) return;
     const room = this.rooms.get(roomId);
     if (!room) return;
 
-    const result = room.game.previewScore(playerId);
+    let result;
+    if (placements && placements.length > 0) {
+      // Tentative preview (during opponent's turn)
+      result = room.game.previewScoreTentative(placements);
+    } else {
+      // Normal preview (during own turn, uses server-side pending placements)
+      result = room.game.previewScore(playerId);
+    }
     this.sendToPlayer(playerId, 'SCORE_PREVIEW', result);
   }
 
