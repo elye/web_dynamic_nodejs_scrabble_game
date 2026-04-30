@@ -64,6 +64,10 @@ function handleMessage(msg) {
       if (msg.rooms) {
         updateRoomList(msg.rooms);
       }
+      // Check if URL has a room to auto-join (only after we have a playerId)
+      if (window.playerId) {
+        checkUrlRoomCode();
+      }
       break;
       
     case 'ROOM_CREATED':
@@ -78,19 +82,33 @@ function handleMessage(msg) {
       }
       break;
 
-    case 'LEFT_ROOM':
+    case 'LEFT_ROOM': {
       showScreen('lobby-screen');
       if (msg.rooms) updateRoomList(msg.rooms);
+      // Check if URL has a room to join after leaving
+      checkUrlRoomCode();
       break;
+    }
       
     case 'GAME_START':
     case 'GAME_STATE':
       handleGameState(msg);
       break;
       
-    case 'RECONNECTED':
+    case 'RECONNECTED': {
+      // Check if URL has a different room code — if so, leave old game and join new room
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlRoom = urlParams.get('room');
+      if (urlRoom && msg.roomId && urlRoom.toUpperCase() !== msg.roomId.toUpperCase()) {
+        // Leave current game — LEFT_ROOM handler will trigger join via checkUrlRoomCode
+        if (window.ws && window.ws.readyState === WebSocket.OPEN) {
+          window.ws.send(JSON.stringify({ type: 'LEAVE_ROOM' }));
+        }
+        break;
+      }
       handleGameState(msg);
       break;
+    }
       
     case 'PLACE_TILE_RESULT':
       if (!msg.success) {

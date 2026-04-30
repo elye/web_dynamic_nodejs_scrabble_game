@@ -125,6 +125,9 @@ export class GameManager {
   // --- Multiplayer room ---
 
   createRoom(playerId: string, socket: WebSocket, username: string, avatar: string, elo: number, settings: GameSettings): Room {
+    // Clean up any existing room association
+    this.cleanupPlayerRoom(playerId);
+
     const roomId = uuidv4().substring(0, 8).toUpperCase();
     const game = new GameState(roomId, settings, this.validator);
 
@@ -149,6 +152,9 @@ export class GameManager {
     if (!room) return null;
     if (room.isSolo) return null; // Can't join solo rooms
     if (room.game.status !== 'waiting') return null;
+
+    // Clean up any existing room association
+    this.cleanupPlayerRoom(playerId);
 
     const player = room.game.addPlayer(playerId, socket.toString(), username, avatar, elo);
     if (!player) return null;
@@ -425,10 +431,25 @@ export class GameManager {
   }
 
   handleLeaveRoom(playerId: string): void {
+    this.cleanupPlayerRoom(playerId);
+  }
+
+  private cleanupPlayerRoom(playerId: string): void {
     const roomId = this.playerRooms.get(playerId);
     if (!roomId) return;
     const room = this.rooms.get(roomId);
-    if (!room) return;
+    if (!room) {
+      this.playerRooms.delete(playerId);
+      this.updateSessionRoom(playerId, undefined);
+      return;
+    }
+
+    if (room.game.status === 'finished') {
+      // For finished games, just clean up the mapping
+      this.playerRooms.delete(playerId);
+      this.updateSessionRoom(playerId, undefined);
+      return;
+    }
 
     if (room.game.status !== 'waiting') return; // Can only leave during waiting
 

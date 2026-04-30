@@ -116,6 +116,12 @@ function initLobby() {
   const joinModal = document.getElementById('join-modal');
 
   joinBtn.addEventListener('click', () => {
+    // Pre-fill join username from main username input
+    const mainUsername = document.getElementById('username-input').value.trim();
+    const joinUsernameInput = document.getElementById('join-username-input');
+    if (mainUsername && !joinUsernameInput.value.trim()) {
+      joinUsernameInput.value = mainUsername;
+    }
     joinModal.classList.remove('hidden');
     if (window.ws && window.ws.readyState === WebSocket.OPEN) {
       window.ws.send(JSON.stringify({ type: 'GET_ROOMS' }));
@@ -125,8 +131,14 @@ function initLobby() {
 
   document.getElementById('confirm-join-btn').addEventListener('click', () => {
     const roomCode = document.getElementById('room-code-input').value.trim().toUpperCase();
-    const username = document.getElementById('username-input').value.trim() || 'Player';
+    const joinUsername = document.getElementById('join-username-input').value.trim();
+    const username = joinUsername || document.getElementById('username-input').value.trim() || 'Player';
     if (!roomCode) return;
+
+    // Sync back to main username input
+    if (joinUsername) {
+      document.getElementById('username-input').value = joinUsername;
+    }
 
     joinModal.classList.add('hidden');
 
@@ -146,6 +158,10 @@ function initLobby() {
     if (window.ws && window.ws.readyState === WebSocket.OPEN) {
       window.ws.send(JSON.stringify({ type: 'LEAVE_ROOM' }));
     }
+    // Clean room from URL
+    const url = new URL(window.location);
+    url.searchParams.delete('room');
+    window.history.replaceState({}, '', url);
     showScreen('lobby-screen');
   });
 
@@ -194,6 +210,11 @@ function updateRoomList(rooms) {
 
 function updateWaitingRoom(data) {
   document.getElementById('room-code-text').textContent = data.roomId;
+  
+  // Update URL with room code
+  const url = new URL(window.location);
+  url.searchParams.set('room', data.roomId);
+  window.history.replaceState({}, '', url);
 
   const container = document.getElementById('waiting-players');
   container.innerHTML = '';
@@ -242,5 +263,46 @@ function updateWaitingRoom(data) {
     startBtn.disabled = true;
     startBtn.textContent = 'Waiting for host to start...';
     if (botActions) botActions.style.display = 'none';
+  }
+
+  // Set up copy link button
+  const copyBtn = document.getElementById('copy-link-btn');
+  if (copyBtn) {
+    copyBtn.onclick = () => {
+      const url = new URL(window.location);
+      url.searchParams.set('room', data.roomId);
+      navigator.clipboard.writeText(url.toString()).then(() => {
+        copyBtn.textContent = '✅ Copied!';
+        setTimeout(() => { copyBtn.textContent = '📋 Copy Link'; }, 2000);
+      }).catch(() => {
+        // Fallback: select text
+        const temp = document.createElement('input');
+        temp.value = url.toString();
+        document.body.appendChild(temp);
+        temp.select();
+        document.execCommand('copy');
+        document.body.removeChild(temp);
+        copyBtn.textContent = '✅ Copied!';
+        setTimeout(() => { copyBtn.textContent = '📋 Copy Link'; }, 2000);
+      });
+    };
+  }
+}
+
+function checkUrlRoomCode() {
+  const params = new URLSearchParams(window.location.search);
+  const roomCode = params.get('room');
+  if (roomCode) {
+    // Pre-fill room code and show join dialog for confirmation
+    document.getElementById('room-code-input').value = roomCode.toUpperCase();
+    const mainUsername = document.getElementById('username-input').value.trim();
+    if (mainUsername) {
+      document.getElementById('join-username-input').value = mainUsername;
+    }
+    document.getElementById('join-modal').classList.remove('hidden');
+    // Clean up URL
+    const url = new URL(window.location);
+    url.searchParams.delete('room');
+    window.history.replaceState({}, '', url);
   }
 }
