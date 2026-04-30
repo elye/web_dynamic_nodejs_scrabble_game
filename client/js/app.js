@@ -237,6 +237,9 @@ function handleGameOver(msg) {
   if (winner) {
     showNotification(`${winner.username} wins! 🎉`, 'success');
   }
+  
+  // Auto-show round summary
+  setTimeout(() => showRoundSummary(), 500);
 }
 
 function showNotification(text, type = 'info') {
@@ -398,74 +401,53 @@ function showRoundSummary() {
   // Sort players by score
   const sorted = [...currentPlayers].sort((a, b) => b.score - a.score);
   const maxScore = sorted[0]?.score || 0;
-  
+  const playerCount = sorted.length;
+
+  // Build table: players as columns, stats as rows
+  const table = document.createElement('table');
+  table.className = 'summary-table';
+
+  // Header row with player avatars and names
+  const thead = document.createElement('thead');
+  let headerRow = '<tr><th class="stat-label-col"></th>';
   for (const player of sorted) {
-    const stats = gameOverStats ? gameOverStats[player.id] : null;
-    
-    const div = document.createElement('div');
-    div.className = 'summary-player';
-    if (player.score === maxScore && maxScore > 0) {
-      div.classList.add('winner');
-    }
-    
     const initial = player.username.charAt(0).toUpperCase();
-    
-    let statsHtml = '';
-    if (stats) {
-      statsHtml = `
-        <div class="summary-stats">
-          <div class="summary-stat-row">
-            <span class="stat-label">⏱ Time Remaining</span>
-            <span class="stat-value">${formatTime(stats.timeRemaining)}</span>
-          </div>
-          <div class="summary-stat-row">
-            <span class="stat-label">🎯 Best Word</span>
-            <span class="stat-value">${stats.bestWord ? `${stats.bestWord.word} (${stats.bestWord.score} pts)` : '-'}</span>
-          </div>
-          <div class="summary-stat-row">
-            <span class="stat-label">🔥 Best Turn</span>
-            <span class="stat-value">${stats.bestTurn ? `Turn #${stats.bestTurn.turnNumber} (${stats.bestTurn.score} pts, ${stats.bestTurn.wordCount} word${stats.bestTurn.wordCount !== 1 ? 's' : ''})` : '-'}</span>
-          </div>
-          <div class="summary-stat-row">
-            <span class="stat-label">📏 Longest Word</span>
-            <span class="stat-value">${stats.longestWord ? `${stats.longestWord.word} (${stats.longestWord.length} letters)` : '-'}</span>
-          </div>
-          <div class="summary-stat-row">
-            <span class="stat-label">📊 Avg Score/Turn</span>
-            <span class="stat-value">${stats.avgScorePerTurn} pts</span>
-          </div>
-          <div class="summary-stat-row">
-            <span class="stat-label">📝 Words Played</span>
-            <span class="stat-value">${stats.totalWords}</span>
-          </div>
-          <div class="summary-stat-row">
-            <span class="stat-label">🌟 Bingos (7 tiles)</span>
-            <span class="stat-value">${stats.bingoCount}</span>
-          </div>
-          <div class="summary-stat-row">
-            <span class="stat-label">🎒 Tiles Left</span>
-            <span class="stat-value">${stats.tilesRemaining} (−${stats.rackDeduction} pts)</span>
-          </div>
-        </div>
-      `;
-    }
-    
-    div.innerHTML = `
-      <div class="summary-player-header">
-        <div class="summary-player-info">
-          <div class="player-avatar" style="background: ${getAvatarColor(player.id)}">${initial}</div>
-          <div>
-            <div class="player-name">${escapeHtml(player.username)}${player.score === maxScore && maxScore > 0 ? ' 🏆' : ''}</div>
-            <div class="player-elo" style="color: var(--text-muted); font-size: 0.8rem;">Elo: ${player.elo}</div>
-          </div>
-        </div>
-        <div class="summary-score">${player.score}</div>
-      </div>
-      ${statsHtml}
-    `;
-    
-    content.appendChild(div);
+    const isWinner = player.score === maxScore && maxScore > 0;
+    headerRow += `<th class="stat-player-col${isWinner ? ' winner' : ''}">
+      <div class="player-avatar" style="background: ${getAvatarColor(player.id)}">${initial}</div>
+      <div class="player-name">${escapeHtml(player.username)}${isWinner ? ' 🏆' : ''}</div>
+    </th>`;
   }
+  headerRow += '</tr>';
+  thead.innerHTML = headerRow;
+  table.appendChild(thead);
+
+  // Stat rows
+  const statRows = [
+    { label: 'Score', key: 'score', format: (s) => `<span class="summary-score">${s.score}</span>` },
+    { label: '⏱ Time Left', key: 'timeRemaining', format: (s) => formatTime(s.timeRemaining) },
+    { label: '🎯 Best Word', key: 'bestWord', format: (s) => s.bestWord ? `${s.bestWord.word} <span class="stat-pts">${s.bestWord.score}pts</span>` : '-' },
+    { label: '🔥 Best Turn', key: 'bestTurn', format: (s) => s.bestTurn ? `#${s.bestTurn.turnNumber} <span class="stat-pts">${s.bestTurn.score}pts</span> <span class="stat-sub">${s.bestTurn.wordCount}w</span>` : '-' },
+    { label: '📏 Longest Word', key: 'longestWord', format: (s) => s.longestWord ? `${s.longestWord.word} <span class="stat-sub">${s.longestWord.length}L</span>` : '-' },
+    { label: '📊 Avg/Turn', key: 'avgScorePerTurn', format: (s) => `${s.avgScorePerTurn} pts` },
+    { label: '📝 Words', key: 'totalWords', format: (s) => `${s.totalWords}` },
+    { label: '🌟 Bingos', key: 'bingoCount', format: (s) => `${s.bingoCount}` },
+    { label: '🎒 Tiles Left', key: 'tilesRemaining', format: (s) => `${s.tilesRemaining} <span class="stat-sub">−${s.rackDeduction}pts</span>` },
+  ];
+
+  const tbody = document.createElement('tbody');
+  for (const row of statRows) {
+    let tr = `<tr><td class="stat-label-cell">${row.label}</td>`;
+    for (const player of sorted) {
+      const stats = gameOverStats ? gameOverStats[player.id] : null;
+      const isWinner = player.score === maxScore && maxScore > 0;
+      tr += `<td class="stat-value-cell${isWinner ? ' winner' : ''}">${stats ? row.format(stats) : '-'}</td>`;
+    }
+    tr += '</tr>';
+    tbody.innerHTML += tr;
+  }
+  table.appendChild(tbody);
+  content.appendChild(table);
   
   modal.classList.remove('hidden');
   

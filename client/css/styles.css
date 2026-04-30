@@ -207,7 +207,7 @@ input[type="text"]:focus {
   overflow-y: auto;
 }
 .modal-content.modal-wide {
-  max-width: 600px;
+  max-width: 700px;
 }
 .modal-content h2 {
   margin-bottom: 1rem;
@@ -1117,55 +1117,72 @@ input[type="text"]:focus {
    Summary Modal
    ============================================ */
 .summary-content {
-  max-height: 400px;
+  max-height: 500px;
   overflow-y: auto;
+  overflow-x: auto;
 }
-.summary-player {
-  background: var(--bg-tertiary);
-  border-radius: 8px;
-  padding: 12px 16px;
-  margin-bottom: 8px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: center;
 }
-.summary-player.winner {
-  border: 2px solid var(--success);
+.summary-table th,
+.summary-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
 }
-.summary-player-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.stat-label-col {
+  width: 1%;
+  white-space: nowrap;
 }
-.summary-stats {
-  margin-top: 10px;
-  padding-top: 8px;
-  border-top: 1px solid rgba(255,255,255,0.08);
+.stat-player-col {
+  text-align: center;
+  padding-bottom: 12px !important;
 }
-.summary-stat-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 3px 0;
-  font-size: 0.78rem;
+.stat-player-col .player-avatar {
+  margin: 0 auto 4px;
 }
-.stat-label {
+.stat-player-col .player-name {
+  font-size: 0.85rem;
+}
+.stat-player-col.winner {
+  background: rgba(72, 187, 120, 0.08);
+  border-top: 3px solid var(--success);
+  border-radius: 8px 8px 0 0;
+}
+.stat-label-cell {
+  text-align: left;
   color: var(--text-muted);
+  font-size: 0.78rem;
+  white-space: nowrap;
+  padding-right: 16px;
 }
-.stat-value {
-  color: var(--text-primary);
+.stat-value-cell {
   font-weight: 600;
+  font-size: 0.82rem;
   text-transform: uppercase;
-  font-size: 0.75rem;
+  color: var(--text-primary);
+}
+.stat-value-cell.winner {
+  background: rgba(72, 187, 120, 0.05);
+}
+.stat-pts {
+  color: var(--accent);
+  font-size: 0.72rem;
+}
+.stat-sub {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 400;
+}
+.summary-table .summary-score {
+  font-size: 1.6rem;
+  font-weight: 800;
 }
 .summary-player-info {
   display: flex;
   align-items: center;
   gap: 10px;
-}
-.summary-score {
-  font-size: 1.8rem;
-  font-weight: 800;
 }
 
 /* ============================================
