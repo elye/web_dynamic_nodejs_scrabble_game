@@ -60,6 +60,7 @@ export function setupWebSocketHandlers(wss: WebSocket.Server, gameManager: GameM
               timeLimit: message.timeLimit ?? 45,
               dictionary: message.dictionary || 'en_us',
               gameType: message.gameType || 'friend',
+              timeoutMode: message.timeoutMode || 'sudden',
             };
             
             const room = gameManager.createRoom(

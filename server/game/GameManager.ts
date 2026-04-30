@@ -86,6 +86,7 @@ export class GameManager {
       timeLimit,
       dictionary: 'en_us',
       gameType: 'friend',
+      timeoutMode: 'sudden',
     };
 
     const roomId = uuidv4().substring(0, 8).toUpperCase();

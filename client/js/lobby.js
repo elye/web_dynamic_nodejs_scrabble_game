@@ -11,6 +11,7 @@ let multiSettings = {
   maxPlayers: 4,
   timeLimit: 45,
   gameType: 'friend',
+  timeoutMode: 'sudden',
 };
 
 function initLobby() {
@@ -76,6 +77,14 @@ function initLobby() {
     });
   });
 
+  document.querySelectorAll('.timeout-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.timeout-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      multiSettings.timeoutMode = btn.dataset.timeout;
+    });
+  });
+
   document.querySelectorAll('.type-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
@@ -97,6 +106,7 @@ function initLobby() {
         maxPlayers: 4,
         timeLimit: multiSettings.timeLimit,
         gameType: multiSettings.gameType,
+        timeoutMode: multiSettings.timeoutMode,
       }));
     }
   });

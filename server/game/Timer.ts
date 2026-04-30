@@ -40,11 +40,13 @@ export class Timer {
         this.onTick(this.timers);
       }
       
-      if (remaining <= 0) {
-        this.stopInterval();
+      if (remaining <= 0 && remaining % 60 === 0) {
+        // Fire timeout callback at 0, -60, -120, etc.
         if (this.onTimeout) {
           this.onTimeout(this.activePlayer);
         }
+        // If game didn't end (penalty mode), keep ticking
+        if (!this.interval) return;
       }
     }, 1000);
   }
@@ -72,11 +74,11 @@ export class Timer {
           this.onTick(this.timers);
         }
         
-        if (remaining <= 0) {
-          this.stopInterval();
+        if (remaining <= 0 && remaining % 60 === 0) {
           if (this.onTimeout) {
             this.onTimeout(this.activePlayer);
           }
+          if (!this.interval) return;
         }
       }, 1000);
     }

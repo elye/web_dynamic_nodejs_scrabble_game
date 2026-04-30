@@ -36,6 +36,7 @@ export interface GameSettings {
   timeLimit: number; // minutes, 0 = unlimited
   dictionary: 'en_us' | 'en_gb';
   gameType: 'friend' | 'ranked';
+  timeoutMode: 'sudden' | 'penalty'; // sudden = score 0 & game over, penalty = -10pts/min overtime
 }
 
 export type GameStatus = 'waiting' | 'playing' | 'finished';
@@ -497,6 +498,32 @@ export class GameState {
   }
 
   private handleTimeout(playerId: string): void {
+    if (this.settings.timeoutMode === 'penalty') {
+      // Overtime penalty: -10 points per minute
+      const player = this.players.find(p => p.id === playerId);
+      if (player) {
+        player.score = Math.max(0, player.score - 10);
+        if (player.score <= 0) {
+          player.score = 0;
+          this.endGame('timeout_penalty', playerId);
+          return;
+        }
+        // Broadcast updated scores
+        if (this.onBroadcast) {
+          this.onBroadcast('TIMER_UPDATE', {
+            timers: this.timer.getAllTimers(),
+            scores: Object.fromEntries(this.players.map(p => [p.id, p.score])),
+          });
+        }
+      }
+      return;
+    }
+    
+    // Sudden death: score becomes 0 and game ends
+    const player = this.players.find(p => p.id === playerId);
+    if (player) {
+      player.score = 0;
+    }
     this.endGame('timeout', playerId);
   }
 
