@@ -87,6 +87,42 @@ function createRackTileElement(tile) {
   
   el.addEventListener('dragend', () => {
     el.classList.remove('dragging');
+    // Clean up any drop indicators
+    document.querySelectorAll('.rack-tile').forEach(t => t.classList.remove('rack-drag-over'));
+  });
+  
+  // Allow dropping other rack tiles onto this one to reorder
+  el.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only show indicator for rack-to-rack reorder (not board tiles)
+    const dragging = document.querySelector('.rack-tile.dragging');
+    if (dragging && dragging !== el) {
+      el.classList.add('rack-drag-over');
+    }
+  });
+  
+  el.addEventListener('dragleave', () => {
+    el.classList.remove('rack-drag-over');
+  });
+  
+  el.addEventListener('drop', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    el.classList.remove('rack-drag-over');
+    
+    const draggedTileId = e.dataTransfer.getData('text/plain');
+    // Only handle rack-to-rack reorder (no board: prefix)
+    if (draggedTileId.startsWith('board:')) return;
+    
+    const fromIdx = rackTiles.findIndex(t => t.id === draggedTileId);
+    const toIdx = rackTiles.findIndex(t => t.id === tile.id);
+    if (fromIdx === -1 || toIdx === -1 || fromIdx === toIdx) return;
+    
+    // Move the tile from fromIdx to toIdx
+    const [movedTile] = rackTiles.splice(fromIdx, 1);
+    rackTiles.splice(toIdx, 0, movedTile);
+    renderRack();
   });
   
   return el;

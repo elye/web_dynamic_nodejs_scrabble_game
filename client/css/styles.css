@@ -571,6 +571,10 @@ input[type="text"]:focus {
   opacity: 0.5;
   cursor: grabbing;
 }
+.rack-tile.rack-drag-over {
+  border-left: 3px solid var(--accent);
+  transform: translateX(3px);
+}
 .rack-tile .tile-letter {
   font-size: 22px;
   font-weight: 800;
