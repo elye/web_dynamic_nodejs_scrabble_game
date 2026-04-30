@@ -29,6 +29,12 @@ export function setupWebSocketHandlers(wss: WebSocket.Server, gameManager: GameM
             if (result.reconnected && result.roomId) {
               // Already reconnected inside resolveSession — client will get
               // ROOM_JOINED or RECONNECTED from handleReconnect
+              // But always send playerId so the client knows who they are
+              ws.send(JSON.stringify({
+                type: 'LOBBY_STATE',
+                playerId,
+                rooms: [],
+              }));
             } else {
               ws.send(JSON.stringify({
                 type: 'LOBBY_STATE',
