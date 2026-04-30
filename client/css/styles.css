@@ -1249,6 +1249,25 @@ input[type="text"]:focus {
   gap: 8px;
   margin-bottom: 10px;
 }
+.overall-highlights-boxes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.highlight-stat {
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.highlight-stat .overall-stat-val {
+  font-size: 0.95rem;
+  letter-spacing: 1px;
+}
+.overall-stat-by {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-top: 2px;
+}
 .overall-stat {
   background: var(--bg-tertiary);
   border-radius: 6px;

@@ -585,6 +585,9 @@ export class GameState {
         const avgScore = playTurns > 0 ? Math.round(playerTurns.reduce((sum, t) => sum + t.totalScore, 0) / playTurns) : 0;
         
         const bingoCount = playerTurns.filter(t => (t.tilesPlayed?.length || 0) === 7).length;
+        const passCount = this.turnHistory.filter(t => t.playerId === p.id && t.action === 'pass').length;
+        const exchangeCount = this.turnHistory.filter(t => t.playerId === p.id && t.action === 'exchange').length;
+        const tilesUsed = playerTurns.reduce((sum, t) => sum + (t.tilesPlayed?.length || 0), 0);
         
         const rackValue = p.rack.reduce((sum, t) => sum + t.points, 0);
         
@@ -602,6 +605,9 @@ export class GameState {
           playTurns,
           avgScorePerTurn: avgScore,
           bingoCount,
+          passCount,
+          exchangeCount,
+          tilesUsed,
         };
       }
 
@@ -632,6 +638,11 @@ export class GameState {
       const totalScoreAll = this.players.reduce((sum, p) => sum + p.score, 0);
       const avgScoreAll = this.players.length > 0 ? Math.round(totalScoreAll / this.players.length) : 0;
 
+      const totalBingos = allPlayTurns.filter(t => (t.tilesPlayed?.length || 0) === 7).length;
+      const totalPasses = this.turnHistory.filter(t => t.action === 'pass').length;
+      const totalExchanges = this.turnHistory.filter(t => t.action === 'exchange').length;
+      const totalTilesUsed = allPlayTurns.reduce((sum, t) => sum + (t.tilesPlayed?.length || 0), 0);
+
       const gameSummary = {
         totalTurns: this.turnHistory.length,
         totalRounds,
@@ -639,24 +650,41 @@ export class GameState {
         avgScoreAll,
         totalWordsPlayed: allGameWords.length,
         totalTimeUsed,
+        totalBingos,
+        totalPasses,
+        totalExchanges,
+        totalTilesUsed,
         bestWord: overallBestWord ? { word: overallBestWord.word, score: overallBestWord.score, player: overallBestWordPlayer?.username || '' } : null,
         bestTurn: overallBestTurn ? { turnNumber: overallBestTurn.turnNumber, score: overallBestTurn.totalScore, player: overallBestTurn.username } : null,
         longestWord: overallLongestWord ? { word: overallLongestWord.word, length: overallLongestWord.word.length, player: overallLongestWordPlayer?.username || '' } : null,
       };
 
-      // Compute score progression (cumulative score after each turn)
-      const scoreProgression: { [playerId: string]: { turn: number; score: number }[] } = {};
+      // Compute score progression (cumulative score after each turn, staircase style)
       const cumulativeScores: { [playerId: string]: number } = {};
       for (const p of this.players) {
-        scoreProgression[p.id] = [{ turn: 0, score: 0 }];
         cumulativeScores[p.id] = 0;
+      }
+      // Build data point only for the active player at each turn
+      const scoreProgression: { [playerId: string]: { turn: number; score: number }[] } = {};
+      const turnEvents: { turn: number; playerId: string; type: 'bingo' | 'pass' | 'exchange' }[] = [];
+      for (const p of this.players) {
+        scoreProgression[p.id] = [{ turn: 0, score: 0 }];
       }
       for (const entry of this.turnHistory) {
         cumulativeScores[entry.playerId] = (cumulativeScores[entry.playerId] || 0) + entry.totalScore;
+        // Only add data point for the player who acted
         scoreProgression[entry.playerId]?.push({
           turn: entry.turnNumber,
           score: cumulativeScores[entry.playerId],
         });
+        // Track special events
+        if (entry.action === 'play' && (entry.tilesPlayed?.length || 0) === 7) {
+          turnEvents.push({ turn: entry.turnNumber, playerId: entry.playerId, type: 'bingo' });
+        } else if (entry.action === 'pass') {
+          turnEvents.push({ turn: entry.turnNumber, playerId: entry.playerId, type: 'pass' });
+        } else if (entry.action === 'exchange') {
+          turnEvents.push({ turn: entry.turnNumber, playerId: entry.playerId, type: 'exchange' });
+        }
       }
 
       this.onBroadcast('GAME_OVER', {
@@ -667,6 +695,7 @@ export class GameState {
         stats,
         gameSummary,
         scoreProgression,
+        turnEvents,
       });
     }
 

@@ -242,12 +242,14 @@ function handleWordRejected(msg) {
 let gameOverStats = null;
 let gameOverSummary = null;
 let gameOverProgression = null;
+let gameOverTurnEvents = null;
 
 function handleGameOver(msg) {
   gameStatus = 'finished';
   gameOverStats = msg.stats || null;
   gameOverSummary = msg.gameSummary || null;
   gameOverProgression = msg.scoreProgression || null;
+  gameOverTurnEvents = msg.turnEvents || null;
   showEndgameButtons();
   
   // Show winner notification
@@ -411,7 +413,7 @@ function showExchangeModal() {
   modal.classList.remove('hidden');
 }
 
-function drawScoreGraph(canvas, players, progression) {
+function drawScoreGraph(canvas, players, progression, turnEvents) {
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
   const w = canvas.width;
@@ -490,6 +492,54 @@ function drawScoreGraph(canvas, players, progression) {
     ctx.arc(xScale(last.turn), yScale(last.score), 4, 0, Math.PI * 2);
     ctx.fill();
   }
+
+  // Draw turn event markers
+  if (turnEvents && turnEvents.length > 0) {
+    for (const evt of turnEvents) {
+      const playerData = progression[evt.playerId];
+      if (!playerData) continue;
+      // Find the score at this turn
+      const pt = playerData.find(d => d.turn === evt.turn);
+      if (!pt) continue;
+      
+      const x = xScale(pt.turn);
+      const y = yScale(pt.score);
+      const color = getAvatarColor(evt.playerId);
+
+      if (evt.type === 'bingo') {
+        // Star marker for bingo
+        ctx.fillStyle = '#FFD700';
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.5;
+        drawStar(ctx, x, y, 7, 5, 3);
+        ctx.fill();
+        ctx.stroke();
+      } else {
+        // Red X marker for pass/exchange
+        ctx.strokeStyle = '#e74c3c';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x - 4, y - 4);
+        ctx.lineTo(x + 4, y + 4);
+        ctx.moveTo(x + 4, y - 4);
+        ctx.lineTo(x - 4, y + 4);
+        ctx.stroke();
+      }
+    }
+  }
+}
+
+function drawStar(ctx, cx, cy, outerR, innerR, points) {
+  ctx.beginPath();
+  for (let i = 0; i < points * 2; i++) {
+    const r = i % 2 === 0 ? outerR : innerR;
+    const angle = (Math.PI / points) * i - Math.PI / 2;
+    const x = cx + r * Math.cos(angle);
+    const y = cy + r * Math.sin(angle);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
 }
 
 function showRoundSummary() {
@@ -528,9 +578,12 @@ function showRoundSummary() {
     { label: '🎯 Best Word', key: 'bestWord', format: (s) => s.bestWord ? `${s.bestWord.word} <span class="stat-pts">${s.bestWord.score}pts</span>` : '-' },
     { label: '🔥 Best Turn', key: 'bestTurn', format: (s) => s.bestTurn ? `#${s.bestTurn.turnNumber} <span class="stat-pts">${s.bestTurn.score}pts</span> <span class="stat-sub">${s.bestTurn.wordCount}w</span>` : '-' },
     { label: '📏 Longest Word', key: 'longestWord', format: (s) => s.longestWord ? `${s.longestWord.word} <span class="stat-sub">${s.longestWord.length}L</span>` : '-' },
-    { label: '📊 Avg/Turn', key: 'avgScorePerTurn', format: (s) => `${s.avgScorePerTurn} pts` },
+    { label: '📊 Avg/Turn', key: 'avgScorePerTurn', format: (s) => `${s.avgScorePerTurn} pts <span class="stat-sub">(${s.playTurns} plays)</span>` },
     { label: '📝 Words', key: 'totalWords', format: (s) => `${s.totalWords}` },
+    { label: '🔄 Turns', key: 'totalTurns', format: (s) => `${s.totalTurns}` },
     { label: '🌟 Bingos', key: 'bingoCount', format: (s) => `${s.bingoCount}` },
+    { label: '⏭ Passes', key: 'passCount', format: (s) => `${s.passCount}` },
+    { label: '🔄 Exchanges', key: 'exchangeCount', format: (s) => `${s.exchangeCount}` },
     { label: '🎒 Tiles Left', key: 'tilesRemaining', format: (s) => `${s.tilesRemaining} <span class="stat-sub">−${s.rackDeduction}pts</span>` },
   ];
 
@@ -555,18 +608,21 @@ function showRoundSummary() {
     overallDiv.className = 'game-overall-summary';
     overallDiv.innerHTML = `
       <h3>Game Overview</h3>
+      <div class="overall-highlights-boxes">
+        ${gs.bestWord ? `<div class="overall-stat highlight-stat"><span class="overall-stat-val">${gs.bestWord.word.toUpperCase()}</span><span class="overall-stat-lbl">🎯 Best Word (${gs.bestWord.score}pts)</span><span class="overall-stat-by">by ${escapeHtml(gs.bestWord.player)}</span></div>` : ''}
+        ${gs.bestTurn ? `<div class="overall-stat highlight-stat"><span class="overall-stat-val">#${gs.bestTurn.turnNumber} (${gs.bestTurn.score}pts)</span><span class="overall-stat-lbl">🔥 Best Turn</span><span class="overall-stat-by">by ${escapeHtml(gs.bestTurn.player)}</span></div>` : ''}
+        ${gs.longestWord ? `<div class="overall-stat highlight-stat"><span class="overall-stat-val">${gs.longestWord.word.toUpperCase()}</span><span class="overall-stat-lbl">📏 Longest (${gs.longestWord.length}L)</span><span class="overall-stat-by">by ${escapeHtml(gs.longestWord.player)}</span></div>` : ''}
+      </div>
       <div class="overall-stats-grid">
         <div class="overall-stat"><span class="overall-stat-val">${gs.totalRounds}</span><span class="overall-stat-lbl">Rounds</span></div>
         <div class="overall-stat"><span class="overall-stat-val">${gs.totalTurns}</span><span class="overall-stat-lbl">Total Turns</span></div>
         <div class="overall-stat"><span class="overall-stat-val">${gs.totalScoreAll}</span><span class="overall-stat-lbl">Combined Score</span></div>
         <div class="overall-stat"><span class="overall-stat-val">${gs.avgScoreAll}</span><span class="overall-stat-lbl">Avg Score</span></div>
         <div class="overall-stat"><span class="overall-stat-val">${gs.totalWordsPlayed}</span><span class="overall-stat-lbl">Words Played</span></div>
+        <div class="overall-stat"><span class="overall-stat-val">${gs.totalTilesUsed || 0}</span><span class="overall-stat-lbl">Tiles Used</span></div>
+        <div class="overall-stat"><span class="overall-stat-val">${gs.totalBingos || 0}</span><span class="overall-stat-lbl">Bingos</span></div>
+        <div class="overall-stat"><span class="overall-stat-val">${gs.totalPasses || 0}/${gs.totalExchanges || 0}</span><span class="overall-stat-lbl">Pass / Exchange</span></div>
         <div class="overall-stat"><span class="overall-stat-val">${gs.totalTimeUsed > 0 ? formatTime(gs.totalTimeUsed) : 'N/A'}</span><span class="overall-stat-lbl">Time Used</span></div>
-      </div>
-      <div class="overall-highlights">
-        ${gs.bestWord ? `<div class="overall-highlight">🎯 <strong>Best Word:</strong> ${gs.bestWord.word.toUpperCase()} (${gs.bestWord.score} pts) by ${escapeHtml(gs.bestWord.player)}</div>` : ''}
-        ${gs.bestTurn ? `<div class="overall-highlight">🔥 <strong>Best Turn:</strong> Turn #${gs.bestTurn.turnNumber} (${gs.bestTurn.score} pts) by ${escapeHtml(gs.bestTurn.player)}</div>` : ''}
-        ${gs.longestWord ? `<div class="overall-highlight">📏 <strong>Longest Word:</strong> ${gs.longestWord.word.toUpperCase()} (${gs.longestWord.length} letters) by ${escapeHtml(gs.longestWord.player)}</div>` : ''}
       </div>
     `;
     content.appendChild(overallDiv);
@@ -590,11 +646,13 @@ function showRoundSummary() {
       const color = getAvatarColor(player.id);
       legendDiv.innerHTML += `<span class="legend-item"><span class="legend-dot" style="background:${color}"></span>${escapeHtml(player.username)}</span>`;
     }
+    legendDiv.innerHTML += `<span class="legend-item"><span class="legend-dot" style="background:#FFD700"></span>Bingo</span>`;
+    legendDiv.innerHTML += `<span class="legend-item"><span style="font-size:0.8rem;color:#e74c3c">✕</span> Pass/Exchange</span>`;
     graphDiv.appendChild(legendDiv);
     content.appendChild(graphDiv);
 
     // Draw line graph
-    requestAnimationFrame(() => drawScoreGraph(canvas, sorted, gameOverProgression));
+    requestAnimationFrame(() => drawScoreGraph(canvas, sorted, gameOverProgression, gameOverTurnEvents));
   }
   
   modal.classList.remove('hidden');
