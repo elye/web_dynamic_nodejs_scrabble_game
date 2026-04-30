@@ -535,6 +535,7 @@ export class GameState {
 
   endGame(reason: string, timedOutPlayer?: string): void {
     this.status = 'finished';
+    const savedTimers = this.timer.getAllTimers();
     this.timer.destroy();
 
     // Apply end-game deductions
@@ -561,11 +562,55 @@ export class GameState {
         p.score > best.score ? p : best
       , this.players[0]);
 
+      // Compute statistics per player
+      const stats: { [id: string]: any } = {};
+      for (const p of this.players) {
+        const playerTurns = this.turnHistory.filter(t => t.playerId === p.id && t.action === 'play');
+        const allWords = playerTurns.flatMap(t => t.wordsFormed || []);
+        
+        const bestWord = allWords.length > 0 
+          ? allWords.reduce((best, w) => w.score > best.score ? w : best, allWords[0])
+          : null;
+        
+        const bestTurn = playerTurns.length > 0
+          ? playerTurns.reduce((best, t) => t.totalScore > best.totalScore ? t : best, playerTurns[0])
+          : null;
+        
+        const longestWord = allWords.length > 0
+          ? allWords.reduce((best, w) => w.word.length > best.word.length ? w : best, allWords[0])
+          : null;
+        
+        const totalTurns = this.turnHistory.filter(t => t.playerId === p.id).length;
+        const playTurns = playerTurns.length;
+        const avgScore = playTurns > 0 ? Math.round(playerTurns.reduce((sum, t) => sum + t.totalScore, 0) / playTurns) : 0;
+        
+        const bingoCount = playerTurns.filter(t => (t.tilesPlayed?.length || 0) === 7).length;
+        
+        const rackValue = p.rack.reduce((sum, t) => sum + t.points, 0);
+        
+        stats[p.id] = {
+          username: p.username,
+          score: p.score,
+          timeRemaining: savedTimers[p.id] ?? 0,
+          tilesRemaining: p.rack.length,
+          rackDeduction: rackValue,
+          bestWord: bestWord ? { word: bestWord.word, score: bestWord.score } : null,
+          bestTurn: bestTurn ? { turnNumber: bestTurn.turnNumber, score: bestTurn.totalScore, wordCount: (bestTurn.wordsFormed?.length || 0) } : null,
+          longestWord: longestWord ? { word: longestWord.word, length: longestWord.word.length } : null,
+          totalWords: allWords.length,
+          totalTurns,
+          playTurns,
+          avgScorePerTurn: avgScore,
+          bingoCount,
+        };
+      }
+
       this.onBroadcast('GAME_OVER', {
         finalScores,
         winner: winner.id,
         reason,
         timedOutPlayer,
+        stats,
       });
     }
 

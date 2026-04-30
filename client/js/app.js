@@ -225,8 +225,11 @@ function handleWordRejected(msg) {
   showNotification(msg.reason || 'Invalid word!', 'error');
 }
 
+let gameOverStats = null;
+
 function handleGameOver(msg) {
   gameStatus = 'finished';
+  gameOverStats = msg.stats || null;
   showEndgameButtons();
   
   // Show winner notification
@@ -397,6 +400,8 @@ function showRoundSummary() {
   const maxScore = sorted[0]?.score || 0;
   
   for (const player of sorted) {
+    const stats = gameOverStats ? gameOverStats[player.id] : null;
+    
     const div = document.createElement('div');
     div.className = 'summary-player';
     if (player.score === maxScore && maxScore > 0) {
@@ -404,15 +409,59 @@ function showRoundSummary() {
     }
     
     const initial = player.username.charAt(0).toUpperCase();
-    div.innerHTML = `
-      <div class="summary-player-info">
-        <div class="player-avatar" style="background: ${getAvatarColor(player.id)}">${initial}</div>
-        <div>
-          <div class="player-name">${escapeHtml(player.username)}${player.score === maxScore ? ' 🏆' : ''}</div>
-          <div class="player-elo" style="color: var(--text-muted); font-size: 0.8rem;">Elo: ${player.elo}</div>
+    
+    let statsHtml = '';
+    if (stats) {
+      statsHtml = `
+        <div class="summary-stats">
+          <div class="summary-stat-row">
+            <span class="stat-label">⏱ Time Remaining</span>
+            <span class="stat-value">${formatTime(stats.timeRemaining)}</span>
+          </div>
+          <div class="summary-stat-row">
+            <span class="stat-label">🎯 Best Word</span>
+            <span class="stat-value">${stats.bestWord ? `${stats.bestWord.word} (${stats.bestWord.score} pts)` : '-'}</span>
+          </div>
+          <div class="summary-stat-row">
+            <span class="stat-label">🔥 Best Turn</span>
+            <span class="stat-value">${stats.bestTurn ? `Turn #${stats.bestTurn.turnNumber} (${stats.bestTurn.score} pts, ${stats.bestTurn.wordCount} word${stats.bestTurn.wordCount !== 1 ? 's' : ''})` : '-'}</span>
+          </div>
+          <div class="summary-stat-row">
+            <span class="stat-label">📏 Longest Word</span>
+            <span class="stat-value">${stats.longestWord ? `${stats.longestWord.word} (${stats.longestWord.length} letters)` : '-'}</span>
+          </div>
+          <div class="summary-stat-row">
+            <span class="stat-label">📊 Avg Score/Turn</span>
+            <span class="stat-value">${stats.avgScorePerTurn} pts</span>
+          </div>
+          <div class="summary-stat-row">
+            <span class="stat-label">📝 Words Played</span>
+            <span class="stat-value">${stats.totalWords}</span>
+          </div>
+          <div class="summary-stat-row">
+            <span class="stat-label">🌟 Bingos (7 tiles)</span>
+            <span class="stat-value">${stats.bingoCount}</span>
+          </div>
+          <div class="summary-stat-row">
+            <span class="stat-label">🎒 Tiles Left</span>
+            <span class="stat-value">${stats.tilesRemaining} (−${stats.rackDeduction} pts)</span>
+          </div>
         </div>
+      `;
+    }
+    
+    div.innerHTML = `
+      <div class="summary-player-header">
+        <div class="summary-player-info">
+          <div class="player-avatar" style="background: ${getAvatarColor(player.id)}">${initial}</div>
+          <div>
+            <div class="player-name">${escapeHtml(player.username)}${player.score === maxScore && maxScore > 0 ? ' 🏆' : ''}</div>
+            <div class="player-elo" style="color: var(--text-muted); font-size: 0.8rem;">Elo: ${player.elo}</div>
+          </div>
+        </div>
+        <div class="summary-score">${player.score}</div>
       </div>
-      <div class="summary-score">${player.score}</div>
+      ${statsHtml}
     `;
     
     content.appendChild(div);
@@ -420,7 +469,11 @@ function showRoundSummary() {
   
   modal.classList.remove('hidden');
   
-  document.getElementById('close-summary-btn').addEventListener('click', () => {
+  // Remove old listener and add new one
+  const closeBtn = document.getElementById('close-summary-btn');
+  const newCloseBtn = closeBtn.cloneNode(true);
+  closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+  newCloseBtn.addEventListener('click', () => {
     modal.classList.add('hidden');
   });
 }
