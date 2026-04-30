@@ -185,6 +185,23 @@ export class GameManager {
     return true;
   }
 
+  removeAIFromRoom(playerId: string, aiPlayerId: string): boolean {
+    const roomId = this.playerRooms.get(playerId);
+    if (!roomId) return false;
+
+    const room = this.rooms.get(roomId);
+    if (!room || room.hostId !== playerId) return false;
+    if (room.game.status !== 'waiting') return false;
+
+    const aiPlayer = room.game.players.find(p => p.id === aiPlayerId && p.isAI);
+    if (!aiPlayer) return false;
+
+    room.game.players = room.game.players.filter(p => p.id !== aiPlayerId);
+
+    this.broadcastToRoom(roomId, 'ROOM_UPDATE', this.getRoomState(room));
+    return true;
+  }
+
   startGame(playerId: string): boolean {
     const roomId = this.playerRooms.get(playerId);
     if (!roomId) return false;

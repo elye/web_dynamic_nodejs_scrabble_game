@@ -9,7 +9,7 @@ let soloSettings = {
 
 let multiSettings = {
   maxPlayers: 4,
-  timeLimit: 45,
+  timeLimit: 30,
   gameType: 'friend',
   timeoutMode: 'sudden',
 };
@@ -149,11 +149,12 @@ function initLobby() {
     showScreen('lobby-screen');
   });
 
-  document.getElementById('add-ai-btn').addEventListener('click', () => {
-    if (window.ws && window.ws.readyState === WebSocket.OPEN) {
-      const difficulty = document.getElementById('ai-difficulty-select').value;
-      window.ws.send(JSON.stringify({ type: 'ADD_AI', aiDifficulty: difficulty }));
-    }
+  document.querySelectorAll('.add-ai-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (window.ws && window.ws.readyState === WebSocket.OPEN) {
+        window.ws.send(JSON.stringify({ type: 'ADD_AI', aiDifficulty: btn.dataset.difficulty }));
+      }
+    });
   });
 
   document.getElementById('start-game-btn').addEventListener('click', () => {
@@ -197,33 +198,49 @@ function updateWaitingRoom(data) {
   const container = document.getElementById('waiting-players');
   container.innerHTML = '';
 
+  const hostId = data.hostId || data.players[0]?.id;
+  const isHost = window.playerId === hostId;
+
   for (const player of data.players) {
     const card = document.createElement('div');
     card.className = 'waiting-player-card';
     const initial = player.username.charAt(0).toUpperCase();
     const disconnectedBadge = player.connected === false ? ' <span style="color:var(--danger);font-size:0.7rem">(disconnected)</span>' : '';
+    const aiBadge = player.isAI ? ` 🤖 <span class="ai-diff-badge">${(player.aiDifficulty || 'medium').charAt(0).toUpperCase() + (player.aiDifficulty || 'medium').slice(1)}</span>` : '';
+    let removeBtn = '';
+    if (player.isAI && isHost) {
+      removeBtn = `<button class="btn btn-sm remove-ai-btn" data-player-id="${player.id}" title="Remove AI">✕</button>`;
+    }
     card.innerHTML = `
       <div class="avatar" style="background: ${getAvatarColor(player.id)}">${initial}</div>
-      <div class="player-name">${escapeHtml(player.username)}${player.isAI ? ' 🤖' : ''}${disconnectedBadge}</div>
+      <div class="player-name">${escapeHtml(player.username)}${aiBadge}${disconnectedBadge}</div>
       <div class="player-elo" style="color: var(--text-muted); font-size: 0.8rem;">Elo: ${player.elo}</div>
+      ${removeBtn}
     `;
     container.appendChild(card);
   }
 
-  // Enable start button if host and enough human players
-  const startBtn = document.getElementById('start-game-btn');
-  const hostId = data.hostId || data.players[0]?.id;
-  const humanPlayers = data.players.filter(p => !p.isAI);
+  // Attach remove handlers
+  container.querySelectorAll('.remove-ai-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (window.ws && window.ws.readyState === WebSocket.OPEN) {
+        window.ws.send(JSON.stringify({ type: 'REMOVE_AI', playerId: btn.dataset.playerId }));
+      }
+    });
+  });
 
-  const addAiBtn = document.getElementById('add-ai-btn');
-  if (window.playerId === hostId) {
+  // Enable start button if host
+  const startBtn = document.getElementById('start-game-btn');
+  const botActions = document.querySelector('.ai-bot-actions');
+
+  if (isHost) {
     startBtn.disabled = false;
     startBtn.textContent = data.players.length < 2 ? 'Play Solo' : 'Start Game';
-    // Show Add AI button only if room has space (max 4)
-    addAiBtn.style.display = data.players.length >= 4 ? 'none' : '';
+    // Show bot buttons only if room has space (max 4)
+    if (botActions) botActions.style.display = data.players.length >= 4 ? 'none' : '';
   } else {
     startBtn.disabled = true;
     startBtn.textContent = 'Waiting for host to start...';
-    addAiBtn.style.display = 'none';
+    if (botActions) botActions.style.display = 'none';
   }
 }

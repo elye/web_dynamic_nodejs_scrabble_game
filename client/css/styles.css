@@ -278,8 +278,35 @@ input[type="text"]:focus {
 }
 .ai-add-group {
   display: flex;
-  gap: 6px;
+  flex-direction: column;
+  gap: 4px;
   align-items: center;
+}
+.ai-bot-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 12px;
+}
+.remove-ai-btn {
+  margin-left: auto;
+  padding: 2px 8px !important;
+  font-size: 0.75rem !important;
+  color: var(--danger) !important;
+  border-color: var(--danger) !important;
+  background: transparent !important;
+}
+.remove-ai-btn:hover {
+  background: var(--danger) !important;
+  color: white !important;
+}
+.waiting-player-card {
+  position: relative;
+}
+.ai-diff-badge {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 400;
 }
 .ai-difficulty-select {
   background: var(--bg-tertiary);

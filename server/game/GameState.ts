@@ -713,6 +713,8 @@ export class GameState {
         score: p.score,
         rackCount: p.rack.length,
         connected: p.connected,
+        isAI: p.isAI,
+        aiDifficulty: p.aiDifficulty,
       })),
       status: this.status,
       settings: this.settings,

@@ -125,6 +125,18 @@ export function setupWebSocketHandlers(wss: WebSocket.Server, gameManager: GameM
             break;
           }
 
+          case 'REMOVE_AI': {
+            if (!playerId) return;
+            const aiRemoved = gameManager.removeAIFromRoom(playerId, message.playerId);
+            if (!aiRemoved) {
+              ws.send(JSON.stringify({
+                type: 'ERROR',
+                message: 'Could not remove AI.',
+              }));
+            }
+            break;
+          }
+
           case 'START_GAME': {
             if (!playerId) return;
             const started = gameManager.startGame(playerId);
