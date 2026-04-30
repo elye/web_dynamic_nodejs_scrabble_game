@@ -95,9 +95,12 @@ function createRackTileElement(tile) {
   el.addEventListener('dragover', (e) => {
     e.preventDefault();
     e.stopPropagation();
-    // Only show indicator for rack-to-rack reorder (not board tiles)
+    // Show indicator for both rack-to-rack and board-to-rack drops
     const dragging = document.querySelector('.rack-tile.dragging');
     if (dragging && dragging !== el) {
+      el.classList.add('rack-drag-over');
+    } else if (!dragging) {
+      // Could be a board tile being dragged to rack
       el.classList.add('rack-drag-over');
     }
   });
@@ -112,9 +115,17 @@ function createRackTileElement(tile) {
     el.classList.remove('rack-drag-over');
     
     const draggedTileId = e.dataTransfer.getData('text/plain');
-    // Only handle rack-to-rack reorder (no board: prefix)
-    if (draggedTileId.startsWith('board:')) return;
     
+    // Handle board tile being returned to a specific rack position
+    if (draggedTileId.startsWith('board:')) {
+      const actualTileId = draggedTileId.substring(6);
+      const toIdx = rackTiles.findIndex(t => t.id === tile.id);
+      if (toIdx === -1) return;
+      returnBoardTileToRackAt(actualTileId, toIdx);
+      return;
+    }
+    
+    // Handle rack-to-rack reorder
     const fromIdx = rackTiles.findIndex(t => t.id === draggedTileId);
     const toIdx = rackTiles.findIndex(t => t.id === tile.id);
     if (fromIdx === -1 || toIdx === -1 || fromIdx === toIdx) return;

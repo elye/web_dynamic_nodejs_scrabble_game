@@ -205,6 +205,14 @@ function handleWordAccepted(msg) {
   // Clear pending tiles
   pendingTiles = [];
   
+  // Track last move tiles for highlighting
+  lastMoveTiles.clear();
+  if (msg.tilesPlayed) {
+    for (const tp of msg.tilesPlayed) {
+      lastMoveTiles.add(`${tp.row},${tp.col}`);
+    }
+  }
+  
   // Flash score
   if (msg.playerId) {
     flashScore(msg.playerId);
@@ -266,8 +274,19 @@ function showNotification(text, type = 'info') {
 // ============================================
 
 function initGameActions() {
-  // Recall
-  document.getElementById('recall-btn').addEventListener('click', recallAllTiles);
+  // Exit game / Back to menu
+  document.getElementById('exit-game-btn').addEventListener('click', () => {
+    if (gameStatus === 'playing') {
+      if (!confirm('Are you sure you want to leave the game? This will count as a resignation.')) {
+        return;
+      }
+      if (window.ws && window.ws.readyState === WebSocket.OPEN) {
+        window.ws.send(JSON.stringify({ type: 'RESIGN' }));
+      }
+    }
+    showScreen('lobby-screen');
+    gameStatus = 'lobby';
+  });
   
   // Submit
   document.getElementById('submit-btn').addEventListener('click', () => {

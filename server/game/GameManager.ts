@@ -163,6 +163,27 @@ export class GameManager {
     return room;
   }
 
+  addAIToRoom(playerId: string, aiDifficulty: 'easy' | 'medium' | 'hard'): boolean {
+    const roomId = this.playerRooms.get(playerId);
+    if (!roomId) return false;
+
+    const room = this.rooms.get(roomId);
+    if (!room || room.hostId !== playerId) return false;
+    if (room.game.status !== 'waiting') return false;
+    if (room.game.players.length >= room.settings.maxPlayers) return false;
+
+    const aiId = uuidv4();
+    const aiNames = ['AI Bot', 'AI Alpha', 'AI Beta', 'AI Gamma'];
+    const aiCount = room.game.players.filter(p => p.isAI).length;
+    const aiName = aiNames[aiCount] || `AI ${aiCount + 1}`;
+    
+    const player = room.game.addPlayer(aiId, '', aiName, '🤖', 1200, true, aiDifficulty);
+    if (!player) return false;
+
+    this.broadcastToRoom(roomId, 'ROOM_UPDATE', this.getRoomState(room));
+    return true;
+  }
+
   startGame(playerId: string): boolean {
     const roomId = this.playerRooms.get(playerId);
     if (!roomId) return false;

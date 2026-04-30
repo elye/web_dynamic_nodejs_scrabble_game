@@ -38,6 +38,7 @@ const PREMIUM_LABELS = {
 let boardState = Array(15).fill(null).map(() => Array(15).fill(null));
 let pendingTiles = []; // { tileId, letter, points, isBlank, chosenLetter, row, col }
 let selectedRackTile = null;
+let lastMoveTiles = new Set(); // Set of "row,col" strings for last opponent's move
 
 function initBoard() {
   const grid = document.getElementById('board-grid');
@@ -222,7 +223,8 @@ function renderBoard() {
     // Check committed tile
     const committed = boardState[row][col];
     if (committed) {
-      cell.appendChild(createBoardTileElement(committed, false));
+      const isLastMove = lastMoveTiles.has(`${row},${col}`);
+      cell.appendChild(createBoardTileElement(committed, false, isLastMove));
       return;
     }
     
@@ -246,10 +248,11 @@ function renderBoard() {
   });
 }
 
-function createBoardTileElement(tile, isNew) {
+function createBoardTileElement(tile, isNew, isLastMove) {
   const el = document.createElement('div');
   el.className = 'board-tile';
   if (isNew) el.classList.add('new-tile');
+  if (isLastMove) el.classList.add('last-move-tile');
   if (tile.isBlank) el.classList.add('blank-tile');
   
   const displayLetter = tile.isBlank ? (tile.chosenLetter || '?') : tile.letter;
@@ -322,6 +325,31 @@ function shakePendingTiles() {
     t.classList.add('shake');
     setTimeout(() => t.classList.remove('shake'), 300);
   });
+}
+
+function returnBoardTileToRackAt(tileId, atIndex) {
+  const pendingIdx = pendingTiles.findIndex(t => t.tileId === tileId);
+  if (pendingIdx === -1) return;
+  
+  const tile = pendingTiles.splice(pendingIdx, 1)[0];
+  if (tile.isBlank) {
+    tile.chosenLetter = undefined;
+  }
+  // Insert at specific position in rack
+  rackTiles.splice(atIndex, 0, {
+    id: tile.tileId,
+    letter: tile.letter,
+    points: tile.points,
+    isBlank: tile.isBlank,
+  });
+  renderRack();
+  renderBoard();
+  
+  // Notify server to recall just this one tile
+  if (window.ws && window.ws.readyState === WebSocket.OPEN) {
+    window.ws.send(JSON.stringify({ type: 'RECALL_TILE', tileId: tile.tileId }));
+    setTimeout(requestScorePreview, 150);
+  }
 }
 
 function returnBoardTileToRack(tileId) {

@@ -139,6 +139,12 @@ function initLobby() {
     showScreen('lobby-screen');
   });
 
+  document.getElementById('add-ai-btn').addEventListener('click', () => {
+    if (window.ws && window.ws.readyState === WebSocket.OPEN) {
+      window.ws.send(JSON.stringify({ type: 'ADD_AI', aiDifficulty: 'medium' }));
+    }
+  });
+
   document.getElementById('start-game-btn').addEventListener('click', () => {
     if (window.ws && window.ws.readyState === WebSocket.OPEN) {
       window.ws.send(JSON.stringify({ type: 'START_GAME' }));
@@ -198,11 +204,15 @@ function updateWaitingRoom(data) {
   const hostId = data.hostId || data.players[0]?.id;
   const humanPlayers = data.players.filter(p => !p.isAI);
 
+  const addAiBtn = document.getElementById('add-ai-btn');
   if (window.playerId === hostId) {
     startBtn.disabled = false;
-    startBtn.textContent = humanPlayers.length < 2 ? 'Play Solo' : 'Start Game';
+    startBtn.textContent = data.players.length < 2 ? 'Play Solo' : 'Start Game';
+    // Show Add AI button only if room has space (max 4)
+    addAiBtn.style.display = data.players.length >= 4 ? 'none' : '';
   } else {
     startBtn.disabled = true;
     startBtn.textContent = 'Waiting for host to start...';
+    addAiBtn.style.display = 'none';
   }
 }

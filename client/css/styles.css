@@ -488,6 +488,11 @@ input[type="text"]:focus {
   animation: tilePlace 0.15s ease-out;
 }
 
+.board-tile.last-move-tile {
+  border: 1.5px solid rgba(255, 255, 255, 0.45);
+  box-shadow: 0 0 4px 1px rgba(255, 255, 255, 0.15);
+}
+
 .board-tile.blank-tile {
   background: #c9a83a;
 }

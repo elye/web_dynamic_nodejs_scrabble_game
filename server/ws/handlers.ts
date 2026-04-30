@@ -112,6 +112,18 @@ export function setupWebSocketHandlers(wss: WebSocket.Server, gameManager: GameM
             break;
           }
 
+          case 'ADD_AI': {
+            if (!playerId) return;
+            const aiAdded = gameManager.addAIToRoom(playerId, message.aiDifficulty || 'medium');
+            if (!aiAdded) {
+              ws.send(JSON.stringify({
+                type: 'ERROR',
+                message: 'Could not add AI. Room may be full or you are not the host.',
+              }));
+            }
+            break;
+          }
+
           case 'START_GAME': {
             if (!playerId) return;
             const started = gameManager.startGame(playerId);
