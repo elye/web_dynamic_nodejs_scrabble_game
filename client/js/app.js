@@ -288,7 +288,21 @@ function initGameActions() {
     document.getElementById('exchange-modal').classList.add('hidden');
   });
   
+  document.getElementById('select-all-exchange-btn').addEventListener('click', () => {
+    document.querySelectorAll('.exchange-tile').forEach(el => el.classList.add('selected'));
+  });
+  
+  document.getElementById('deselect-all-exchange-btn').addEventListener('click', () => {
+    document.querySelectorAll('.exchange-tile').forEach(el => el.classList.remove('selected'));
+  });
+  
   document.getElementById('pass-only-btn').addEventListener('click', () => {
+    const selectedTiles = document.querySelectorAll('.exchange-tile.selected');
+    if (selectedTiles.length > 0) {
+      if (!confirm('You have tiles selected. Pass without exchanging?')) {
+        return;
+      }
+    }
     document.getElementById('exchange-modal').classList.add('hidden');
     recallAllTiles();
     if (window.ws && window.ws.readyState === WebSocket.OPEN) {
