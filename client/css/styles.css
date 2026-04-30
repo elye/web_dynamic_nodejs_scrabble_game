@@ -786,6 +786,29 @@ input[type="text"]:focus {
 .score-flash {
   animation: scoreFlash 0.5s ease-out;
 }
+.score-delta {
+  position: absolute;
+  top: -8px;
+  right: 8px;
+  background: var(--success);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  animation: scoreDeltaIn 0.3s ease-out;
+  transition: opacity 0.5s;
+}
+.score-delta-fade {
+  opacity: 0;
+}
+@keyframes scoreDeltaIn {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.player-card-body {
+  position: relative;
+}
 
 @keyframes activePulse {
   0%, 100% { border-color: var(--text-primary); }
@@ -1409,6 +1432,25 @@ input[type="text"]:focus {
 @keyframes hintPop {
   from { transform: scale(0.5); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
+}
+.board-score-indicator {
+  position: absolute;
+  top: -12px;
+  right: -8px;
+  background: var(--success);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 8px;
+  z-index: 20;
+  pointer-events: none;
+  animation: scoreDeltaIn 0.3s ease-out;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  transition: opacity 0.5s;
+}
+.board-score-indicator.fade-out {
+  opacity: 0;
 }
 
 /* ============================================

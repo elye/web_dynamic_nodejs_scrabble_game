@@ -408,3 +408,24 @@ function updateScoreHint(data) {
 function removeScoreHint() {
   document.querySelectorAll('.score-hint').forEach(el => el.remove());
 }
+
+function showBoardScoreIndicator(tilesPlayed, score) {
+  // Remove any existing indicator
+  document.querySelectorAll('.board-score-indicator').forEach(el => el.remove());
+  
+  // Find the last tile position to anchor the indicator
+  const lastTile = tilesPlayed[tilesPlayed.length - 1];
+  const cell = document.querySelector(`.board-cell[data-row="${lastTile.row}"][data-col="${lastTile.col}"]`);
+  if (!cell) return;
+  
+  const indicator = document.createElement('div');
+  indicator.className = 'board-score-indicator';
+  indicator.textContent = `+${score}`;
+  cell.appendChild(indicator);
+  
+  // Auto-remove after 3 seconds
+  setTimeout(() => {
+    indicator.classList.add('fade-out');
+    setTimeout(() => indicator.remove(), 500);
+  }, 3000);
+}

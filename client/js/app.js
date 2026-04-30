@@ -231,6 +231,12 @@ function handleWordAccepted(msg) {
   if (msg.playerId) {
     flashScore(msg.playerId);
   }
+  
+  // Show turn score on the board near last played tiles
+  if (msg.totalTurnScore && msg.tilesPlayed && msg.tilesPlayed.length > 0) {
+    removeScoreHint();
+    showBoardScoreIndicator(msg.tilesPlayed, msg.totalTurnScore);
+  }
 }
 
 function handleWordRejected(msg) {

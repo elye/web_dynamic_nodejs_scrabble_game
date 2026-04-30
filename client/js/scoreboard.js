@@ -77,6 +77,26 @@ function flashScore(playerId) {
   }
 }
 
+function showScoreDelta(playerId, delta) {
+  const el = document.getElementById(`score-${playerId}`);
+  if (!el) return;
+  
+  // Remove any existing delta badge
+  const existing = el.parentElement.querySelector('.score-delta');
+  if (existing) existing.remove();
+  
+  const badge = document.createElement('span');
+  badge.className = 'score-delta';
+  badge.textContent = `+${delta}`;
+  el.parentElement.appendChild(badge);
+  
+  // Auto-remove after 3 seconds
+  setTimeout(() => {
+    badge.classList.add('score-delta-fade');
+    setTimeout(() => badge.remove(), 500);
+  }, 3000);
+}
+
 function updateTimers(timers) {
   const timerEls = document.querySelectorAll('.player-timer');
   const cards = document.querySelectorAll('.player-card');
