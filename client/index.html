@@ -20,33 +20,43 @@
           <input type="text" id="username-input" placeholder="Enter your username" maxlength="20" value="">
         </div>
         
-        <div class="lobby-actions">
-          <button id="create-game-btn" class="btn btn-accent">Create Game</button>
-          <button id="join-game-btn" class="btn btn-outlined">Join Game</button>
+        <div class="lobby-actions lobby-actions-vertical">
+          <button id="solo-btn" class="btn btn-accent btn-large">🤖 Solo (vs AI)</button>
+          <button id="multiplayer-btn" class="btn btn-accent btn-large">👥 Multiplayer</button>
+          <button id="join-game-btn" class="btn btn-outlined btn-large">🔗 Join Game</button>
         </div>
       </div>
 
-      <!-- Create Game Modal -->
-      <div id="create-modal" class="modal hidden">
+      <!-- Solo Game Modal -->
+      <div id="solo-modal" class="modal hidden">
         <div class="modal-content">
-          <h2>Create Game</h2>
-          <div class="form-group">
-            <label>Number of Players</label>
-            <div class="btn-group">
-              <button class="btn btn-sm player-count-btn" data-count="1">1 (vs AI)</button>
-              <button class="btn btn-sm player-count-btn active" data-count="2">2</button>
-              <button class="btn btn-sm player-count-btn" data-count="3">3</button>
-              <button class="btn btn-sm player-count-btn" data-count="4">4</button>
-            </div>
-          </div>
+          <h2>Solo Game vs AI</h2>
           <div class="form-group">
             <label>AI Difficulty</label>
-            <div class="btn-group" id="ai-difficulty-group">
+            <div class="btn-group">
               <button class="btn btn-sm ai-diff-btn" data-diff="easy">Easy</button>
               <button class="btn btn-sm ai-diff-btn active" data-diff="medium">Medium</button>
               <button class="btn btn-sm ai-diff-btn" data-diff="hard">Hard</button>
             </div>
           </div>
+          <div class="form-group">
+            <label>Time Limit</label>
+            <div class="btn-group">
+              <button class="btn btn-sm time-btn-solo" data-time="15">15 min</button>
+              <button class="btn btn-sm time-btn-solo active" data-time="0">Unlimited</button>
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button id="cancel-solo-btn" class="btn btn-outlined">Cancel</button>
+            <button id="confirm-solo-btn" class="btn btn-accent">Start Game</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Create Multiplayer Room Modal -->
+      <div id="create-modal" class="modal hidden">
+        <div class="modal-content">
+          <h2>Create Multiplayer Room</h2>
           <div class="form-group">
             <label>Time Limit</label>
             <div class="btn-group">
@@ -64,7 +74,7 @@
           </div>
           <div class="modal-actions">
             <button id="cancel-create-btn" class="btn btn-outlined">Cancel</button>
-            <button id="confirm-create-btn" class="btn btn-accent">Create</button>
+            <button id="confirm-create-btn" class="btn btn-accent">Create Room</button>
           </div>
         </div>
       </div>

@@ -9,6 +9,28 @@ function initRack() {
   
   document.getElementById('shuffle-btn').addEventListener('click', shuffleRack);
   document.getElementById('sort-btn').addEventListener('click', sortRack);
+  
+  // Allow dropping board tiles back onto the rack
+  const rackContainer = document.getElementById('tile-rack');
+  rackContainer.addEventListener('dragover', (e) => {
+    const types = e.dataTransfer.types;
+    if (types.includes('text/plain')) {
+      e.preventDefault();
+      rackContainer.classList.add('rack-drop-target');
+    }
+  });
+  rackContainer.addEventListener('dragleave', () => {
+    rackContainer.classList.remove('rack-drop-target');
+  });
+  rackContainer.addEventListener('drop', (e) => {
+    e.preventDefault();
+    rackContainer.classList.remove('rack-drop-target');
+    const tileId = e.dataTransfer.getData('text/plain');
+    if (tileId.startsWith('board:')) {
+      const actualTileId = tileId.substring(6);
+      returnBoardTileToRack(actualTileId);
+    }
+  });
 }
 
 function renderRack() {

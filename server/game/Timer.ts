@@ -54,6 +54,38 @@ export class Timer {
     this.activePlayer = null;
   }
 
+  pauseCurrentPlayer(): void {
+    this.stopInterval();
+    // Keep activePlayer set so we know whose turn it is
+  }
+
+  resumeCurrentPlayer(): void {
+    if (this.activePlayer && this.timeLimitSeconds > 0) {
+      this.stopInterval();
+      this.interval = setInterval(() => {
+        if (!this.activePlayer) return;
+        
+        const remaining = (this.timers.get(this.activePlayer) || 0) - 1;
+        this.timers.set(this.activePlayer, remaining);
+        
+        if (this.onTick) {
+          this.onTick(this.timers);
+        }
+        
+        if (remaining <= 0) {
+          this.stopInterval();
+          if (this.onTimeout) {
+            this.onTimeout(this.activePlayer);
+          }
+        }
+      }, 1000);
+    }
+  }
+
+  getActivePlayer(): string | null {
+    return this.activePlayer;
+  }
+
   private stopInterval(): void {
     if (this.interval) {
       clearInterval(this.interval);

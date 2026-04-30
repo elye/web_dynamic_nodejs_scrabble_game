@@ -12,22 +12,52 @@ export function setupWebSocketHandlers(wss: WebSocket.Server, gameManager: GameM
         
         switch (message.type) {
           case 'JOIN_LOBBY': {
-            playerId = uuidv4();
-            gameManager.registerSocket(playerId, ws);
-            
-            ws.send(JSON.stringify({
-              type: 'LOBBY_STATE',
-              playerId,
-              rooms: gameManager.getRoomList(),
-            }));
+            const sessionId = message.sessionId;
+            if (!sessionId) {
+              ws.send(JSON.stringify({ type: 'ERROR', message: 'sessionId required' }));
+              return;
+            }
+
+            const result = gameManager.resolveSession(
+              sessionId, ws,
+              message.username || 'Player',
+              message.avatar || '',
+              message.elo || 1200
+            );
+            playerId = result.playerId;
+
+            if (result.reconnected && result.roomId) {
+              // Already reconnected inside resolveSession — client will get
+              // ROOM_JOINED or RECONNECTED from handleReconnect
+            } else {
+              ws.send(JSON.stringify({
+                type: 'LOBBY_STATE',
+                playerId,
+                rooms: gameManager.getRoomList(),
+              }));
+            }
+            break;
+          }
+
+          case 'CREATE_SOLO': {
+            if (!playerId) return;
+            const room = gameManager.createSoloGame(
+              playerId, ws,
+              message.username || 'Player',
+              message.avatar || '',
+              message.elo || 1200,
+              message.aiDifficulty || 'medium',
+              message.timeLimit ?? 0
+            );
+            // GAME_START is already sent inside createSoloGame
             break;
           }
 
           case 'CREATE_ROOM': {
             if (!playerId) return;
             const settings = {
-              maxPlayers: message.maxPlayers || 2,
-              timeLimit: message.timeLimit || 45,
+              maxPlayers: Math.min(4, Math.max(2, message.maxPlayers || 4)),
+              timeLimit: message.timeLimit ?? 45,
               dictionary: message.dictionary || 'en_us',
               gameType: message.gameType || 'friend',
             };
@@ -37,14 +67,12 @@ export function setupWebSocketHandlers(wss: WebSocket.Server, gameManager: GameM
               message.username || 'Player',
               message.avatar || '',
               message.elo || 1200,
-              settings,
-              message.aiDifficulty
+              settings
             );
             
             ws.send(JSON.stringify({
               type: 'ROOM_CREATED',
-              roomId: room.id,
-              ...room.game.getPublicState(),
+              ...gameManager.getRoomState(room),
             }));
             break;
           }
@@ -60,24 +88,27 @@ export function setupWebSocketHandlers(wss: WebSocket.Server, gameManager: GameM
             );
             
             if (room) {
-              // Send room state to joining player
               ws.send(JSON.stringify({
                 type: 'ROOM_JOINED',
-                roomId: room.id,
-                ...room.game.getPublicState(),
+                ...gameManager.getRoomState(room),
               }));
-              
-              // Broadcast to all in room
-              broadcastToRoomExcept(gameManager, room.id, playerId, {
-                type: 'ROOM_UPDATE',
-                ...room.game.getPublicState(),
-              });
+              // ROOM_UPDATE is already broadcast to others inside joinRoom
             } else {
               ws.send(JSON.stringify({
                 type: 'ERROR',
-                message: 'Could not join room. Room may be full or not found.',
+                message: 'Could not join room. Room may be full, already started, or not found.',
               }));
             }
+            break;
+          }
+
+          case 'LEAVE_ROOM': {
+            if (!playerId) return;
+            gameManager.handleLeaveRoom(playerId);
+            ws.send(JSON.stringify({
+              type: 'LEFT_ROOM',
+              rooms: gameManager.getRoomList(),
+            }));
             break;
           }
 
@@ -87,7 +118,7 @@ export function setupWebSocketHandlers(wss: WebSocket.Server, gameManager: GameM
             if (!started) {
               ws.send(JSON.stringify({
                 type: 'ERROR',
-                message: 'Could not start game',
+                message: 'Could not start game. You must be the host.',
               }));
             }
             break;
@@ -102,6 +133,24 @@ export function setupWebSocketHandlers(wss: WebSocket.Server, gameManager: GameM
               message.col,
               message.chosenLetter
             );
+            break;
+          }
+
+          case 'PREVIEW_SCORE': {
+            if (!playerId) return;
+            gameManager.handlePreviewScore(playerId);
+            break;
+          }
+
+          case 'MOVE_TILE': {
+            if (!playerId) return;
+            gameManager.handleMoveTile(playerId, message.tileId, message.row, message.col);
+            break;
+          }
+
+          case 'RECALL_TILE': {
+            if (!playerId) return;
+            gameManager.handleRecallSingleTile(playerId, message.tileId);
             break;
           }
 
@@ -165,19 +214,11 @@ export function setupWebSocketHandlers(wss: WebSocket.Server, gameManager: GameM
     });
 
     ws.on('close', () => {
-      if (playerId) {
-        gameManager.handleDisconnect(ws);
-      }
+      gameManager.handleDisconnect(ws);
     });
 
     ws.on('error', (err) => {
       console.error('WebSocket error:', err);
     });
   });
-}
-
-function broadcastToRoomExcept(gameManager: GameManager, roomId: string, excludePlayerId: string, data: any): void {
-  const room = gameManager.getRoom(roomId);
-  if (!room) return;
-  // The GameManager handles broadcasting internally
 }

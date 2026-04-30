@@ -6,6 +6,19 @@ window.ws = null;
 window.playerId = null;
 let gameStatus = 'lobby';
 
+function getSessionId() {
+  let sessionId = sessionStorage.getItem('scrabble_session_id');
+  if (!sessionId) {
+    sessionId = crypto.randomUUID ? crypto.randomUUID() : 
+      'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+        const r = Math.random() * 16 | 0;
+        return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+      });
+    sessionStorage.setItem('scrabble_session_id', sessionId);
+  }
+  return sessionId;
+}
+
 function connectWebSocket() {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   const wsUrl = `${protocol}//${window.location.host}`;
@@ -17,6 +30,7 @@ function connectWebSocket() {
     const username = document.getElementById('username-input').value.trim() || 'Player';
     window.ws.send(JSON.stringify({
       type: 'JOIN_LOBBY',
+      sessionId: getSessionId(),
       username,
       avatar: '',
     }));
@@ -59,7 +73,14 @@ function handleMessage(msg) {
       break;
       
     case 'ROOM_UPDATE':
-      updateWaitingRoom(msg);
+      if (document.getElementById('waiting-screen').classList.contains('active')) {
+        updateWaitingRoom(msg);
+      }
+      break;
+
+    case 'LEFT_ROOM':
+      showScreen('lobby-screen');
+      if (msg.rooms) updateRoomList(msg.rooms);
       break;
       
     case 'GAME_START':
@@ -75,6 +96,10 @@ function handleMessage(msg) {
       if (!msg.success) {
         console.warn('Place tile failed:', msg.error);
       }
+      break;
+      
+    case 'SCORE_PREVIEW':
+      updateScoreHint(msg);
       break;
       
     case 'TILES_RECALLED':
@@ -130,6 +155,7 @@ function handleMessage(msg) {
       
     case 'ERROR':
       console.error('Server error:', msg.message);
+      showNotification(msg.message || 'An error occurred', 'error');
       break;
       
     default:

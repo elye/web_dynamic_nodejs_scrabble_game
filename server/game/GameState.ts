@@ -115,7 +115,7 @@ export class GameState {
   }
 
   startGame(): boolean {
-    if (this.players.length < 2 && !this.players.some(p => p.isAI)) return false;
+    if (this.players.length < 1) return false;
     if (this.status !== 'waiting') return false;
 
     this.status = 'playing';
@@ -176,6 +176,55 @@ export class GameState {
     return { success: true };
   }
 
+  moveTile(playerId: string, tileId: string, newRow: number, newCol: number): { success: boolean; error?: string } {
+    const player = this.getCurrentPlayer();
+    if (!player || player.id !== playerId) {
+      return { success: false, error: 'Not your turn' };
+    }
+
+    if (newRow < 0 || newRow > 14 || newCol < 0 || newCol > 14) {
+      return { success: false, error: 'Invalid position' };
+    }
+
+    if (this.board.getCell(newRow, newCol)?.tile !== null) {
+      return { success: false, error: 'Cell already occupied' };
+    }
+
+    const pending = this.pendingPlacements.get(playerId) || [];
+    const tileIdx = pending.findIndex(p => p.tile.id === tileId);
+    if (tileIdx === -1) {
+      return { success: false, error: 'Tile not in pending placements' };
+    }
+
+    // Check that the destination doesn't have another pending tile
+    const destOccupied = pending.some((p, i) => i !== tileIdx && p.row === newRow && p.col === newCol);
+    if (destOccupied) {
+      return { success: false, error: 'Cell already has a pending tile' };
+    }
+
+    // Move the tile
+    pending[tileIdx].row = newRow;
+    pending[tileIdx].col = newCol;
+
+    return { success: true };
+  }
+
+  recallSingleTile(playerId: string, tileId: string): { success: boolean } {
+    const player = this.players.find(p => p.id === playerId);
+    if (!player) return { success: false };
+
+    const pending = this.pendingPlacements.get(playerId) || [];
+    const idx = pending.findIndex(p => p.tile.id === tileId);
+    if (idx === -1) return { success: false };
+
+    const placement = pending.splice(idx, 1)[0];
+    if (placement.tile.isBlank) {
+      placement.tile.chosenLetter = undefined;
+    }
+    player.rack.push(placement.tile);
+    return { success: true };
+  }
+
   recallTiles(playerId: string): { success: boolean; tiles: Tile[] } {
     const player = this.players.find(p => p.id === playerId);
     if (!player) return { success: false, tiles: [] };
@@ -191,6 +240,50 @@ export class GameState {
     }
     this.pendingPlacements.set(playerId, []);
     return { success: true, tiles };
+  }
+
+  previewScore(playerId: string): { valid: boolean; score: number; isLegitimate: boolean; words?: string[] } {
+    const player = this.getCurrentPlayer();
+    if (!player || player.id !== playerId) {
+      return { valid: false, score: 0, isLegitimate: false };
+    }
+
+    const pending = this.pendingPlacements.get(playerId) || [];
+    if (pending.length === 0) {
+      return { valid: false, score: 0, isLegitimate: false };
+    }
+
+    const placements: PlacedTile[] = pending.map(p => ({
+      tile: p.tile,
+      row: p.row,
+      col: p.col,
+    }));
+
+    // Validate placement geometry
+    const validation = this.board.validatePlacement(placements);
+    if (!validation.valid) {
+      return { valid: false, score: 0, isLegitimate: false };
+    }
+
+    // Find all words formed
+    const wordsFormed = this.board.findWordsFormed(placements);
+    if (wordsFormed.length === 0) {
+      return { valid: false, score: 0, isLegitimate: false };
+    }
+
+    // Validate all words against dictionary
+    const wordStrings = wordsFormed.map(w => w.word);
+    const dictValidation = this.validator.validateWords(wordStrings);
+
+    // Calculate score regardless of validity
+    const { totalScore } = calculateTurnScore(wordsFormed, placements.length);
+
+    return {
+      valid: dictValidation.valid,
+      score: totalScore,
+      isLegitimate: true,
+      words: wordStrings,
+    };
   }
 
   submitWord(playerId: string): { 

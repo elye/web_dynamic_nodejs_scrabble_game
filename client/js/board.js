@@ -97,21 +97,18 @@ function handleCellClick(row, col) {
     if (tile.isBlank) {
       tile.chosenLetter = undefined;
     }
-    addTileToRack(tile);
+    addTileToRack({
+      id: tile.tileId,
+      letter: tile.letter,
+      points: tile.points,
+      isBlank: tile.isBlank,
+    });
     renderBoard();
-    // Notify server to recall this specific tile... for simplicity, recall all
+    // Notify server to recall just this one tile
     if (window.ws && window.ws.readyState === WebSocket.OPEN) {
-      window.ws.send(JSON.stringify({ type: 'RECALL_TILES' }));
-      // Re-place remaining pending tiles
-      for (const pt of pendingTiles) {
-        window.ws.send(JSON.stringify({
-          type: 'PLACE_TILE',
-          tileId: pt.tileId,
-          row: pt.row,
-          col: pt.col,
-          chosenLetter: pt.chosenLetter,
-        }));
-      }
+      window.ws.send(JSON.stringify({ type: 'RECALL_TILE', tileId: tile.tileId }));
+      // Re-request score preview
+      setTimeout(requestScorePreview, 150);
     }
     return;
   }
@@ -127,6 +124,31 @@ function handleCellClick(row, col) {
 function handleTileDrop(tileId, row, col) {
   if (boardState[row][col]) return;
   if (pendingTiles.find(t => t.row === row && t.col === col)) return;
+  
+  // Check if this is a board-to-board move (pending tile being relocated)
+  if (tileId.startsWith('board:')) {
+    const actualTileId = tileId.substring(6);
+    const pendingIdx = pendingTiles.findIndex(t => t.tileId === actualTileId);
+    if (pendingIdx === -1) return;
+    
+    // Move the pending tile to the new position
+    pendingTiles[pendingIdx].row = row;
+    pendingTiles[pendingIdx].col = col;
+    renderBoard();
+    
+    // Notify server: move just this one tile
+    if (window.ws && window.ws.readyState === WebSocket.OPEN) {
+      window.ws.send(JSON.stringify({
+        type: 'MOVE_TILE',
+        tileId: actualTileId,
+        row: row,
+        col: col,
+      }));
+      // Re-request score preview
+      setTimeout(requestScorePreview, 150);
+    }
+    return;
+  }
   
   const tile = removeTileFromRack(tileId);
   if (!tile) return;
@@ -160,6 +182,8 @@ function placeTileOnBoard(tile, row, col) {
       row, col,
       chosenLetter: tile.chosenLetter,
     }));
+    // Request score preview after a short delay for server to process
+    setTimeout(requestScorePreview, 100);
   }
 }
 
@@ -235,6 +259,21 @@ function createBoardTileElement(tile, isNew) {
     el.innerHTML += `<span class="tile-points">${tile.points}</span>`;
   }
   
+  // Make pending (new) tiles draggable on the board
+  if (isNew) {
+    el.draggable = true;
+    el.style.cursor = 'grab';
+    el.addEventListener('dragstart', (e) => {
+      e.dataTransfer.setData('text/plain', 'board:' + (tile.tileId || tile.id));
+      el.style.opacity = '0.5';
+      el.style.cursor = 'grabbing';
+    });
+    el.addEventListener('dragend', () => {
+      el.style.opacity = '1';
+      el.style.cursor = 'grab';
+    });
+  }
+  
   return el;
 }
 
@@ -260,6 +299,7 @@ function recallAllTiles() {
     });
   });
   renderBoard();
+  removeScoreHint();
   
   if (window.ws && window.ws.readyState === WebSocket.OPEN) {
     window.ws.send(JSON.stringify({ type: 'RECALL_TILES' }));
@@ -272,4 +312,57 @@ function shakePendingTiles() {
     t.classList.add('shake');
     setTimeout(() => t.classList.remove('shake'), 300);
   });
+}
+
+function returnBoardTileToRack(tileId) {
+  const pendingIdx = pendingTiles.findIndex(t => t.tileId === tileId);
+  if (pendingIdx === -1) return;
+  
+  const tile = pendingTiles.splice(pendingIdx, 1)[0];
+  if (tile.isBlank) {
+    tile.chosenLetter = undefined;
+  }
+  addTileToRack({
+    id: tile.tileId,
+    letter: tile.letter,
+    points: tile.points,
+    isBlank: tile.isBlank,
+  });
+  renderBoard();
+  
+  // Notify server to recall just this one tile
+  if (window.ws && window.ws.readyState === WebSocket.OPEN) {
+    window.ws.send(JSON.stringify({ type: 'RECALL_TILE', tileId: tile.tileId }));
+    setTimeout(requestScorePreview, 150);
+  }
+}
+
+// Score hint overlay
+function requestScorePreview() {
+  if (window.ws && window.ws.readyState === WebSocket.OPEN && pendingTiles.length > 0) {
+    window.ws.send(JSON.stringify({ type: 'PREVIEW_SCORE' }));
+  } else {
+    removeScoreHint();
+  }
+}
+
+function updateScoreHint(data) {
+  removeScoreHint();
+  
+  if (!data.isLegitimate || pendingTiles.length === 0) return;
+  
+  // Find the last pending tile to anchor the hint near
+  const lastTile = pendingTiles[pendingTiles.length - 1];
+  const cell = document.querySelector(`.board-cell[data-row="${lastTile.row}"][data-col="${lastTile.col}"]`);
+  if (!cell) return;
+  
+  const hint = document.createElement('div');
+  hint.className = 'score-hint';
+  hint.classList.add(data.valid ? 'score-hint-valid' : 'score-hint-invalid');
+  hint.textContent = data.score;
+  cell.appendChild(hint);
+}
+
+function removeScoreHint() {
+  document.querySelectorAll('.score-hint').forEach(el => el.remove());
 }
