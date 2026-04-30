@@ -111,11 +111,17 @@ function createHistoryEntry(entry) {
     </div>
   `;
   
+  // Show tiles sorted by position (row then column)
   if (entry.tilesPlayed && entry.tilesPlayed.length > 0) {
+    const sortedTiles = [...entry.tilesPlayed].sort((a, b) => {
+      if (a.row !== b.row) return a.row - b.row;
+      return a.col - b.col;
+    });
+    
     const tilesDiv = document.createElement('div');
     tilesDiv.className = 'history-tiles';
     
-    for (const tp of entry.tilesPlayed) {
+    for (const tp of sortedTiles) {
       const tile = document.createElement('div');
       tile.className = 'history-tile';
       tile.innerHTML = `
@@ -128,5 +134,70 @@ function createHistoryEntry(entry) {
     el.appendChild(tilesDiv);
   }
   
+  // Show each word formed with its score and definition
+  if (entry.wordsFormed && entry.wordsFormed.length > 0) {
+    const wordsDiv = document.createElement('div');
+    wordsDiv.className = 'history-words';
+    
+    for (const wordEntry of entry.wordsFormed) {
+      const wordEl = document.createElement('div');
+      wordEl.className = 'history-word-item';
+      wordEl.innerHTML = `
+        <span class="history-word-text">${escapeHtml(wordEntry.word)}</span>
+        <span class="history-word-score">${wordEntry.score} pts</span>
+      `;
+      
+      // Add definition container
+      const defEl = document.createElement('div');
+      defEl.className = 'history-word-def';
+      defEl.textContent = 'Loading...';
+      wordEl.appendChild(defEl);
+      
+      // Fetch definition
+      fetchWordDefinition(wordEntry.word, defEl);
+      
+      wordsDiv.appendChild(wordEl);
+    }
+    
+    el.appendChild(wordsDiv);
+  }
+  
   return el;
+}
+
+// Cache for word definitions
+const wordDefCache = {};
+
+function fetchWordDefinition(word, defElement) {
+  const lowerWord = word.toLowerCase();
+  
+  // Check cache first
+  if (wordDefCache[lowerWord] !== undefined) {
+    defElement.textContent = wordDefCache[lowerWord] || '';
+    if (!wordDefCache[lowerWord]) defElement.remove();
+    return;
+  }
+  
+  fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(lowerWord)}`)
+    .then(res => {
+      if (!res.ok) throw new Error('Not found');
+      return res.json();
+    })
+    .then(data => {
+      const meaning = data[0]?.meanings?.[0];
+      const def = meaning?.definitions?.[0]?.definition;
+      if (def) {
+        const partOfSpeech = meaning.partOfSpeech ? `(${meaning.partOfSpeech}) ` : '';
+        const text = partOfSpeech + def;
+        wordDefCache[lowerWord] = text;
+        defElement.textContent = text;
+      } else {
+        wordDefCache[lowerWord] = '';
+        defElement.remove();
+      }
+    })
+    .catch(() => {
+      wordDefCache[lowerWord] = '';
+      defElement.remove();
+    });
 }
