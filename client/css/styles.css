@@ -923,6 +923,14 @@ input[type="text"]:focus {
 .tab-btn.active {
   color: var(--text-primary);
 }
+.tab-btn.chat-notify {
+  animation: chat-pulse 0.6s ease-in-out 3;
+  color: var(--accent);
+}
+@keyframes chat-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
 
 .toggle-switch {
   position: relative;

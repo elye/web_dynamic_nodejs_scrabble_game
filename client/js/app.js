@@ -157,6 +157,7 @@ function handleMessage(msg) {
       
     case 'CHAT':
       addChatMessage(msg);
+      notifyChatTab();
       break;
       
     case 'GAME_OVER':

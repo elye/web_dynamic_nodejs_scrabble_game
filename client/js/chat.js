@@ -40,6 +40,18 @@ function initChat() {
   });
 }
 
+function notifyChatTab() {
+  const chatTab = document.getElementById('chat-tab-btn');
+  if (chatTab.classList.contains('active')) return;
+  chatTab.classList.remove('chat-notify');
+  // Force reflow to restart animation
+  void chatTab.offsetWidth;
+  chatTab.classList.add('chat-notify');
+  chatTab.addEventListener('animationend', () => {
+    chatTab.classList.remove('chat-notify');
+  }, { once: true });
+}
+
 function addChatMessage(data) {
   const container = document.getElementById('chat-messages');
   const initial = data.username.charAt(0).toUpperCase();
