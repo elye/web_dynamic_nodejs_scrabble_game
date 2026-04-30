@@ -264,9 +264,19 @@ function createBoardTileElement(tile, isNew) {
     el.draggable = true;
     el.style.cursor = 'grab';
     el.addEventListener('dragstart', (e) => {
+      e.stopPropagation();
       e.dataTransfer.setData('text/plain', 'board:' + (tile.tileId || tile.id));
+      e.dataTransfer.effectAllowed = 'move';
+      // Create a clean drag image of just this tile
+      const ghost = el.cloneNode(true);
+      ghost.style.position = 'absolute';
+      ghost.style.top = '-9999px';
+      ghost.style.width = el.offsetWidth + 'px';
+      ghost.style.height = el.offsetHeight + 'px';
+      document.body.appendChild(ghost);
+      e.dataTransfer.setDragImage(ghost, el.offsetWidth / 2, el.offsetHeight / 2);
+      setTimeout(() => ghost.remove(), 0);
       el.style.opacity = '0.5';
-      el.style.cursor = 'grabbing';
     });
     el.addEventListener('dragend', () => {
       el.style.opacity = '1';
