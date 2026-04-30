@@ -166,9 +166,8 @@ function handleMessage(msg) {
 function handleGameState(msg) {
   gameStatus = msg.status;
   
-  // If there are tentative tiles on the board, recall them before updating state
+  // Clear client-side pending tiles (will restore from server state below if needed)
   if (pendingTiles.length > 0) {
-    // Silently return pending tiles to rack (they were client-only or will be reset by server rack)
     pendingTiles = [];
     removeScoreHint();
   }
@@ -186,6 +185,23 @@ function handleGameState(msg) {
   // Update rack
   if (msg.rack) {
     setRack(msg.rack);
+  }
+  
+  // Restore server-side pending placements
+  if (msg.pendingPlacements && msg.pendingPlacements.length > 0) {
+    for (const p of msg.pendingPlacements) {
+      pendingTiles.push({
+        tileId: p.tileId,
+        letter: p.letter,
+        points: p.points,
+        isBlank: p.isBlank,
+        chosenLetter: p.chosenLetter,
+        row: p.row,
+        col: p.col,
+      });
+    }
+    renderBoard();
+    setTimeout(requestScorePreview, 150);
   }
   
   // Update scoreboard
@@ -256,6 +272,16 @@ function handleGameOver(msg) {
   gameOverSummary = msg.gameSummary || null;
   gameOverProgression = msg.scoreProgression || null;
   gameOverTurnEvents = msg.turnEvents || null;
+  
+  // Update currentPlayers scores to reflect end-game deductions
+  if (msg.finalScores) {
+    for (const player of currentPlayers) {
+      if (msg.finalScores[player.id] !== undefined) {
+        player.score = msg.finalScores[player.id];
+      }
+    }
+  }
+  
   showEndgameButtons();
   
   // Show winner notification

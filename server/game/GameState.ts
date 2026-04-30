@@ -740,6 +740,18 @@ export class GameState {
         }
       }
 
+      // Add final data point for all players reflecting post-deduction scores
+      const finalTurnNum = lastTurn + (timedOutPlayer ? 2 : 1);
+      for (const p of this.players) {
+        const lastPt = scoreProgression[p.id]?.[scoreProgression[p.id].length - 1];
+        if (lastPt && lastPt.score !== p.score) {
+          scoreProgression[p.id].push({
+            turn: finalTurnNum,
+            score: p.score,
+          });
+        }
+      }
+
       this.onBroadcast('GAME_OVER', {
         finalScores,
         winner: winner.id,
@@ -759,6 +771,7 @@ export class GameState {
 
   getStateForPlayer(playerId: string): any {
     const player = this.players.find(p => p.id === playerId);
+    const pending = this.pendingPlacements.get(playerId) || [];
     return {
       roomId: this.roomId,
       board: this.board.toJSON(),
@@ -779,6 +792,15 @@ export class GameState {
       settings: this.settings,
       turnHistory: this.turnHistory,
       rack: player ? player.rack : [],
+      pendingPlacements: pending.map(p => ({
+        tileId: p.tile.id,
+        letter: p.tile.isBlank ? (p.tile.chosenLetter || '?') : p.tile.letter,
+        points: p.tile.points,
+        isBlank: p.tile.isBlank,
+        chosenLetter: p.tile.chosenLetter,
+        row: p.row,
+        col: p.col,
+      })),
       turnNumber: this.turnNumber,
       consecutivePasses: this.consecutivePasses,
     };
