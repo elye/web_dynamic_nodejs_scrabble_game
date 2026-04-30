@@ -520,6 +520,22 @@ function drawScoreGraph(canvas, players, progression, turnEvents) {
         drawStar(ctx, x, y, 7, 5, 3);
         ctx.fill();
         ctx.stroke();
+      } else if (evt.type === 'timeout') {
+        // Down-arrow marker for timeout/penalty
+        ctx.fillStyle = '#ff6b35';
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(x, y + 8);
+        ctx.lineTo(x - 6, y - 4);
+        ctx.lineTo(x - 2, y - 4);
+        ctx.lineTo(x - 2, y - 8);
+        ctx.lineTo(x + 2, y - 8);
+        ctx.lineTo(x + 2, y - 4);
+        ctx.lineTo(x + 6, y - 4);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
       } else {
         // Red X marker for pass/exchange
         ctx.strokeStyle = '#e74c3c';
@@ -654,6 +670,7 @@ function showRoundSummary() {
     }
     legendDiv.innerHTML += `<span class="legend-item"><span class="legend-dot" style="background:#FFD700"></span>Bingo</span>`;
     legendDiv.innerHTML += `<span class="legend-item"><span style="font-size:0.8rem;color:#e74c3c">✕</span> Pass/Exchange</span>`;
+    legendDiv.innerHTML += `<span class="legend-item"><span style="font-size:0.8rem;color:#ff6b35">▼</span> Timeout</span>`;
     graphDiv.appendChild(legendDiv);
     content.appendChild(graphDiv);
 

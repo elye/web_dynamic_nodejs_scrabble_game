@@ -705,7 +705,7 @@ export class GameState {
       }
       // Build data point only for the active player at each turn
       const scoreProgression: { [playerId: string]: { turn: number; score: number }[] } = {};
-      const turnEvents: { turn: number; playerId: string; type: 'bingo' | 'pass' | 'exchange' }[] = [];
+      const turnEvents: { turn: number; playerId: string; type: 'bingo' | 'pass' | 'exchange' | 'timeout' }[] = [];
       for (const p of this.players) {
         scoreProgression[p.id] = [{ turn: 0, score: 0 }];
       }
@@ -723,6 +723,20 @@ export class GameState {
           turnEvents.push({ turn: entry.turnNumber, playerId: entry.playerId, type: 'pass' });
         } else if (entry.action === 'exchange') {
           turnEvents.push({ turn: entry.turnNumber, playerId: entry.playerId, type: 'exchange' });
+        }
+      }
+
+      // Add final score data point for timeout/penalty (score dropped to 0 or reduced)
+      const lastTurn = this.turnHistory.length > 0 ? this.turnHistory[this.turnHistory.length - 1].turnNumber : 0;
+      if (timedOutPlayer && (reason === 'timeout' || reason === 'timeout_penalty')) {
+        const finalTurn = lastTurn + 1;
+        const timedPlayer = this.players.find(p => p.id === timedOutPlayer);
+        if (timedPlayer && scoreProgression[timedOutPlayer]) {
+          scoreProgression[timedOutPlayer].push({
+            turn: finalTurn,
+            score: timedPlayer.score,
+          });
+          turnEvents.push({ turn: finalTurn, playerId: timedOutPlayer, type: 'timeout' });
         }
       }
 
