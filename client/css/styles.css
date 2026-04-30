@@ -399,6 +399,8 @@ input[type="text"]:focus {
 .board-wrapper {
   width: 100%;
   max-width: 680px;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .board-col-headers {
@@ -571,6 +573,8 @@ input[type="text"]:focus {
   border-radius: 12px;
   padding: 8px 12px;
   gap: 8px;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .rack-btn {
@@ -666,6 +670,8 @@ input[type="text"]:focus {
 .game-actions {
   display: flex;
   gap: 0.6rem;
+  user-select: none;
+  -webkit-user-select: none;
 }
 .game-actions .btn {
   flex: 1;

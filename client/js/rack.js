@@ -80,6 +80,16 @@ function createRackTileElement(tile) {
   // Drag start
   el.addEventListener('dragstart', (e) => {
     e.dataTransfer.setData('text/plain', tile.id);
+    e.dataTransfer.effectAllowed = 'move';
+    // Create a clean drag image of just this tile
+    const ghost = el.cloneNode(true);
+    ghost.style.position = 'absolute';
+    ghost.style.top = '-9999px';
+    ghost.style.width = el.offsetWidth + 'px';
+    ghost.style.height = el.offsetHeight + 'px';
+    document.body.appendChild(ghost);
+    e.dataTransfer.setDragImage(ghost, el.offsetWidth / 2, el.offsetHeight / 2);
+    setTimeout(() => ghost.remove(), 0);
     el.classList.add('dragging');
     selectedRackTile = null;
     clearRackSelection();
