@@ -8,7 +8,7 @@ function initRack() {
   renderRack();
   
   document.getElementById('shuffle-btn').addEventListener('click', shuffleRack);
-  document.getElementById('sort-btn').addEventListener('click', sortRack);
+  document.getElementById('sort-btn').addEventListener('click', recallAllTiles);
   
   // Allow dropping board tiles back onto the rack
   const rackContainer = document.getElementById('tile-rack');
