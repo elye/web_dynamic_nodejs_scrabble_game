@@ -28,6 +28,7 @@ export interface TurnEntry {
   wordsFormed: WordScore[];
   totalScore: number;
   tilesPlayed: { letter: string; points: number; row: number; col: number }[];
+  displayWord?: { letter: string; points: number; row: number; col: number; isNew: boolean; premium: string | null }[];
 }
 
 export interface GameSettings {
@@ -335,6 +336,28 @@ export class GameState {
     // Calculate score
     const { words, totalScore } = calculateTurnScore(wordsFormed, placements.length);
 
+    // Select best word for display: most new tiles → most letters → highest score
+    const wordScoreMap = new Map<string, number>();
+    for (const ws of words) {
+      wordScoreMap.set(ws.word, ws.score);
+    }
+    const bestWord = [...wordsFormed].sort((a, b) => {
+      const aNew = a.tiles.filter(t => t.isNew).length;
+      const bNew = b.tiles.filter(t => t.isNew).length;
+      if (bNew !== aNew) return bNew - aNew;
+      if (b.tiles.length !== a.tiles.length) return b.tiles.length - a.tiles.length;
+      return (wordScoreMap.get(b.word) || 0) - (wordScoreMap.get(a.word) || 0);
+    })[0];
+
+    const displayWord = bestWord ? bestWord.tiles.map(t => ({
+      letter: t.tile.isBlank ? (t.tile.chosenLetter || '?') : t.tile.letter,
+      points: t.tile.points,
+      row: t.row,
+      col: t.col,
+      isNew: t.isNew,
+      premium: t.isNew ? (this.board.getCell(t.row, t.col)?.premium || null) : null,
+    })) : undefined;
+
     // Commit tiles to board
     this.board.commitTiles(placements);
     this.pendingPlacements.set(playerId, []);
@@ -362,6 +385,7 @@ export class GameState {
         row: p.row,
         col: p.col,
       })),
+      displayWord,
     });
 
     // Check for game end (player used all tiles and bag is empty)

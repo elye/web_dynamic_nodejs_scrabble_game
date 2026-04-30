@@ -201,20 +201,20 @@
         <!-- Chat / Turn History -->
         <div class="chat-history-panel">
           <div class="tab-toggle">
-            <button id="chat-tab-btn" class="tab-btn active">
+            <button id="chat-tab-btn" class="tab-btn">
               <span>💬</span> Chat
             </button>
             <div class="toggle-switch">
-              <input type="checkbox" id="tab-toggle" class="toggle-input">
+              <input type="checkbox" id="tab-toggle" class="toggle-input" checked>
               <label for="tab-toggle" class="toggle-label"></label>
             </div>
-            <button id="history-tab-btn" class="tab-btn">
+            <button id="history-tab-btn" class="tab-btn active">
               <span>📋</span> Turn History
             </button>
           </div>
           
           <!-- Chat Panel -->
-          <div id="chat-panel" class="tab-panel active">
+          <div id="chat-panel" class="tab-panel">
             <div id="chat-messages" class="chat-messages"></div>
             <div class="chat-input-area">
               <input type="text" id="chat-input" placeholder="Type a message..." maxlength="200">
@@ -223,7 +223,7 @@
           </div>
 
           <!-- Turn History Panel -->
-          <div id="history-panel" class="tab-panel">
+          <div id="history-panel" class="tab-panel active">
             <div id="turn-history" class="turn-history"></div>
           </div>
         </div>

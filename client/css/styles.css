@@ -987,6 +987,43 @@ input[type="text"]:focus {
   justify-content: center;
   position: relative;
 }
+.history-tile-existing {
+  background: #6a6a7e;
+}
+.history-tile-existing .tile-letter {
+  color: #ddd;
+}
+.history-tile-existing .tile-points {
+  color: #bbb;
+}
+.history-tile-premium-tw {
+  background: var(--tw-color);
+}
+.history-tile-premium-tw .tile-letter,
+.history-tile-premium-tw .tile-points {
+  color: white;
+}
+.history-tile-premium-dw {
+  background: var(--dw-color);
+}
+.history-tile-premium-dw .tile-letter,
+.history-tile-premium-dw .tile-points {
+  color: white;
+}
+.history-tile-premium-tl {
+  background: var(--tl-color);
+}
+.history-tile-premium-tl .tile-letter,
+.history-tile-premium-tl .tile-points {
+  color: white;
+}
+.history-tile-premium-dl {
+  background: var(--dl-color);
+}
+.history-tile-premium-dl .tile-letter,
+.history-tile-premium-dl .tile-points {
+  color: white;
+}
 .history-tile .tile-letter {
   font-size: 13px;
   font-weight: 800;

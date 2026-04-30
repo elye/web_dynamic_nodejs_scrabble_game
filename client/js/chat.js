@@ -111,8 +111,32 @@ function createHistoryEntry(entry) {
     </div>
   `;
   
-  // Show tiles sorted by position (row then column)
-  if (entry.tilesPlayed && entry.tilesPlayed.length > 0) {
+  // Show the display word (full word with existing + new tiles) or fallback to tilesPlayed
+  if (entry.displayWord && entry.displayWord.length > 0) {
+    const tilesDiv = document.createElement('div');
+    tilesDiv.className = 'history-tiles';
+    
+    for (const tp of entry.displayWord) {
+      const tile = document.createElement('div');
+      tile.className = 'history-tile';
+      
+      if (!tp.isNew) {
+        // Existing tile on board - grey
+        tile.classList.add('history-tile-existing');
+      } else if (tp.premium) {
+        // New tile on premium square
+        tile.classList.add('history-tile-premium-' + tp.premium.toLowerCase());
+      }
+      
+      tile.innerHTML = `
+        <span class="tile-letter">${tp.letter}</span>
+        ${tp.points > 0 ? `<span class="tile-points">${tp.points}</span>` : ''}
+      `;
+      tilesDiv.appendChild(tile);
+    }
+    
+    el.appendChild(tilesDiv);
+  } else if (entry.tilesPlayed && entry.tilesPlayed.length > 0) {
     const sortedTiles = [...entry.tilesPlayed].sort((a, b) => {
       if (a.row !== b.row) return a.row - b.row;
       return a.col - b.col;
