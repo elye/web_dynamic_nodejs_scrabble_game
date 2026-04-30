@@ -1184,6 +1184,89 @@ input[type="text"]:focus {
   align-items: center;
   gap: 10px;
 }
+/* Overall Game Summary */
+.game-overall-summary {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+.game-overall-summary h3 {
+  font-size: 0.95rem;
+  margin-bottom: 10px;
+  color: var(--text-primary);
+}
+.overall-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.overall-stat {
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  padding: 8px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+}
+.overall-stat-val {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--accent);
+}
+.overall-stat-lbl {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.overall-highlights {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.overall-highlight {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  padding: 3px 0;
+}
+/* Score Progression Graph */
+.score-graph-section {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+.score-graph-section h3 {
+  font-size: 0.95rem;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+.score-graph-canvas {
+  width: 100%;
+  max-width: 600px;
+  display: block;
+  margin: 0 auto;
+}
+.score-graph-legend {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
 
 /* ============================================
    Utility

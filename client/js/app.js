@@ -226,10 +226,14 @@ function handleWordRejected(msg) {
 }
 
 let gameOverStats = null;
+let gameOverSummary = null;
+let gameOverProgression = null;
 
 function handleGameOver(msg) {
   gameStatus = 'finished';
   gameOverStats = msg.stats || null;
+  gameOverSummary = msg.gameSummary || null;
+  gameOverProgression = msg.scoreProgression || null;
   showEndgameButtons();
   
   // Show winner notification
@@ -393,6 +397,87 @@ function showExchangeModal() {
   modal.classList.remove('hidden');
 }
 
+function drawScoreGraph(canvas, players, progression) {
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.width;
+  const h = canvas.height;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+  ctx.scale(dpr, dpr);
+
+  const pad = { top: 20, right: 20, bottom: 30, left: 45 };
+  const plotW = w - pad.left - pad.right;
+  const plotH = h - pad.top - pad.bottom;
+
+  // Find max turn and max score
+  let maxTurn = 0, maxVal = 0;
+  for (const player of players) {
+    const data = progression[player.id] || [];
+    for (const pt of data) {
+      if (pt.turn > maxTurn) maxTurn = pt.turn;
+      if (pt.score > maxVal) maxVal = pt.score;
+    }
+  }
+  if (maxTurn === 0) maxTurn = 1;
+  if (maxVal === 0) maxVal = 100;
+  maxVal = Math.ceil(maxVal / 50) * 50; // round up to nearest 50
+
+  const xScale = (t) => pad.left + (t / maxTurn) * plotW;
+  const yScale = (s) => pad.top + plotH - (s / maxVal) * plotH;
+
+  // Grid lines and labels
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.font = '10px sans-serif';
+  ctx.textAlign = 'right';
+  const ySteps = 5;
+  for (let i = 0; i <= ySteps; i++) {
+    const val = Math.round((maxVal / ySteps) * i);
+    const y = yScale(val);
+    ctx.beginPath();
+    ctx.moveTo(pad.left, y);
+    ctx.lineTo(w - pad.right, y);
+    ctx.stroke();
+    ctx.fillText(val, pad.left - 6, y + 3);
+  }
+
+  // X-axis labels
+  ctx.textAlign = 'center';
+  const xLabelCount = Math.min(maxTurn, 10);
+  for (let i = 0; i <= xLabelCount; i++) {
+    const turn = Math.round((maxTurn / xLabelCount) * i);
+    ctx.fillText(turn, xScale(turn), h - pad.bottom + 18);
+  }
+  ctx.fillText('Turn', w / 2, h - 2);
+
+  // Draw lines for each player
+  for (const player of players) {
+    const data = progression[player.id] || [];
+    if (data.length < 2) continue;
+
+    const color = getAvatarColor(player.id);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.5;
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(xScale(data[0].turn), yScale(data[0].score));
+    for (let i = 1; i < data.length; i++) {
+      ctx.lineTo(xScale(data[i].turn), yScale(data[i].score));
+    }
+    ctx.stroke();
+
+    // Dot at end
+    const last = data[data.length - 1];
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(xScale(last.turn), yScale(last.score), 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
 function showRoundSummary() {
   const modal = document.getElementById('summary-modal');
   const content = document.getElementById('summary-content');
@@ -448,6 +533,55 @@ function showRoundSummary() {
   }
   table.appendChild(tbody);
   content.appendChild(table);
+
+  // Overall game summary
+  if (gameOverSummary) {
+    const gs = gameOverSummary;
+    const overallDiv = document.createElement('div');
+    overallDiv.className = 'game-overall-summary';
+    overallDiv.innerHTML = `
+      <h3>Game Overview</h3>
+      <div class="overall-stats-grid">
+        <div class="overall-stat"><span class="overall-stat-val">${gs.totalRounds}</span><span class="overall-stat-lbl">Rounds</span></div>
+        <div class="overall-stat"><span class="overall-stat-val">${gs.totalTurns}</span><span class="overall-stat-lbl">Total Turns</span></div>
+        <div class="overall-stat"><span class="overall-stat-val">${gs.totalScoreAll}</span><span class="overall-stat-lbl">Combined Score</span></div>
+        <div class="overall-stat"><span class="overall-stat-val">${gs.avgScoreAll}</span><span class="overall-stat-lbl">Avg Score</span></div>
+        <div class="overall-stat"><span class="overall-stat-val">${gs.totalWordsPlayed}</span><span class="overall-stat-lbl">Words Played</span></div>
+        <div class="overall-stat"><span class="overall-stat-val">${gs.totalTimeUsed > 0 ? formatTime(gs.totalTimeUsed) : 'N/A'}</span><span class="overall-stat-lbl">Time Used</span></div>
+      </div>
+      <div class="overall-highlights">
+        ${gs.bestWord ? `<div class="overall-highlight">🎯 <strong>Best Word:</strong> ${gs.bestWord.word.toUpperCase()} (${gs.bestWord.score} pts) by ${escapeHtml(gs.bestWord.player)}</div>` : ''}
+        ${gs.bestTurn ? `<div class="overall-highlight">🔥 <strong>Best Turn:</strong> Turn #${gs.bestTurn.turnNumber} (${gs.bestTurn.score} pts) by ${escapeHtml(gs.bestTurn.player)}</div>` : ''}
+        ${gs.longestWord ? `<div class="overall-highlight">📏 <strong>Longest Word:</strong> ${gs.longestWord.word.toUpperCase()} (${gs.longestWord.length} letters) by ${escapeHtml(gs.longestWord.player)}</div>` : ''}
+      </div>
+    `;
+    content.appendChild(overallDiv);
+  }
+
+  // Score progression line graph
+  if (gameOverProgression) {
+    const graphDiv = document.createElement('div');
+    graphDiv.className = 'score-graph-section';
+    graphDiv.innerHTML = '<h3>Score Progression</h3>';
+    const canvas = document.createElement('canvas');
+    canvas.className = 'score-graph-canvas';
+    canvas.width = 600;
+    canvas.height = 240;
+    graphDiv.appendChild(canvas);
+
+    // Legend
+    const legendDiv = document.createElement('div');
+    legendDiv.className = 'score-graph-legend';
+    for (const player of sorted) {
+      const color = getAvatarColor(player.id);
+      legendDiv.innerHTML += `<span class="legend-item"><span class="legend-dot" style="background:${color}"></span>${escapeHtml(player.username)}</span>`;
+    }
+    graphDiv.appendChild(legendDiv);
+    content.appendChild(graphDiv);
+
+    // Draw line graph
+    requestAnimationFrame(() => drawScoreGraph(canvas, sorted, gameOverProgression));
+  }
   
   modal.classList.remove('hidden');
   

@@ -605,12 +605,68 @@ export class GameState {
         };
       }
 
+      // Compute overall game summary
+      const allPlayTurns = this.turnHistory.filter(t => t.action === 'play');
+      const allGameWords = allPlayTurns.flatMap(t => t.wordsFormed || []);
+      const totalRounds = Math.max(...this.players.map(p => this.turnHistory.filter(t => t.playerId === p.id).length), 0);
+      const totalTimeUsed = Object.values(savedTimers).reduce((sum, t) => sum + ((this.settings.timeLimit * 60) - t), 0);
+      
+      const overallBestWord = allGameWords.length > 0
+        ? allGameWords.reduce((best, w) => w.score > best.score ? w : best, allGameWords[0])
+        : null;
+      const overallBestWordPlayer = overallBestWord
+        ? allPlayTurns.find(t => (t.wordsFormed || []).some(w => w.word === overallBestWord.word && w.score === overallBestWord.score))
+        : null;
+      
+      const overallBestTurn = allPlayTurns.length > 0
+        ? allPlayTurns.reduce((best, t) => t.totalScore > best.totalScore ? t : best, allPlayTurns[0])
+        : null;
+      
+      const overallLongestWord = allGameWords.length > 0
+        ? allGameWords.reduce((best, w) => w.word.length > best.word.length ? w : best, allGameWords[0])
+        : null;
+      const overallLongestWordPlayer = overallLongestWord
+        ? allPlayTurns.find(t => (t.wordsFormed || []).some(w => w.word === overallLongestWord.word && w.word.length === overallLongestWord.word.length))
+        : null;
+      
+      const totalScoreAll = this.players.reduce((sum, p) => sum + p.score, 0);
+      const avgScoreAll = this.players.length > 0 ? Math.round(totalScoreAll / this.players.length) : 0;
+
+      const gameSummary = {
+        totalTurns: this.turnHistory.length,
+        totalRounds,
+        totalScoreAll,
+        avgScoreAll,
+        totalWordsPlayed: allGameWords.length,
+        totalTimeUsed,
+        bestWord: overallBestWord ? { word: overallBestWord.word, score: overallBestWord.score, player: overallBestWordPlayer?.username || '' } : null,
+        bestTurn: overallBestTurn ? { turnNumber: overallBestTurn.turnNumber, score: overallBestTurn.totalScore, player: overallBestTurn.username } : null,
+        longestWord: overallLongestWord ? { word: overallLongestWord.word, length: overallLongestWord.word.length, player: overallLongestWordPlayer?.username || '' } : null,
+      };
+
+      // Compute score progression (cumulative score after each turn)
+      const scoreProgression: { [playerId: string]: { turn: number; score: number }[] } = {};
+      const cumulativeScores: { [playerId: string]: number } = {};
+      for (const p of this.players) {
+        scoreProgression[p.id] = [{ turn: 0, score: 0 }];
+        cumulativeScores[p.id] = 0;
+      }
+      for (const entry of this.turnHistory) {
+        cumulativeScores[entry.playerId] = (cumulativeScores[entry.playerId] || 0) + entry.totalScore;
+        scoreProgression[entry.playerId]?.push({
+          turn: entry.turnNumber,
+          score: cumulativeScores[entry.playerId],
+        });
+      }
+
       this.onBroadcast('GAME_OVER', {
         finalScores,
         winner: winner.id,
         reason,
         timedOutPlayer,
         stats,
+        gameSummary,
+        scoreProgression,
       });
     }
 
