@@ -47,7 +47,8 @@ export function setupWebSocketHandlers(wss: WebSocket.Server, gameManager: GameM
               message.avatar || '',
               message.elo || 1200,
               message.aiDifficulty || 'medium',
-              message.timeLimit ?? 0
+              message.timeLimit ?? 0,
+              message.randomOrder || false
             );
             // GAME_START is already sent inside createSoloGame
             break;
@@ -61,6 +62,7 @@ export function setupWebSocketHandlers(wss: WebSocket.Server, gameManager: GameM
               dictionary: message.dictionary || 'en_us',
               gameType: message.gameType || 'friend',
               timeoutMode: message.timeoutMode || 'sudden',
+              randomOrder: message.randomOrder || false,
             };
             
             const room = gameManager.createRoom(

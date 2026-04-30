@@ -80,13 +80,14 @@ export class GameManager {
 
   // --- Solo game (atomic: create + add AI + start) ---
 
-  createSoloGame(playerId: string, socket: WebSocket, username: string, avatar: string, elo: number, aiDifficulty: 'easy' | 'medium' | 'hard', timeLimit: number): Room {
+  createSoloGame(playerId: string, socket: WebSocket, username: string, avatar: string, elo: number, aiDifficulty: 'easy' | 'medium' | 'hard', timeLimit: number, randomOrder: boolean = false): Room {
     const settings: GameSettings = {
       maxPlayers: 2,
       timeLimit,
       dictionary: 'en_us',
       gameType: 'friend',
       timeoutMode: 'sudden',
+      randomOrder,
     };
 
     const roomId = uuidv4().substring(0, 8).toUpperCase();

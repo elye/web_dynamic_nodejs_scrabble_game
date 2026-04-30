@@ -37,6 +37,7 @@ export interface GameSettings {
   dictionary: 'en_us' | 'en_gb';
   gameType: 'friend' | 'ranked';
   timeoutMode: 'sudden' | 'penalty'; // sudden = score 0 & game over, penalty = -10pts/min overtime
+  randomOrder?: boolean; // shuffle player order at game start
 }
 
 export type GameStatus = 'waiting' | 'playing' | 'finished';
@@ -119,6 +120,14 @@ export class GameState {
   startGame(): boolean {
     if (this.players.length < 1) return false;
     if (this.status !== 'waiting') return false;
+
+    // Shuffle player order if setting is enabled
+    if (this.settings.randomOrder) {
+      for (let i = this.players.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [this.players[i], this.players[j]] = [this.players[j], this.players[i]];
+      }
+    }
 
     this.status = 'playing';
     this.currentTurnIndex = 0;

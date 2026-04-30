@@ -40,6 +40,7 @@ function initLobby() {
 
   document.getElementById('confirm-solo-btn').addEventListener('click', () => {
     const username = document.getElementById('username-input').value.trim() || 'Player';
+    const randomOrder = document.getElementById('solo-random-order').checked;
     soloModal.classList.add('hidden');
 
     if (window.ws && window.ws.readyState === WebSocket.OPEN) {
@@ -50,6 +51,7 @@ function initLobby() {
         elo: 1200,
         aiDifficulty: soloSettings.aiDifficulty,
         timeLimit: soloSettings.timeLimit,
+        randomOrder,
       }));
     }
   });
@@ -95,6 +97,7 @@ function initLobby() {
 
   document.getElementById('confirm-create-btn').addEventListener('click', () => {
     const username = document.getElementById('username-input').value.trim() || 'Player';
+    const randomOrder = document.getElementById('multi-random-order').checked;
     createModal.classList.add('hidden');
 
     if (window.ws && window.ws.readyState === WebSocket.OPEN) {
@@ -107,6 +110,7 @@ function initLobby() {
         timeLimit: multiSettings.timeLimit,
         gameType: multiSettings.gameType,
         timeoutMode: multiSettings.timeoutMode,
+        randomOrder,
       }));
     }
   });
