@@ -166,6 +166,13 @@ function handleMessage(msg) {
 function handleGameState(msg) {
   gameStatus = msg.status;
   
+  // If there are tentative tiles on the board, recall them before updating state
+  if (pendingTiles.length > 0) {
+    // Silently return pending tiles to rack (they were client-only or will be reset by server rack)
+    pendingTiles = [];
+    removeScoreHint();
+  }
+  
   if (msg.status === 'playing' || msg.status === 'finished') {
     showScreen('game-screen');
     showGameActions();
@@ -202,8 +209,15 @@ function handleGameState(msg) {
 }
 
 function handleWordAccepted(msg) {
-  // Clear pending tiles
-  pendingTiles = [];
+  // If we had tentative tiles on the board (placed during opponent's turn), recall them
+  if (pendingTiles.length > 0 && msg.playerId !== window.playerId) {
+    recallAllTiles();
+  }
+  
+  // Clear pending tiles (for the submitter)
+  if (msg.playerId === window.playerId) {
+    pendingTiles = [];
+  }
   
   // Track last move tiles for highlighting
   lastMoveTiles.clear();

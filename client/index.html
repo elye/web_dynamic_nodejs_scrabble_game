@@ -114,7 +114,14 @@
       <div id="waiting-players" class="waiting-players"></div>
       <div class="waiting-actions">
         <button id="leave-room-btn" class="btn btn-outlined">Leave</button>
-        <button id="add-ai-btn" class="btn btn-outlined">🤖 Add AI</button>
+        <div class="ai-add-group">
+          <select id="ai-difficulty-select" class="ai-difficulty-select">
+            <option value="hard" selected>Hard</option>
+            <option value="medium">Medium</option>
+            <option value="easy">Easy</option>
+          </select>
+          <button id="add-ai-btn" class="btn btn-outlined">🤖 Add AI</button>
+        </div>
         <button id="start-game-btn" class="btn btn-accent" disabled>Start Game</button>
       </div>
     </div>

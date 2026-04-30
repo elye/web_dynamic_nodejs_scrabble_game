@@ -151,7 +151,8 @@ function initLobby() {
 
   document.getElementById('add-ai-btn').addEventListener('click', () => {
     if (window.ws && window.ws.readyState === WebSocket.OPEN) {
-      window.ws.send(JSON.stringify({ type: 'ADD_AI', aiDifficulty: 'medium' }));
+      const difficulty = document.getElementById('ai-difficulty-select').value;
+      window.ws.send(JSON.stringify({ type: 'ADD_AI', aiDifficulty: difficulty }));
     }
   });
 

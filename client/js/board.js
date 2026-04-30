@@ -105,8 +105,8 @@ function handleCellClick(row, col) {
       isBlank: tile.isBlank,
     });
     renderBoard();
-    // Notify server to recall just this one tile
-    if (window.ws && window.ws.readyState === WebSocket.OPEN) {
+    // Notify server to recall just this one tile (only if it's my turn)
+    if (isMyTurn() && window.ws && window.ws.readyState === WebSocket.OPEN) {
       window.ws.send(JSON.stringify({ type: 'RECALL_TILE', tileId: tile.tileId }));
       // Re-request score preview
       setTimeout(requestScorePreview, 150);
@@ -137,8 +137,8 @@ function handleTileDrop(tileId, row, col) {
     pendingTiles[pendingIdx].col = col;
     renderBoard();
     
-    // Notify server: move just this one tile
-    if (window.ws && window.ws.readyState === WebSocket.OPEN) {
+    // Notify server only if it's my turn
+    if (isMyTurn() && window.ws && window.ws.readyState === WebSocket.OPEN) {
       window.ws.send(JSON.stringify({
         type: 'MOVE_TILE',
         tileId: actualTileId,
@@ -155,6 +155,10 @@ function handleTileDrop(tileId, row, col) {
   if (!tile) return;
   
   placeTileOnBoard(tile, row, col);
+}
+
+function isMyTurn() {
+  return currentTurn === window.playerId;
 }
 
 function placeTileOnBoard(tile, row, col) {
@@ -175,8 +179,8 @@ function placeTileOnBoard(tile, row, col) {
   
   renderBoard();
   
-  // Notify server
-  if (window.ws && window.ws.readyState === WebSocket.OPEN) {
+  // Only notify server if it's my turn
+  if (isMyTurn() && window.ws && window.ws.readyState === WebSocket.OPEN) {
     window.ws.send(JSON.stringify({
       type: 'PLACE_TILE',
       tileId: tile.id,
@@ -314,7 +318,7 @@ function recallAllTiles() {
   renderBoard();
   removeScoreHint();
   
-  if (window.ws && window.ws.readyState === WebSocket.OPEN) {
+  if (isMyTurn() && window.ws && window.ws.readyState === WebSocket.OPEN) {
     window.ws.send(JSON.stringify({ type: 'RECALL_TILES' }));
   }
 }
