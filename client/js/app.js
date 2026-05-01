@@ -686,6 +686,7 @@ function showRoundSummary() {
     { label: '🌟 Bingos', key: 'bingoCount', format: (s) => `${s.bingoCount}` },
     { label: '⏭ Passes', key: 'passCount', format: (s) => `${s.passCount}` },
     { label: '🔄 Exchanges', key: 'exchangeCount', format: (s) => `${s.exchangeCount}` },
+    { label: '🧱 Tiles Placed', key: 'tilesUsed', format: (s) => `${s.tilesUsed}` },
     { label: '🎒 Tiles Left', key: 'tilesRemaining', format: (s) => `${s.tilesRemaining} <span class="stat-sub">−${s.rackDeduction}pts</span>` },
   ];
 
