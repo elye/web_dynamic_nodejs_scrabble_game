@@ -223,6 +223,18 @@ export function setupWebSocketHandlers(wss: WebSocket.Server, gameManager: GameM
             break;
           }
 
+          case 'REMATCH_REQUEST': {
+            if (!playerId) return;
+            gameManager.handleRematchRequest(playerId);
+            break;
+          }
+
+          case 'REMATCH_ACCEPT': {
+            if (!playerId) return;
+            gameManager.handleRematchAccept(playerId);
+            break;
+          }
+
           case 'GET_ROOMS': {
             ws.send(JSON.stringify({
               type: 'LOBBY_STATE',

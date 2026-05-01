@@ -10,6 +10,7 @@ export interface Room {
   game: GameState;
   settings: GameSettings;
   isSolo: boolean;
+  rematchVotes?: Set<string>;
 }
 
 interface SessionInfo {
@@ -447,6 +448,122 @@ export class GameManager {
 
   handleLeaveRoom(playerId: string): void {
     this.cleanupPlayerRoom(playerId);
+  }
+
+  // --- Rematch ---
+
+  handleRematchRequest(playerId: string): void {
+    const roomId = this.playerRooms.get(playerId);
+    if (!roomId) return;
+    const room = this.rooms.get(roomId);
+    if (!room || room.game.status !== 'finished') return;
+
+    if (room.isSolo) {
+      this.startRematch(roomId);
+      return;
+    }
+
+    // Multiplayer: track votes
+    if (!room.rematchVotes) {
+      room.rematchVotes = new Set();
+    }
+    room.rematchVotes.add(playerId);
+
+    const connectedHumans = room.game.players.filter(p => !p.isAI && p.connected);
+    const votesNeeded = connectedHumans.length;
+    const currentVotes = connectedHumans.filter(p => room.rematchVotes!.has(p.id)).length;
+    const player = room.game.players.find(p => p.id === playerId);
+
+    this.broadcastToRoom(roomId, 'REMATCH_REQUESTED', {
+      playerId,
+      username: player?.username || 'Player',
+      votesNeeded,
+      currentVotes,
+    });
+
+    if (currentVotes >= votesNeeded) {
+      this.startRematch(roomId);
+    }
+  }
+
+  handleRematchAccept(playerId: string): void {
+    const roomId = this.playerRooms.get(playerId);
+    if (!roomId) return;
+    const room = this.rooms.get(roomId);
+    if (!room || room.game.status !== 'finished') return;
+    if (!room.rematchVotes) return;
+
+    room.rematchVotes.add(playerId);
+
+    const connectedHumans = room.game.players.filter(p => !p.isAI && p.connected);
+    const votesNeeded = connectedHumans.length;
+    const currentVotes = connectedHumans.filter(p => room.rematchVotes!.has(p.id)).length;
+    const player = room.game.players.find(p => p.id === playerId);
+
+    this.broadcastToRoom(roomId, 'REMATCH_ACCEPTED', {
+      playerId,
+      username: player?.username || 'Player',
+      votesNeeded,
+      currentVotes,
+    });
+
+    if (currentVotes >= votesNeeded) {
+      this.startRematch(roomId);
+    }
+  }
+
+  private startRematch(roomId: string): void {
+    const room = this.rooms.get(roomId);
+    if (!room) return;
+
+    // Save player info before resetting
+    const playerInfos = room.game.players.map(p => ({
+      id: p.id,
+      socketId: p.socketId,
+      username: p.username,
+      avatar: p.avatar,
+      elo: p.elo,
+      isAI: p.isAI,
+      aiDifficulty: p.aiDifficulty,
+      connected: p.connected,
+    }));
+
+    // Create a fresh game with same settings
+    const game = new GameState(roomId, room.settings, this.validator);
+
+    game.setCallbacks(
+      (type, data, excludePlayer) => this.broadcastToRoom(roomId, type, data, excludePlayer),
+      (pid, type, data) => this.sendToPlayer(pid, type, data),
+      () => this.handleGameOver(roomId)
+    );
+
+    // Re-add all players
+    for (const info of playerInfos) {
+      game.addPlayer(info.id, info.socketId, info.username, info.avatar, info.elo, info.isAI, info.aiDifficulty);
+      const player = game.players.find(p => p.id === info.id);
+      if (player) {
+        player.connected = info.connected;
+      }
+    }
+
+    room.game = game;
+    room.rematchVotes = undefined;
+
+    // Start the game
+    game.startGame();
+
+    // Send GAME_START to all connected human players
+    for (const player of game.players) {
+      if (!player.isAI && player.connected) {
+        this.sendToPlayer(player.id, 'GAME_START', game.getStateForPlayer(player.id));
+      }
+    }
+
+    // Trigger AI turn if AI goes first
+    const currentPlayer = game.getCurrentPlayer();
+    if (currentPlayer?.isAI) {
+      this.triggerAITurn(roomId);
+    }
   }
 
   private cleanupPlayerRoom(playerId: string): void {

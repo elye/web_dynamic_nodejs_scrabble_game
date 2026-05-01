@@ -198,7 +198,22 @@ function handleMessage(msg) {
       stopHttpKeepAlive();
       handleGameOver(msg);
       break;
-      
+
+    case 'REMATCH_REQUESTED':
+      showNotification(`${msg.username} wants a rematch! (${msg.currentVotes}/${msg.votesNeeded} votes)`, 'info');
+      if (msg.playerId !== window.playerId) {
+        if (confirm(`${msg.username} wants a rematch! Accept?`)) {
+          if (window.ws && window.ws.readyState === WebSocket.OPEN) {
+            window.ws.send(JSON.stringify({ type: 'REMATCH_ACCEPT' }));
+          }
+        }
+      }
+      break;
+
+    case 'REMATCH_ACCEPTED':
+      showNotification(`${msg.username} accepted rematch! (${msg.currentVotes}/${msg.votesNeeded} votes)`, 'info');
+      break;
+
     case 'PLAYER_DISCONNECTED':
       console.log('Player disconnected:', msg.playerId);
       break;
@@ -464,7 +479,9 @@ function initGameActions() {
   });
   
   document.getElementById('rematch-btn').addEventListener('click', () => {
-    showNotification('Rematch requested!', 'info');
+    if (window.ws && window.ws.readyState === WebSocket.OPEN) {
+      window.ws.send(JSON.stringify({ type: 'REMATCH_REQUEST' }));
+    }
   });
   
   document.getElementById('summary-btn').addEventListener('click', showRoundSummary);
