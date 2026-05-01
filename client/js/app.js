@@ -682,12 +682,12 @@ function showRoundSummary() {
     { label: '📏 Longest Word', key: 'longestWord', format: (s) => s.longestWord ? `${s.longestWord.word} <span class="stat-sub">${s.longestWord.length}L</span>` : '-' },
     { label: '📊 Avg/Turn', key: 'avgScorePerTurn', format: (s) => `${s.avgScorePerTurn} pts <span class="stat-sub">(${s.playTurns} plays)</span>` },
     { label: '📝 Words', key: 'totalWords', format: (s) => `${s.totalWords}` },
+    { label: '🧱 Tiles Placed', key: 'tilesUsed', format: (s) => `${s.tilesUsed}` },
+    { label: '🎒 Tiles Left', key: 'tilesRemaining', format: (s) => `${s.tilesRemaining} <span class="stat-sub">−${s.rackDeduction}pts</span>` },
     { label: '🔄 Turns', key: 'totalTurns', format: (s) => `${s.totalTurns}` },
     { label: '🌟 Bingos', key: 'bingoCount', format: (s) => `${s.bingoCount}` },
     { label: '⏭ Passes', key: 'passCount', format: (s) => `${s.passCount}` },
     { label: '🔄 Exchanges', key: 'exchangeCount', format: (s) => `${s.exchangeCount}` },
-    { label: '🧱 Tiles Placed', key: 'tilesUsed', format: (s) => `${s.tilesUsed}` },
-    { label: '🎒 Tiles Left', key: 'tilesRemaining', format: (s) => `${s.tilesRemaining} <span class="stat-sub">−${s.rackDeduction}pts</span>` },
   ];
 
   const tbody = document.createElement('tbody');
