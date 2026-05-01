@@ -29,6 +29,12 @@ if (!require('fs').existsSync(clientDir)) {
 }
 
 const server = http.createServer((req, res) => {
+  if (req.url === '/health') {
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.end('ok');
+    return;
+  }
+
   let filePath = req.url || '/';
   
   if (filePath === '/') {

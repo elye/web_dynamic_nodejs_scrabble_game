@@ -5,9 +5,11 @@
 window.ws = null;
 window.playerId = null;
 let gameStatus = 'lobby';
-let keepaliveInterval = null;
 let lastMessageTime = Date.now();
 let stalenessCheckInterval = null;
+
+// HTTP keepalive to prevent Render.com from spinning down the server
+setInterval(() => { fetch('/health').catch(() => {}); }, 300000);
 
 function getSessionId() {
   let sessionId = sessionStorage.getItem('scrabble_session_id');
@@ -39,23 +41,15 @@ function connectWebSocket() {
       avatar: '',
     }));
 
-    // Start keepalive ping every 15s to prevent proxy idle timeout
-    clearInterval(keepaliveInterval);
-    keepaliveInterval = setInterval(() => {
-      if (window.ws && window.ws.readyState === WebSocket.OPEN) {
-        window.ws.send(JSON.stringify({ type: 'PING' }));
-      }
-    }, 15000);
-
-    // Detect stale connections (no message in 35s means proxy likely dropped us)
+    // Detect stale connections (no message in 120s means connection likely dropped)
     lastMessageTime = Date.now();
     clearInterval(stalenessCheckInterval);
     stalenessCheckInterval = setInterval(() => {
-      if (Date.now() - lastMessageTime > 35000 && window.ws) {
+      if (Date.now() - lastMessageTime > 120000 && window.ws) {
         console.log('Connection appears stale, reconnecting...');
         window.ws.close();
       }
-    }, 5000);
+    }, 15000);
   };
   
   window.ws.onmessage = (event) => {
@@ -70,7 +64,6 @@ function connectWebSocket() {
   
   window.ws.onclose = () => {
     console.log('WebSocket disconnected');
-    clearInterval(keepaliveInterval);
     clearInterval(stalenessCheckInterval);
     document.getElementById('reconnect-overlay').style.display = 'flex';
     setTimeout(connectWebSocket, 3000);
