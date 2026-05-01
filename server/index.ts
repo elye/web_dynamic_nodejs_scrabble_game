@@ -81,7 +81,7 @@ server.listen(PORT, () => {
 });
 
 // Ping/pong keepalive to detect dead connections
-const PING_INTERVAL = 30000;
+const PING_INTERVAL = 15000;
 const pingInterval = setInterval(() => {
   wss.clients.forEach((ws: any) => {
     if (ws.isAlive === false) {

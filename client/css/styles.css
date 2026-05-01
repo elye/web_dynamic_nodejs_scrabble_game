@@ -1517,3 +1517,36 @@ input[type="text"]:focus {
     font-size: 1.6rem;
   }
 }
+
+/* Reconnecting overlay */
+.reconnect-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.reconnect-message {
+  background: var(--surface);
+  color: var(--text-primary);
+  padding: 20px 32px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 1rem;
+  font-weight: 600;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+}
+.reconnect-spinner {
+  width: 22px; height: 22px;
+  border: 3px solid var(--text-muted);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

@@ -30,6 +30,7 @@ function connectWebSocket() {
   
   window.ws.onopen = () => {
     console.log('WebSocket connected');
+    document.getElementById('reconnect-overlay').style.display = 'none';
     const username = document.getElementById('username-input').value.trim() || 'Player';
     window.ws.send(JSON.stringify({
       type: 'JOIN_LOBBY',
@@ -38,23 +39,23 @@ function connectWebSocket() {
       avatar: '',
     }));
 
-    // Start keepalive ping every 25s to prevent proxy idle timeout
+    // Start keepalive ping every 15s to prevent proxy idle timeout
     clearInterval(keepaliveInterval);
     keepaliveInterval = setInterval(() => {
       if (window.ws && window.ws.readyState === WebSocket.OPEN) {
         window.ws.send(JSON.stringify({ type: 'PING' }));
       }
-    }, 25000);
+    }, 15000);
 
-    // Detect stale connections (no message in 45s means proxy likely dropped us)
+    // Detect stale connections (no message in 35s means proxy likely dropped us)
     lastMessageTime = Date.now();
     clearInterval(stalenessCheckInterval);
     stalenessCheckInterval = setInterval(() => {
-      if (Date.now() - lastMessageTime > 45000 && window.ws) {
+      if (Date.now() - lastMessageTime > 35000 && window.ws) {
         console.log('Connection appears stale, reconnecting...');
         window.ws.close();
       }
-    }, 10000);
+    }, 5000);
   };
   
   window.ws.onmessage = (event) => {
@@ -71,6 +72,7 @@ function connectWebSocket() {
     console.log('WebSocket disconnected');
     clearInterval(keepaliveInterval);
     clearInterval(stalenessCheckInterval);
+    document.getElementById('reconnect-overlay').style.display = 'flex';
     setTimeout(connectWebSocket, 3000);
   };
   

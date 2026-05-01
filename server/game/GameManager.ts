@@ -537,14 +537,6 @@ export class GameManager {
 
     this.broadcastToRoom(roomId, 'PLAYER_DISCONNECTED', { playerId });
 
-    // Check if all human players are disconnected — end game if so
-    const humanPlayers = room.game.players.filter(p => !p.isAI);
-    const allDisconnected = humanPlayers.every(p => !p.connected);
-    if (allDisconnected && room.game.status === 'playing') {
-      room.game.endGame('all_disconnected');
-      return;
-    }
-
     const timer = setTimeout(() => {
       this.disconnectTimers.delete(playerId);
       const r = this.rooms.get(roomId);
@@ -721,7 +713,7 @@ export class GameManager {
     const room = this.rooms.get(roomId);
     if (!room) return;
 
-    // Clean up finished room after 5 minutes (time for players to view summary)
+    // Clean up finished room after 30 minutes
     setTimeout(() => {
       const r = this.rooms.get(roomId);
       if (!r || r.game.status !== 'finished') return;
@@ -733,7 +725,7 @@ export class GameManager {
         }
       }
       this.rooms.delete(roomId);
-    }, 5 * 60 * 1000);
+    }, 30 * 60 * 1000);
   }
 
   getRoomState(room: Room): any {
