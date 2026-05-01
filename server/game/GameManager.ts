@@ -754,6 +754,7 @@ export class GameManager {
           hostId: room.hostId,
           host: room.game.players.find(p => p.id === room.hostId)?.username || 'Unknown',
           playerCount: room.game.players.filter(p => !p.isAI).length,
+          aiCount: room.game.players.filter(p => p.isAI).length,
           maxPlayers: room.settings.maxPlayers,
           settings: room.settings,
         });

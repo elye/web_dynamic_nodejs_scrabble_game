@@ -203,7 +203,7 @@ function updateRoomList(rooms) {
     item.className = 'room-item';
     item.innerHTML = `
       <span class="room-info">${room.id} - ${room.host}</span>
-      <span class="room-players">${room.playerCount}/${room.maxPlayers}</span>
+      <span class="room-players">(${room.playerCount}H${room.aiCount ? '+' + room.aiCount + 'A' : ''})/${room.maxPlayers}</span>
     `;
     item.addEventListener('click', () => {
       document.getElementById('room-code-input').value = room.id;
