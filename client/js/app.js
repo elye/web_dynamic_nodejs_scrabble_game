@@ -7,9 +7,17 @@ window.playerId = null;
 let gameStatus = 'lobby';
 let lastMessageTime = Date.now();
 let stalenessCheckInterval = null;
+let httpKeepAliveInterval = null;
 
-// HTTP keepalive to prevent Render.com from spinning down the server
-setInterval(() => { fetch('/health').catch(() => {}); }, 300000);
+function startHttpKeepAlive() {
+  stopHttpKeepAlive();
+  httpKeepAliveInterval = setInterval(() => { fetch('/health').catch(() => {}); }, 300000);
+}
+
+function stopHttpKeepAlive() {
+  clearInterval(httpKeepAliveInterval);
+  httpKeepAliveInterval = null;
+}
 
 function getSessionId() {
   let sessionId = sessionStorage.getItem('scrabble_session_id');
@@ -110,6 +118,10 @@ function handleMessage(msg) {
     }
       
     case 'GAME_START':
+      startHttpKeepAlive();
+      handleGameState(msg);
+      break;
+
     case 'GAME_STATE':
       handleGameState(msg);
       break;
@@ -124,6 +136,9 @@ function handleMessage(msg) {
           window.ws.send(JSON.stringify({ type: 'LEAVE_ROOM' }));
         }
         break;
+      }
+      if (msg.status === 'playing') {
+        startHttpKeepAlive();
       }
       handleGameState(msg);
       break;
@@ -180,6 +195,7 @@ function handleMessage(msg) {
       break;
       
     case 'GAME_OVER':
+      stopHttpKeepAlive();
       handleGameOver(msg);
       break;
       
