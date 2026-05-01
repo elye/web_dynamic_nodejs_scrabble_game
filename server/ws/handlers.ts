@@ -231,6 +231,11 @@ export function setupWebSocketHandlers(wss: WebSocket.Server, gameManager: GameM
             break;
           }
 
+          case 'PING': {
+            ws.send(JSON.stringify({ type: 'PONG' }));
+            break;
+          }
+
           default:
             ws.send(JSON.stringify({
               type: 'ERROR',

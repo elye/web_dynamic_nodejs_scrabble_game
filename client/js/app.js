@@ -5,6 +5,9 @@
 window.ws = null;
 window.playerId = null;
 let gameStatus = 'lobby';
+let keepaliveInterval = null;
+let lastMessageTime = Date.now();
+let stalenessCheckInterval = null;
 
 function getSessionId() {
   let sessionId = sessionStorage.getItem('scrabble_session_id');
@@ -34,9 +37,28 @@ function connectWebSocket() {
       username,
       avatar: '',
     }));
+
+    // Start keepalive ping every 25s to prevent proxy idle timeout
+    clearInterval(keepaliveInterval);
+    keepaliveInterval = setInterval(() => {
+      if (window.ws && window.ws.readyState === WebSocket.OPEN) {
+        window.ws.send(JSON.stringify({ type: 'PING' }));
+      }
+    }, 25000);
+
+    // Detect stale connections (no message in 45s means proxy likely dropped us)
+    lastMessageTime = Date.now();
+    clearInterval(stalenessCheckInterval);
+    stalenessCheckInterval = setInterval(() => {
+      if (Date.now() - lastMessageTime > 45000 && window.ws) {
+        console.log('Connection appears stale, reconnecting...');
+        window.ws.close();
+      }
+    }, 10000);
   };
   
   window.ws.onmessage = (event) => {
+    lastMessageTime = Date.now();
     try {
       const msg = JSON.parse(event.data);
       handleMessage(msg);
@@ -47,6 +69,8 @@ function connectWebSocket() {
   
   window.ws.onclose = () => {
     console.log('WebSocket disconnected');
+    clearInterval(keepaliveInterval);
+    clearInterval(stalenessCheckInterval);
     setTimeout(connectWebSocket, 3000);
   };
   
