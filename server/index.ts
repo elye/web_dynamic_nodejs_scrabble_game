@@ -79,3 +79,34 @@ server.listen(PORT, () => {
   console.log(`🎮 Scrabble server running on http://localhost:${PORT}`);
   console.log(`🔌 WebSocket server ready`);
 });
+
+// Ping/pong keepalive to detect dead connections
+const PING_INTERVAL = 30000;
+const pingInterval = setInterval(() => {
+  wss.clients.forEach((ws: any) => {
+    if (ws.isAlive === false) {
+      ws.terminate();
+      return;
+    }
+    ws.isAlive = false;
+    ws.ping();
+  });
+}, PING_INTERVAL);
+
+wss.on('connection', (ws: any) => {
+  ws.isAlive = true;
+  ws.on('pong', () => { ws.isAlive = true; });
+});
+
+wss.on('close', () => {
+  clearInterval(pingInterval);
+});
+
+// Catch unhandled errors to prevent silent crashes
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught exception:', err);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled rejection:', reason);
+});

@@ -34,6 +34,20 @@ export class GameManager {
   constructor() {
     this.validator = new Validator();
     this.ai = new AI(this.validator);
+
+    // Periodically clean up stale sessions (every 10 minutes)
+    setInterval(() => this.cleanupStaleSessions(), 10 * 60 * 1000);
+  }
+
+  private cleanupStaleSessions(): void {
+    for (const [sessionId, info] of this.sessions) {
+      const hasSocket = this.playerSockets.has(info.playerId);
+      const hasRoom = this.playerRooms.has(info.playerId);
+      if (!hasSocket && !hasRoom) {
+        this.sessions.delete(sessionId);
+        this.playerSessions.delete(info.playerId);
+      }
+    }
   }
 
   // --- Session management ---
@@ -704,10 +718,22 @@ export class GameManager {
   }
 
   private handleGameOver(roomId: string): void {
-    // Clean up session room mappings after a delay
     const room = this.rooms.get(roomId);
     if (!room) return;
-    // Room stays for potential rematch / summary viewing
+
+    // Clean up finished room after 5 minutes (time for players to view summary)
+    setTimeout(() => {
+      const r = this.rooms.get(roomId);
+      if (!r || r.game.status !== 'finished') return;
+
+      for (const player of r.game.players) {
+        if (!player.isAI) {
+          this.playerRooms.delete(player.id);
+          this.updateSessionRoom(player.id, undefined);
+        }
+      }
+      this.rooms.delete(roomId);
+    }, 5 * 60 * 1000);
   }
 
   getRoomState(room: Room): any {
