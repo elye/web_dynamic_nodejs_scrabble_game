@@ -63,8 +63,18 @@
           reorderRackTile(tileId, toId);
         }
       } else if (sourceType === 'board') {
-        // Return board tile to rack
-        returnBoardTileToRack(tileId);
+        // Return board tile to rack — insert at the position it was dropped on
+        if (targetRackTile) {
+          const toId  = targetRackTile.dataset.tileId;
+          const toIdx = rackTiles.findIndex(t => t.id === toId);
+          if (toIdx !== -1 && typeof returnBoardTileToRackAt === 'function') {
+            returnBoardTileToRackAt(tileId, toIdx);
+          } else {
+            returnBoardTileToRack(tileId);
+          }
+        } else {
+          returnBoardTileToRack(tileId); // dropped on empty rack area — append
+        }
       }
     }
   }
