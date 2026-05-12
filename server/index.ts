@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import express from 'express';
 import expressSession from 'express-session';
-import { handleAuthRoutes, withLogto, getLogtoContext } from '@logto/express';
+import { handleAuthRoutes, withLogto } from '@logto/express';
 import WebSocket from 'ws';
 import { GameManager } from './game/GameManager';
 import { setupWebSocketHandlers } from './ws/handlers';
@@ -49,8 +49,8 @@ app.get('/health', (_req, res) => {
 });
 
 // Auth status endpoint — returns the current user's info (or null if not signed in)
-app.get('/auth/me', withLogto(logtoConfig), async (req, res) => {
-  const { isAuthenticated, claims } = await getLogtoContext(req);
+app.get('/auth/me', withLogto(logtoConfig), (req, res) => {
+  const { isAuthenticated, claims } = req.user;
   if (!isAuthenticated) {
     res.json({ isAuthenticated: false, user: null });
     return;
