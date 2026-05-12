@@ -74,9 +74,43 @@ body {
 
 .lobby-subtitle {
   color: var(--text-muted);
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
   font-size: 1.1rem;
 }
+
+/* ============================================
+   Auth Bar
+   ============================================ */
+.auth-bar {
+  width: 100%;
+  max-width: 400px;
+  margin-bottom: 1rem;
+}
+.auth-bar.hidden { display: none; }
+
+.auth-signed-in,
+.auth-signed-out {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+}
+.auth-signed-in.hidden,
+.auth-signed-out.hidden { display: none; }
+
+.auth-avatar { font-size: 1.1rem; }
+.auth-username {
+  flex: 1;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.auth-signout-btn { text-decoration: none; }
 
 .lobby-form {
   background: var(--bg-secondary);
