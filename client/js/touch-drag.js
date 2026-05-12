@@ -52,19 +52,20 @@
       return;
     }
 
-    // Drop onto a rack tile for reordering (rack-to-rack)
+    // Drop onto the rack area (both rack reorder and board-to-rack return)
+    const rackContainer  = target.closest('#tile-rack');
     const targetRackTile = target.closest('.rack-tile');
-    if (targetRackTile && sourceType === 'rack') {
-      const toId = targetRackTile.dataset.tileId;
-      if (toId && toId !== tileId && typeof reorderRackTile === 'function') {
-        reorderRackTile(tileId, toId);
+    if (rackContainer) {
+      if (sourceType === 'rack' && targetRackTile) {
+        // Reorder: rack tile dragged onto another rack tile
+        const toId = targetRackTile.dataset.tileId;
+        if (toId && toId !== tileId && typeof reorderRackTile === 'function') {
+          reorderRackTile(tileId, toId);
+        }
+      } else if (sourceType === 'board') {
+        // Return board tile to rack
+        returnBoardTileToRack(tileId);
       }
-      return;
-    }
-
-    // Drop back onto the rack (empty area or board tile returning)
-    if (rackContainer && sourceType === 'board') {
-      returnBoardTileToRack(tileId);
     }
   }
 
