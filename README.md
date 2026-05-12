@@ -16,6 +16,7 @@ A full-stack, real-time multiplayer Scrabble board game for 1–4 players built 
 - **Timer modes** — Sudden death or -10 pts/min penalty overtime, with configurable time limits (15/20/30/45 min or unlimited)
 - **Chat & turn history** — Real-time messaging and detailed move log with word definitions from the Free Dictionary API
 - **Dark-themed UI** — Clean, responsive design for desktop and mobile
+- **Authentication** — Login and logout via [Logto](https://logto.io) (OAuth 2.0 / OIDC), with session management through Express
 
 ## Requirements
 
@@ -23,7 +24,7 @@ A full-stack, real-time multiplayer Scrabble board game for 1–4 players built 
 - **npm** v7 or higher
 - **TypeScript** v5.3+ (installed as a dev dependency)
 
-No database or external services required. The dictionary file is bundled in the repository.
+No database required. The dictionary file is bundled. A [Logto](https://logto.io) account and application are required for authentication.
 
 ## Quick Start
 
@@ -35,12 +36,30 @@ cd web-socket-scrabble
 # Install dependencies
 npm install
 
+# Copy the env template and fill in your Logto credentials
+cp .env.example .env
+
 # Build the TypeScript server
 npm run build
 
 # Start the server
 npm start
 ```
+
+### Environment Variables
+
+Create a `.env` file at the project root (see `.env.example`):
+
+| Variable | Description |
+|----------|-------------|
+| `PORT` | HTTP server port (default: `3000`) |
+| `BASE_URL` | Public base URL of the app (e.g. `https://your-app.onrender.com`) |
+| `LOGTO_ENDPOINT` | Your Logto tenant endpoint (e.g. `https://your-tenant.logto.app/`) |
+| `LOGTO_APP_ID` | App ID from the Logto Console |
+| `LOGTO_APP_SECRET` | App secret from the Logto Console |
+| `LOGTO_REDIRECT_URI` | OAuth callback URL, must match Logto Console (e.g. `https://your-app.onrender.com/callback`) |
+| `LOGTO_POST_LOGOUT_REDIRECT_URI` | Redirect after logout (e.g. `https://your-app.onrender.com`) |
+| `SESSION_SECRET` | Random secret for Express sessions — generate with `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"` |
 
 Open **http://localhost:3000** in your browser. The port can be changed via the `PORT` environment variable:
 
@@ -102,7 +121,7 @@ The application follows a **client-server** architecture with WebSocket-based re
 
 | File | Responsibility |
 |------|---------------|
-| `index.ts` | HTTP server for static files + WebSocket server setup. Serves the `client/` directory with proper MIME types. Prevents directory traversal. |
+| `index.ts` | Express + WebSocket server entry point. Loads `.env`, configures Logto auth routes (`/sign-in`, `/sign-in-callback`, `/sign-out`), serves static files from `client/`, exposes `/auth/me` endpoint for client auth state. |
 | `ws/handlers.ts` | WebSocket message router. Dispatches incoming messages by type to `GameManager` methods. Manages session resolution on connect. |
 | `game/GameManager.ts` | Room and player orchestration. Manages rooms, sessions, player sockets, disconnect/reconnect timers, and AI turn execution. |
 | `game/GameState.ts` | Core game logic. Handles tile placement, word submission, turn advancement, score tracking, turn history, and end-game statistics. |
@@ -183,9 +202,20 @@ The AI uses a trie built from the SOWPODS dictionary to efficiently generate val
 │   │   └── lobby.js          # Room creation, joining, waiting room
 │   └── assets/
 │       └── sounds/           # Sound effects
+├── .env                      # Local secrets (gitignored)
+├── .env.example              # Env variable template
 ├── package.json
 └── tsconfig.json
 ```
+
+### Authentication Endpoints
+
+| Route | Description |
+|-------|-------------|
+| `GET /sign-in` | Redirects to Logto login page |
+| `GET /sign-in-callback` | OAuth callback — exchanges code for tokens |
+| `GET /sign-out` | Clears session and redirects to Logto logout |
+| `GET /auth/me` | Returns `{ isAuthenticated, user }` for the active session |
 
 ## WebSocket Protocol
 
