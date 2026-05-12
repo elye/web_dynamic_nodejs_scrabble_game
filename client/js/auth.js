@@ -8,25 +8,22 @@
     if (!res.ok) return;
     const { isAuthenticated, user } = await res.json();
 
-    const authBar = document.getElementById('auth-bar');
-    const signedIn = document.getElementById('auth-signed-in');
-    const signedOut = document.getElementById('auth-signed-out');
-
-    authBar.classList.remove('hidden');
-
     if (isAuthenticated && user) {
       const displayName = user.name || user.email || user.sub || 'Player';
-      document.getElementById('auth-username-display').textContent = displayName;
-      signedIn.classList.remove('hidden');
 
-      // Pre-fill the username input with the Logto display name
+      // Show signed-in row, hide the username input row
+      document.getElementById('username-row').classList.add('hidden');
+      const signedInRow = document.getElementById('auth-signed-in-row');
+      signedInRow.classList.remove('hidden');
+      document.getElementById('auth-username-display').textContent = displayName;
+
+      // Keep username input populated for the WebSocket JOIN_LOBBY message
       const usernameInput = document.getElementById('username-input');
-      if (usernameInput && !usernameInput.value) {
+      if (usernameInput) {
         usernameInput.value = displayName.slice(0, 20);
       }
-    } else {
-      signedOut.classList.remove('hidden');
     }
+    // If not signed in: the default username row (input + sign-in button) is already visible
   } catch (_) {
     // Auth endpoint unreachable — fail silently, game still works without auth
   }

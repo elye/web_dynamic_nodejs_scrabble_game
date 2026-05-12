@@ -79,31 +79,49 @@ body {
 }
 
 /* ============================================
-   Auth Bar
+   Auth inline row (username field + sign-in/out)
    ============================================ */
-.auth-bar {
-  width: 100%;
-  max-width: 400px;
-  margin-bottom: 1rem;
+.username-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.6rem;
 }
-.auth-bar.hidden { display: none; }
+.username-row-auth {
+  display: flex;
+  flex-direction: column;
+}
+.username-row-auth label {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin-bottom: 0.4rem;
+  font-weight: 600;
+}
+.username-row-auth .btn {
+  white-space: nowrap;
+  text-decoration: none;
+  /* match the height of the text input */
+  padding: 0.7rem 1rem;
+  font-size: 0.9rem;
+}
 
-.auth-signed-in,
-.auth-signed-out {
+.auth-signed-in-row { display: none; }
+.auth-signed-in-row.hidden { display: none !important; }
+.auth-signed-in-row:not(.hidden) { display: block; }
+
+.auth-signed-in-inner {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  background: var(--bg-secondary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--cell-border);
   border-radius: 8px;
-  padding: 0.5rem 1rem;
+  padding: 0.6rem 1rem;
 }
-.auth-signed-in.hidden,
-.auth-signed-out.hidden { display: none; }
-
 .auth-avatar { font-size: 1.1rem; }
 .auth-username {
   flex: 1;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: var(--text-primary);
   overflow: hidden;

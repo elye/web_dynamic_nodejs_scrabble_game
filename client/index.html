@@ -14,22 +14,30 @@
       <h1 class="lobby-title">🎯 Scrabble</h1>
       <p class="lobby-subtitle">Real-time Multiplayer Word Game</p>
 
-      <!-- Auth bar -->
-      <div id="auth-bar" class="auth-bar hidden">
-        <div id="auth-signed-in" class="auth-signed-in hidden">
-          <span class="auth-avatar">👤</span>
-          <span id="auth-username-display" class="auth-username"></span>
-          <a href="/sign-out" class="btn btn-sm btn-outlined auth-signout-btn">Sign out</a>
-        </div>
-        <div id="auth-signed-out" class="auth-signed-out hidden">
-          <a href="/sign-in" class="btn btn-sm btn-accent">🔑 Sign in</a>
-        </div>
-      </div>
-
       <div class="lobby-form">
+        <!-- Username / Auth row -->
         <div class="form-group">
-          <label for="username-input">Username</label>
-          <input type="text" id="username-input" placeholder="Enter your username" maxlength="20" value="">
+          <!-- Shown when NOT signed in: text input + sign-in button side by side -->
+          <div id="username-row" class="username-row">
+            <div style="flex:1">
+              <label for="username-input">Username</label>
+              <input type="text" id="username-input" placeholder="Enter your username" maxlength="20" value="">
+            </div>
+            <div class="username-row-auth">
+              <label>&nbsp;</label>
+              <a id="sign-in-btn" href="/sign-in" class="btn btn-outlined">🔑 Sign in</a>
+            </div>
+          </div>
+
+          <!-- Shown when signed in: name + sign-out button, no text input -->
+          <div id="auth-signed-in-row" class="auth-signed-in-row hidden">
+            <label>Signed in as</label>
+            <div class="auth-signed-in-inner">
+              <span class="auth-avatar">👤</span>
+              <span id="auth-username-display" class="auth-username"></span>
+              <a href="/sign-out" class="btn btn-sm btn-outlined auth-signout-btn">Sign out</a>
+            </div>
+          </div>
         </div>
         
         <div class="lobby-actions lobby-actions-vertical">
