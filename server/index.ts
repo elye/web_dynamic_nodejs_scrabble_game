@@ -19,8 +19,8 @@ const logtoConfig = {
   appSecret: process.env.LOGTO_APP_SECRET!,
   endpoint: process.env.LOGTO_ENDPOINT!,
   baseUrl: process.env.BASE_URL || `http://localhost:${PORT}`,
-  redirectUri: process.env.LOGTO_REDIRECT_URI!,
-  postLogoutRedirectUri: process.env.LOGTO_POST_LOGOUT_REDIRECT_URI!,
+  // handleAuthRoutes auto-builds callback as: baseUrl/logto/sign-in-callback
+  // Ensure this URL is registered in the Logto Console as an allowed redirect URI
 };
 
 // Resolve client dir relative to project root (works from both dev and dist)
