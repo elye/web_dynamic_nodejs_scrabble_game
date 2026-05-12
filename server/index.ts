@@ -5,7 +5,8 @@ import * as path from 'path';
 import express from 'express';
 import expressSession from 'express-session';
 import MemoryStore from 'memorystore';
-import { handleAuthRoutes, withLogto } from '@logto/express';
+import NodeClient from '@logto/node';
+import { withLogto } from '@logto/express';
 
 const SessionStore = MemoryStore(expressSession);
 import WebSocket from 'ws';
@@ -13,15 +14,35 @@ import { GameManager } from './game/GameManager';
 import { setupWebSocketHandlers } from './ws/handlers';
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
+const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 
 const logtoConfig = {
   appId: process.env.LOGTO_APP_ID!,
   appSecret: process.env.LOGTO_APP_SECRET!,
   endpoint: process.env.LOGTO_ENDPOINT!,
-  baseUrl: process.env.BASE_URL || `http://localhost:${PORT}`,
-  // handleAuthRoutes auto-builds callback as: baseUrl/logto/sign-in-callback
-  // Ensure this URL is registered in the Logto Console as an allowed redirect URI
+  baseUrl: BASE_URL,
 };
+
+const REDIRECT_URI = process.env.LOGTO_REDIRECT_URI || `${BASE_URL}/callback`;
+const POST_LOGOUT_URI = process.env.LOGTO_POST_LOGOUT_REDIRECT_URI || BASE_URL;
+
+// Helper: create a Logto Node client for a given request/response
+function makeLogtoClient(req: express.Request, res: express.Response) {
+  return new NodeClient(logtoConfig, {
+    storage: {
+      async getItem(key: string) {
+        return (req.session as Record<string, string | undefined>)[key] ?? null;
+      },
+      async setItem(key: string, value: string) {
+        (req.session as Record<string, string | undefined>)[key] = value;
+      },
+      async removeItem(key: string) {
+        delete (req.session as Record<string, string | undefined>)[key];
+      },
+    },
+    navigate: (url: string) => res.redirect(url),
+  });
+}
 
 // Resolve client dir relative to project root (works from both dev and dist)
 let clientDir = path.join(__dirname, '..', 'client');
@@ -45,8 +66,22 @@ app.use(expressSession({
   },
 }));
 
-// Logto auth routes: GET /sign-in, GET /sign-in-callback, GET /sign-out
-app.use(handleAuthRoutes(logtoConfig));
+// Logto auth routes — paths match what's registered in the Logto Console
+app.get('/sign-in', async (req, res) => {
+  const client = makeLogtoClient(req, res);
+  await client.signIn({ redirectUri: REDIRECT_URI });
+});
+
+app.get('/callback', async (req, res) => {
+  const client = makeLogtoClient(req, res);
+  await client.handleSignInCallback(`${BASE_URL}${req.originalUrl}`);
+  res.redirect(BASE_URL);
+});
+
+app.get('/sign-out', async (req, res) => {
+  const client = makeLogtoClient(req, res);
+  await client.signOut(POST_LOGOUT_URI);
+});
 
 // Health check
 app.get('/health', (_req, res) => {
