@@ -64,6 +64,9 @@ if (!fs.existsSync(clientDir)) {
 
 const app = express();
 
+// Trust the reverse proxy (Render, etc.) so req.protocol returns 'https' correctly
+app.set('trust proxy', 1);
+
 // Session middleware (required by @logto/express)
 // Uses memorystore (LRU-evicting) instead of the default MemoryStore to avoid memory leaks in production
 app.use(expressSession({
@@ -86,7 +89,10 @@ app.get('/sign-in', async (req, res) => {
 
 app.get('/callback', async (req, res) => {
   const client = await makeLogtoClient(req, res);
-  await client.handleSignInCallback(`${BASE_URL}${req.originalUrl}`);
+  // Derive the full callback URL from the actual incoming request
+  // to avoid mismatches when BASE_URL differs from the deployed hostname
+  const callbackUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
+  await client.handleSignInCallback(callbackUrl);
   res.redirect(BASE_URL);
 });
 
