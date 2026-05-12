@@ -1,80 +1,72 @@
+import 'dotenv/config';
 import * as http from 'http';
 import * as fs from 'fs';
 import * as path from 'path';
+import express from 'express';
+import expressSession from 'express-session';
+import { handleAuthRoutes, withLogto, getLogtoContext } from '@logto/express';
 import WebSocket from 'ws';
 import { GameManager } from './game/GameManager';
 import { setupWebSocketHandlers } from './ws/handlers';
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 
-const MIME_TYPES: { [ext: string]: string } = {
-  '.html': 'text/html',
-  '.css': 'text/css',
-  '.js': 'application/javascript',
-  '.json': 'application/json',
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.gif': 'image/gif',
-  '.svg': 'image/svg+xml',
-  '.ico': 'image/x-icon',
-  '.mp3': 'audio/mpeg',
-  '.wav': 'audio/wav',
-  '.ogg': 'audio/ogg',
+const logtoConfig = {
+  appId: process.env.LOGTO_APP_ID!,
+  appSecret: process.env.LOGTO_APP_SECRET!,
+  endpoint: process.env.LOGTO_ENDPOINT!,
+  baseUrl: process.env.BASE_URL || `http://localhost:${PORT}`,
+  redirectUri: process.env.LOGTO_REDIRECT_URI!,
+  postLogoutRedirectUri: process.env.LOGTO_POST_LOGOUT_REDIRECT_URI!,
 };
 
 // Resolve client dir relative to project root (works from both dev and dist)
 let clientDir = path.join(__dirname, '..', 'client');
-if (!require('fs').existsSync(clientDir)) {
+if (!fs.existsSync(clientDir)) {
   clientDir = path.join(__dirname, '..', '..', 'client');
 }
 
-const server = http.createServer((req, res) => {
-  if (req.url === '/health') {
-    res.writeHead(200, { 'Content-Type': 'text/plain' });
-    res.end('ok');
-    return;
-  }
+const app = express();
 
-  let filePath = req.url || '/';
-  
-  if (filePath === '/') {
-    filePath = '/index.html';
-  }
+// Session middleware (required by @logto/express)
+app.use(expressSession({
+  secret: process.env.SESSION_SECRET!,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    sameSite: 'lax',
+  },
+}));
 
-  const fullPath = path.join(clientDir, filePath);
-  const ext = path.extname(fullPath);
-  const mimeType = MIME_TYPES[ext] || 'application/octet-stream';
+// Logto auth routes: GET /sign-in, GET /sign-in-callback, GET /sign-out
+app.use(handleAuthRoutes(logtoConfig));
 
-  // Security: prevent directory traversal
-  if (!fullPath.startsWith(clientDir)) {
-    res.writeHead(403);
-    res.end('Forbidden');
-    return;
-  }
-
-  fs.readFile(fullPath, (err, data) => {
-    if (err) {
-      if (err.code === 'ENOENT') {
-        // Try serving index.html for SPA routing
-        fs.readFile(path.join(clientDir, 'index.html'), (err2, data2) => {
-          if (err2) {
-            res.writeHead(404);
-            res.end('Not Found');
-          } else {
-            res.writeHead(200, { 'Content-Type': 'text/html' });
-            res.end(data2);
-          }
-        });
-      } else {
-        res.writeHead(500);
-        res.end('Internal Server Error');
-      }
-    } else {
-      res.writeHead(200, { 'Content-Type': mimeType });
-      res.end(data);
-    }
-  });
+// Health check
+app.get('/health', (_req, res) => {
+  res.send('ok');
 });
+
+// Auth status endpoint — returns the current user's info (or null if not signed in)
+app.get('/auth/me', withLogto(logtoConfig), async (req, res) => {
+  const { isAuthenticated, claims } = await getLogtoContext(req);
+  if (!isAuthenticated) {
+    res.json({ isAuthenticated: false, user: null });
+    return;
+  }
+  res.json({ isAuthenticated: true, user: { sub: claims?.sub, name: claims?.name, email: claims?.email } });
+});
+
+// Static files
+app.use(express.static(clientDir));
+
+// SPA fallback
+app.get('*', (_req, res) => {
+  res.sendFile(path.join(clientDir, 'index.html'));
+});
+
+const server = http.createServer(app);
 
 const wss = new WebSocket.Server({ server });
 const gameManager = new GameManager();
