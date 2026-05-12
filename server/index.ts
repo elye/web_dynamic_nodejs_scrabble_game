@@ -4,7 +4,10 @@ import * as fs from 'fs';
 import * as path from 'path';
 import express from 'express';
 import expressSession from 'express-session';
+import MemoryStore from 'memorystore';
 import { handleAuthRoutes, withLogto } from '@logto/express';
+
+const SessionStore = MemoryStore(expressSession);
 import WebSocket from 'ws';
 import { GameManager } from './game/GameManager';
 import { setupWebSocketHandlers } from './ws/handlers';
@@ -29,7 +32,9 @@ if (!fs.existsSync(clientDir)) {
 const app = express();
 
 // Session middleware (required by @logto/express)
+// Uses memorystore (LRU-evicting) instead of the default MemoryStore to avoid memory leaks in production
 app.use(expressSession({
+  store: new SessionStore({ checkPeriod: 86400000 }), // prune expired sessions every 24h
   secret: process.env.SESSION_SECRET!,
   resave: false,
   saveUninitialized: false,
@@ -61,8 +66,8 @@ app.get('/auth/me', withLogto(logtoConfig), (req, res) => {
 // Static files
 app.use(express.static(clientDir));
 
-// SPA fallback
-app.get('*', (_req, res) => {
+// SPA fallback (Express 5 compatible: use app.use instead of app.get('*'))
+app.use((_req, res) => {
   res.sendFile(path.join(clientDir, 'index.html'));
 });
 
