@@ -5,8 +5,8 @@ import * as path from 'path';
 import express from 'express';
 import expressSession from 'express-session';
 import MemoryStore from 'memorystore';
-import NodeClient from '@logto/node';
 import { withLogto } from '@logto/express';
+import type { default as NodeClientType } from '@logto/node';
 
 const SessionStore = MemoryStore(expressSession);
 import WebSocket from 'ws';
@@ -26,9 +26,21 @@ const logtoConfig = {
 const REDIRECT_URI = process.env.LOGTO_REDIRECT_URI || `${BASE_URL}/callback`;
 const POST_LOGOUT_URI = process.env.LOGTO_POST_LOGOUT_REDIRECT_URI || BASE_URL;
 
+// @logto/node is ESM-only — load via native import() to avoid CJS require() transformation by TypeScript
+let _NodeClient: typeof NodeClientType | null = null;
+async function getNodeClientClass(): Promise<typeof NodeClientType> {
+  if (!_NodeClient) {
+    // eslint-disable-next-line @typescript-eslint/no-implied-eval
+    const mod = await (new Function('m', 'return import(m)')('@logto/node') as Promise<{ default: typeof NodeClientType }>);
+    _NodeClient = mod.default;
+  }
+  return _NodeClient;
+}
+
 // Helper: create a Logto Node client for a given request/response
-function makeLogtoClient(req: express.Request, res: express.Response) {
-  return new NodeClient(logtoConfig, {
+async function makeLogtoClient(req: express.Request, res: express.Response) {
+  const Client = await getNodeClientClass();
+  return new Client(logtoConfig, {
     storage: {
       async getItem(key: string) {
         return (req.session as Record<string, string | undefined>)[key] ?? null;
@@ -68,18 +80,18 @@ app.use(expressSession({
 
 // Logto auth routes — paths match what's registered in the Logto Console
 app.get('/sign-in', async (req, res) => {
-  const client = makeLogtoClient(req, res);
+  const client = await makeLogtoClient(req, res);
   await client.signIn({ redirectUri: REDIRECT_URI });
 });
 
 app.get('/callback', async (req, res) => {
-  const client = makeLogtoClient(req, res);
+  const client = await makeLogtoClient(req, res);
   await client.handleSignInCallback(`${BASE_URL}${req.originalUrl}`);
   res.redirect(BASE_URL);
 });
 
 app.get('/sign-out', async (req, res) => {
-  const client = makeLogtoClient(req, res);
+  const client = await makeLogtoClient(req, res);
   await client.signOut(POST_LOGOUT_URI);
 });
 
