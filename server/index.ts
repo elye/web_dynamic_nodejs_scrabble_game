@@ -9,6 +9,7 @@ import { withLogto } from '@logto/express';
 import type { default as NodeClientType } from '@logto/node';
 
 const SessionStore = MemoryStore(expressSession);
+
 import WebSocket from 'ws';
 import { GameManager } from './game/GameManager';
 import { setupWebSocketHandlers } from './ws/handlers';

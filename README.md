@@ -121,7 +121,7 @@ The application follows a **client-server** architecture with WebSocket-based re
 
 | File | Responsibility |
 |------|---------------|
-| `index.ts` | Express + WebSocket server entry point. Loads `.env`, configures Logto auth routes (`/sign-in`, `/sign-in-callback`, `/sign-out`), serves static files from `client/`, exposes `/auth/me` endpoint for client auth state. |
+| `index.ts` | Express + WebSocket server entry point. Loads `.env`, mounts Logto auth routes (`/sign-in`, `/callback`, `/sign-out`), serves static files from `client/`, exposes `/auth/me` for client auth state. Trusts reverse proxy for HTTPS. |
 | `ws/handlers.ts` | WebSocket message router. Dispatches incoming messages by type to `GameManager` methods. Manages session resolution on connect. |
 | `game/GameManager.ts` | Room and player orchestration. Manages rooms, sessions, player sockets, disconnect/reconnect timers, and AI turn execution. |
 | `game/GameState.ts` | Core game logic. Handles tile placement, word submission, turn advancement, score tracking, turn history, and end-game statistics. |
@@ -139,6 +139,7 @@ The application follows a **client-server** architecture with WebSocket-based re
 |------|---------------|
 | `index.html` | Single-page HTML with lobby modals, game board, rack, scoreboard, chat panel, and round summary overlay. |
 | `css/styles.css` | Dark-themed styles. Board grid, tile rendering, premium square colors, animations (shake, flash), modals, responsive layout. |
+| `js/auth.js` | Auth state check on page load. Calls `/auth/me`, shows signed-in user name + sign-out button, or sign-in button if not authenticated. |
 | `js/app.js` | WebSocket connection and message dispatcher. Routes incoming messages to UI handlers. Manages game state variables, round summary rendering with canvas-based score graph. |
 | `js/board.js` | Board rendering and interaction. Drag-and-drop tile placement, click-to-place, board-to-board moves, score preview requests, tentative placement during opponent's turn. |
 | `js/rack.js` | Tile rack management. Drag-and-drop reordering, shuffle, sort, add/remove tiles. |
@@ -213,7 +214,7 @@ The AI uses a trie built from the SOWPODS dictionary to efficiently generate val
 | Route | Description |
 |-------|-------------|
 | `GET /sign-in` | Redirects to Logto login page |
-| `GET /sign-in-callback` | OAuth callback — exchanges code for tokens |
+| `GET /callback` | OAuth callback — exchanges code for tokens, then redirects to `BASE_URL` |
 | `GET /sign-out` | Clears session and redirects to Logto logout |
 | `GET /auth/me` | Returns `{ isAuthenticated, user }` for the active session |
 
