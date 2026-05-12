@@ -116,7 +116,10 @@ function handleCellClick(row, col) {
   
   // If a rack tile is selected, place it
   if (selectedRackTile && !boardState[row][col]) {
-    placeTileOnBoard(selectedRackTile, row, col);
+    const tile = removeTileFromRack(selectedRackTile.id);
+    if (tile) {
+      placeTileOnBoard(tile, row, col);
+    }
     selectedRackTile = null;
     clearRackSelection();
   }
@@ -261,6 +264,7 @@ function createBoardTileElement(tile, isNew, isLastMove) {
   if (isNew) el.classList.add('new-tile');
   if (isLastMove) el.classList.add('last-move-tile');
   if (tile.isBlank) el.classList.add('blank-tile');
+  if (isNew) el.dataset.tileId = tile.tileId || tile.id; // needed by touch-drag.js
   
   const displayLetter = tile.isBlank ? (tile.chosenLetter || '?') : tile.letter;
   el.innerHTML = `<span class="tile-letter">${displayLetter}</span>`;
