@@ -1,13 +1,18 @@
 // ============================================
 // Touch Drag Support for mobile browsers
 // Mirrors the HTML5 drag-and-drop interactions for touchscreen devices
+// Tap (no movement) falls through to the click-to-select handler.
+// Drag (movement > threshold) shows a ghost and hides the original tile.
 // ============================================
 
 (function initTouchDrag() {
-  let activeDrag = null; // { tileId, ghost, offsetX, offsetY, sourceType }
+  const DRAG_THRESHOLD = 8; // px — movement needed to commit to drag vs tap
+
+  let pendingTouch = null; // touch that might become a drag (before threshold)
+  let activeDrag   = null; // confirmed drag in progress
 
   function createGhost(el) {
-    const rect = el.getBoundingClientRect();
+    const rect  = el.getBoundingClientRect();
     const ghost = el.cloneNode(true);
     ghost.id = 'touch-drag-ghost';
     ghost.style.cssText = `
@@ -25,26 +30,16 @@
     return ghost;
   }
 
-  function moveGhost(touch) {
-    if (!activeDrag) return;
-    activeDrag.ghost.style.left = (touch.clientX - activeDrag.offsetX) + 'px';
-    activeDrag.ghost.style.top  = (touch.clientY - activeDrag.offsetY) + 'px';
-  }
-
-  function getElementUnderTouch(touch) {
-    activeDrag.ghost.style.display = 'none';
-    const el = document.elementFromPoint(touch.clientX, touch.clientY);
-    activeDrag.ghost.style.display = '';
-    return el;
-  }
-
   function endDrag(touch) {
     if (!activeDrag) return;
-    activeDrag.ghost.remove();
-    const target = getElementUnderTouch(touch);
-    activeDrag.ghost.remove(); // ensure removed
-    const { tileId, sourceType } = activeDrag;
+    const { el, tileId, sourceType, ghost } = activeDrag;
     activeDrag = null;
+
+    // Hide ghost to find the element underneath the finger
+    ghost.style.display = 'none';
+    const target = document.elementFromPoint(touch.clientX, touch.clientY);
+    ghost.remove();
+    el.style.visibility = ''; // restore original tile (handleTileDrop will remove it from rack)
 
     if (!target) return;
 
@@ -53,11 +48,7 @@
     if (cell) {
       const row = parseInt(cell.dataset.row);
       const col = parseInt(cell.dataset.col);
-      if (sourceType === 'board') {
-        handleTileDrop('board:' + tileId, row, col);
-      } else {
-        handleTileDrop(tileId, row, col);
-      }
+      handleTileDrop(sourceType === 'board' ? 'board:' + tileId : tileId, row, col);
       return;
     }
 
@@ -68,52 +59,72 @@
     }
   }
 
-  // Listen for touchstart on rack tiles and board pending tiles
+  // ---- Event listeners ----
+
+  // touchstart: record position but don't prevent default yet (lets taps fire clicks)
   document.addEventListener('touchstart', (e) => {
     const el = e.target.closest('.rack-tile, .board-tile.new-tile');
     if (!el) return;
-
     const tileId = el.dataset.tileId;
     if (!tileId) return;
-
     const touch = e.touches[0];
-    const rect  = el.getBoundingClientRect();
-    const ghost = createGhost(el);
-
-    const offsetX = touch.clientX - rect.left;
-    const offsetY = touch.clientY - rect.top;
-
-    ghost.style.left = (touch.clientX - offsetX) + 'px';
-    ghost.style.top  = (touch.clientY - offsetY) + 'px';
-
-    activeDrag = {
+    pendingTouch = {
+      el,
       tileId,
-      ghost,
-      offsetX,
-      offsetY,
+      startX: touch.clientX,
+      startY: touch.clientY,
       sourceType: el.classList.contains('board-tile') ? 'board' : 'rack',
     };
+  }, { passive: true }); // passive = true so scroll isn't blocked until drag starts
 
-    // Deselect any click-selected rack tile when a drag starts
-    if (typeof clearRackSelection === 'function') clearRackSelection();
-
-    e.preventDefault(); // prevent scroll while dragging
-  }, { passive: false });
-
+  // touchmove: upgrade to drag once threshold is crossed; then prevent scroll
   document.addEventListener('touchmove', (e) => {
-    if (!activeDrag) return;
-    moveGhost(e.touches[0]);
-    e.preventDefault();
+    const touch = e.touches[0];
+
+    if (pendingTouch && !activeDrag) {
+      const dx = touch.clientX - pendingTouch.startX;
+      const dy = touch.clientY - pendingTouch.startY;
+      if (Math.sqrt(dx * dx + dy * dy) < DRAG_THRESHOLD) return;
+
+      // Threshold crossed — commit to drag
+      const { el, tileId, sourceType, startX, startY } = pendingTouch;
+      pendingTouch = null;
+
+      const rect    = el.getBoundingClientRect();
+      const offsetX = startX - rect.left;
+      const offsetY = startY - rect.top;
+      const ghost   = createGhost(el);
+      ghost.style.left = (touch.clientX - offsetX) + 'px';
+      ghost.style.top  = (touch.clientY - offsetY) + 'px';
+
+      // Hide the original tile so it looks like it was picked up
+      el.style.visibility = 'hidden';
+
+      // Deselect any previously click-selected tile
+      if (typeof clearRackSelection === 'function') clearRackSelection();
+
+      activeDrag = { tileId, ghost, offsetX, offsetY, sourceType, el };
+    }
+
+    if (activeDrag) {
+      activeDrag.ghost.style.left = (touch.clientX - activeDrag.offsetX) + 'px';
+      activeDrag.ghost.style.top  = (touch.clientY - activeDrag.offsetY) + 'px';
+      e.preventDefault(); // prevent page scroll while dragging
+    }
   }, { passive: false });
 
   document.addEventListener('touchend', (e) => {
-    if (!activeDrag) return;
+    pendingTouch = null;
+    if (!activeDrag) return; // was a tap — click handler will fire normally
     endDrag(e.changedTouches[0]);
   });
 
   document.addEventListener('touchcancel', () => {
+    pendingTouch = null;
     if (!activeDrag) return;
+    activeDrag.el.style.visibility = '';
     activeDrag.ghost.remove();
     activeDrag = null;
   });
 })();
+
