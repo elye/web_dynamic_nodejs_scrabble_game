@@ -30,6 +30,18 @@
     return ghost;
   }
 
+  // Calculate the rack insert index based on the touch X position.
+  // Walks through rack tile elements and returns the index of the first tile
+  // whose midpoint is to the right of the touch — i.e. "insert before that tile".
+  function getRackInsertIndex(touchX) {
+    const tiles = document.querySelectorAll('#tile-rack .rack-tile');
+    for (let i = 0; i < tiles.length; i++) {
+      const rect = tiles[i].getBoundingClientRect();
+      if (touchX < rect.left + rect.width / 2) return i;
+    }
+    return tiles.length; // insert at end
+  }
+
   function endDrag(touch) {
     if (!activeDrag) return;
     const { el, tileId, sourceType, ghost } = activeDrag;
@@ -56,24 +68,18 @@
     const rackContainer  = target.closest('#tile-rack');
     const targetRackTile = target.closest('.rack-tile');
     if (rackContainer) {
-      if (sourceType === 'rack' && targetRackTile) {
-        // Reorder: rack tile dragged onto another rack tile
-        const toId = targetRackTile.dataset.tileId;
-        if (toId && toId !== tileId && typeof reorderRackTile === 'function') {
-          reorderRackTile(tileId, toId);
+      const insertIdx = getRackInsertIndex(touch.clientX);
+      if (sourceType === 'rack') {
+        // Reorder rack tile to the precise drop position
+        if (typeof reorderRackTileToIndex === 'function') {
+          reorderRackTileToIndex(tileId, insertIdx);
         }
       } else if (sourceType === 'board') {
-        // Return board tile to rack — insert at the position it was dropped on
-        if (targetRackTile) {
-          const toId  = targetRackTile.dataset.tileId;
-          const toIdx = rackTiles.findIndex(t => t.id === toId);
-          if (toIdx !== -1 && typeof returnBoardTileToRackAt === 'function') {
-            returnBoardTileToRackAt(tileId, toIdx);
-          } else {
-            returnBoardTileToRack(tileId);
-          }
+        // Return board tile to rack at the precise drop position
+        if (typeof returnBoardTileToRackAt === 'function') {
+          returnBoardTileToRackAt(tileId, insertIdx);
         } else {
-          returnBoardTileToRack(tileId); // dropped on empty rack area — append
+          returnBoardTileToRack(tileId);
         }
       }
     }

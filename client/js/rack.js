@@ -184,6 +184,17 @@ function reorderRackTile(fromId, toId) {
   renderRack();
 }
 
+// Insert a rack tile at an absolute index (used by touch drag for precise positioning)
+function reorderRackTileToIndex(fromId, insertIdx) {
+  const fromIdx = rackTiles.findIndex(t => t.id === fromId);
+  if (fromIdx === -1) return;
+  const [movedTile] = rackTiles.splice(fromIdx, 1);
+  // Adjust for the removed element shifting indices
+  const adjusted = (insertIdx > fromIdx) ? insertIdx - 1 : insertIdx;
+  rackTiles.splice(Math.min(adjusted, rackTiles.length), 0, movedTile);
+  renderRack();
+}
+
 function setRack(tiles) {
   rackTiles = tiles.map(t => ({
     id: t.id,
