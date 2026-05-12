@@ -175,6 +175,15 @@ function removeTileFromRack(tileId) {
   return tile;
 }
 
+function reorderRackTile(fromId, toId) {
+  const fromIdx = rackTiles.findIndex(t => t.id === fromId);
+  const toIdx   = rackTiles.findIndex(t => t.id === toId);
+  if (fromIdx === -1 || toIdx === -1 || fromIdx === toIdx) return;
+  const [movedTile] = rackTiles.splice(fromIdx, 1);
+  rackTiles.splice(toIdx, 0, movedTile);
+  renderRack();
+}
+
 function setRack(tiles) {
   rackTiles = tiles.map(t => ({
     id: t.id,
