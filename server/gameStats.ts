@@ -110,6 +110,42 @@ export async function getUserStatsSummary(userId: string): Promise<any> {
 
   const pipeline = [
     { $match: { 'players.userId': userId } },
+    // Add user position (1-based rank by score descending) and player count
+    {
+      $addFields: {
+        _sortedScores: {
+          $sortArray: { input: '$players', sortBy: { score: -1 } },
+        },
+        _playerCount: { $size: '$players' },
+      },
+    },
+    {
+      $addFields: {
+        _userPlayer: {
+          $arrayElemAt: [
+            { $filter: { input: '$players', as: 'p', cond: { $eq: ['$$p.userId', userId] } } },
+            0,
+          ],
+        },
+        _userPosition: {
+          $add: [
+            {
+              $indexOfArray: [
+                {
+                  $map: {
+                    input: { $sortArray: { input: '$players', sortBy: { score: -1 } } },
+                    as: 's',
+                    in: '$$s.userId',
+                  },
+                },
+                userId,
+              ],
+            },
+            1,
+          ],
+        },
+      },
+    },
     {
       $facet: {
         totals: [
@@ -117,52 +153,42 @@ export async function getUserStatsSummary(userId: string): Promise<any> {
             $group: {
               _id: null,
               totalGames: { $sum: 1 },
-              wins: {
-                $sum: {
-                  $cond: [
-                    { $eq: [
-                      { $arrayElemAt: [
-                        { $filter: { input: '$players', as: 'p', cond: { $eq: ['$$p.userId', userId] } } },
-                        0
-                      ] },
-                      null
-                    ] },
-                    0,
-                    {
-                      $cond: [
-                        { $eq: [
-                          '$winnerId',
-                          { $getField: {
-                            field: 'playerId',
-                            input: { $arrayElemAt: [
-                              { $filter: { input: '$players', as: 'p', cond: { $eq: ['$$p.userId', userId] } } },
-                              0
-                            ] }
-                          } }
-                        ] },
-                        1,
-                        0
-                      ]
-                    }
-                  ]
-                }
-              },
+              wins: { $sum: { $cond: [{ $eq: ['$_userPosition', 1] }, 1, 0] } },
+              second: { $sum: { $cond: [{ $eq: ['$_userPosition', 2] }, 1, 0] } },
+              third: { $sum: { $cond: [{ $eq: ['$_userPosition', 3] }, 1, 0] } },
+              fourth: { $sum: { $cond: [{ $eq: ['$_userPosition', 4] }, 1, 0] } },
             },
           },
         ],
-        bestScore: [
-          { $unwind: '$players' },
-          { $match: { 'players.userId': userId } },
-          { $sort: { 'players.score': -1 } },
+        bestScore2p: [
+          { $match: { _playerCount: 2 } },
+          { $sort: { '_userPlayer.score': -1 } },
           { $limit: 1 },
-          { $project: { score: '$players.score', gameId: 1, endedAt: 1 } },
+          { $project: { score: '$_userPlayer.score' } },
+        ],
+        bestScore3p: [
+          { $match: { _playerCount: 3 } },
+          { $sort: { '_userPlayer.score': -1 } },
+          { $limit: 1 },
+          { $project: { score: '$_userPlayer.score' } },
+        ],
+        bestScore4p: [
+          { $match: { _playerCount: 4 } },
+          { $sort: { '_userPlayer.score': -1 } },
+          { $limit: 1 },
+          { $project: { score: '$_userPlayer.score' } },
         ],
         bestWord: [
-          { $unwind: '$players' },
-          { $match: { 'players.userId': userId, 'players.stats.bestWord': { $ne: null } } },
-          { $sort: { 'players.stats.bestWord.score': -1 } },
+          { $match: { '_userPlayer.stats.bestWord': { $ne: null } } },
+          { $sort: { '_userPlayer.stats.bestWord.score': -1 } },
           { $limit: 1 },
-          { $project: { bestWord: '$players.stats.bestWord', gameId: 1, endedAt: 1 } },
+          { $project: { bestWord: '$_userPlayer.stats.bestWord' } },
+        ],
+        bestTurn: [
+          { $match: { '_userPlayer.stats.bestTurn': { $ne: null } } },
+          { $sort: { '_userPlayer.stats.bestTurn.score': -1 } },
+          { $limit: 1 },
+          { $project: { bestTurn: '$_userPlayer.stats.bestTurn' } },
         ],
         recentGames: [
           { $sort: { endedAt: -1 } },
@@ -183,16 +209,19 @@ export async function getUserStatsSummary(userId: string): Promise<any> {
   const results = await db.collection('games').aggregate(pipeline).toArray();
   const data = results[0] || {};
 
-  const totals = data.totals?.[0] || { totalGames: 0, wins: 0 };
-  const losses = totals.totalGames - totals.wins;
+  const totals = data.totals?.[0] || { totalGames: 0, wins: 0, second: 0, third: 0, fourth: 0 };
 
   return {
     totalGames: totals.totalGames,
     wins: totals.wins,
-    losses,
-    winRate: totals.totalGames > 0 ? Math.round((totals.wins / totals.totalGames) * 100) : 0,
-    bestScore: data.bestScore?.[0] || null,
+    second: totals.second,
+    third: totals.third,
+    fourth: totals.fourth,
+    bestScore2p: data.bestScore2p?.[0]?.score ?? null,
+    bestScore3p: data.bestScore3p?.[0]?.score ?? null,
+    bestScore4p: data.bestScore4p?.[0]?.score ?? null,
     bestWord: data.bestWord?.[0]?.bestWord || null,
+    bestTurn: data.bestTurn?.[0]?.bestTurn || null,
     recentGames: data.recentGames || [],
   };
 }
@@ -206,33 +235,40 @@ export async function getOpponentStats(userId: string): Promise<any[]> {
 
   const pipeline = [
     { $match: { 'players.userId': userId } },
+    // Extract the user's score for comparison
+    {
+      $addFields: {
+        _userScore: {
+          $getField: {
+            field: 'score',
+            input: {
+              $arrayElemAt: [
+                { $filter: { input: '$players', as: 'p', cond: { $eq: ['$$p.userId', userId] } } },
+                0,
+              ],
+            },
+          },
+        },
+      },
+    },
     { $unwind: '$players' },
-    { $match: { 'players.userId': { $ne: userId } } },
+    // Keep only opponent rows
+    { $match: { 'players.userId': { $ne: userId }, 'players.isAI': { $in: [true, false] } } },
     {
       $group: {
         _id: {
-          // Group by opponent username (AI or named player)
           opponentName: '$players.username',
           isAI: '$players.isAI',
         },
         totalGames: { $sum: 1 },
         wins: {
-          $sum: {
-            $cond: [
-              { $ne: ['$winnerId', '$players.playerId'] },
-              1,
-              0,
-            ],
-          },
+          $sum: { $cond: [{ $gt: ['$_userScore', '$players.score'] }, 1, 0] },
         },
         losses: {
-          $sum: {
-            $cond: [
-              { $eq: ['$winnerId', '$players.playerId'] },
-              1,
-              0,
-            ],
-          },
+          $sum: { $cond: [{ $lt: ['$_userScore', '$players.score'] }, 1, 0] },
+        },
+        draws: {
+          $sum: { $cond: [{ $eq: ['$_userScore', '$players.score'] }, 1, 0] },
         },
         lastPlayed: { $max: '$endedAt' },
       },
@@ -246,6 +282,7 @@ export async function getOpponentStats(userId: string): Promise<any[]> {
         totalGames: 1,
         wins: 1,
         losses: 1,
+        draws: 1,
         lastPlayed: 1,
       },
     },

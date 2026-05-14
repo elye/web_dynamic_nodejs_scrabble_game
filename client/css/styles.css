@@ -1669,7 +1669,7 @@ input[type="text"]:focus {
 
 .stats-summary-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-template-columns: repeat(5, 1fr);
   gap: 0.8rem;
 }
 
@@ -1859,7 +1859,7 @@ input[type="text"]:focus {
     padding: 1rem;
   }
   .stats-summary-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
   }
   .stats-title {
     font-size: 1.3rem;

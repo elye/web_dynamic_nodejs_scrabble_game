@@ -91,10 +91,14 @@ function renderSummary(data) {
   const grid = document.getElementById('stats-summary-grid');
   const totalGames = data.totalGames || 0;
   const wins = data.wins || 0;
-  const losses = data.losses || 0;
-  const winRate = data.winRate || 0;
-  const bestScore = data.bestScore?.score ?? '-';
+  const second = data.second || 0;
+  const third = data.third || 0;
+  const fourth = data.fourth || 0;
+  const bestScore2p = data.bestScore2p;
+  const bestScore3p = data.bestScore3p;
+  const bestScore4p = data.bestScore4p;
   const bestWord = data.bestWord;
+  const bestTurn = data.bestTurn;
 
   grid.innerHTML = `
     <div class="stats-stat-card">
@@ -103,23 +107,39 @@ function renderSummary(data) {
     </div>
     <div class="stats-stat-card">
       <span class="stats-stat-val stats-val-win">${wins}</span>
-      <span class="stats-stat-lbl">Wins</span>
+      <span class="stats-stat-lbl">🥇 1st Place</span>
     </div>
     <div class="stats-stat-card">
-      <span class="stats-stat-val stats-val-loss">${losses}</span>
-      <span class="stats-stat-lbl">Losses</span>
+      <span class="stats-stat-val">${second}</span>
+      <span class="stats-stat-lbl">🥈 2nd Place</span>
     </div>
     <div class="stats-stat-card">
-      <span class="stats-stat-val">${winRate}%</span>
-      <span class="stats-stat-lbl">Win Rate</span>
+      <span class="stats-stat-val">${third}</span>
+      <span class="stats-stat-lbl">🥉 3rd Place</span>
     </div>
     <div class="stats-stat-card">
-      <span class="stats-stat-val">${bestScore}</span>
-      <span class="stats-stat-lbl">Best Score</span>
+      <span class="stats-stat-val">${fourth}</span>
+      <span class="stats-stat-lbl">4th Place</span>
+    </div>
+    <div class="stats-stat-card">
+      <span class="stats-stat-val">${bestScore2p ?? '-'}</span>
+      <span class="stats-stat-lbl">Best Score (2P)</span>
+    </div>
+    <div class="stats-stat-card">
+      <span class="stats-stat-val">${bestScore3p ?? '-'}</span>
+      <span class="stats-stat-lbl">Best Score (3P)</span>
+    </div>
+    <div class="stats-stat-card">
+      <span class="stats-stat-val">${bestScore4p ?? '-'}</span>
+      <span class="stats-stat-lbl">Best Score (4P)</span>
     </div>
     <div class="stats-stat-card">
       <span class="stats-stat-val">${bestWord ? bestWord.word.toUpperCase() : '-'}</span>
       <span class="stats-stat-lbl">${bestWord ? `Best Word (${bestWord.score}pts)` : 'Best Word'}</span>
+    </div>
+    <div class="stats-stat-card">
+      <span class="stats-stat-val">${bestTurn ? bestTurn.score : '-'}</span>
+      <span class="stats-stat-lbl">Best Turn</span>
     </div>
   `;
 }

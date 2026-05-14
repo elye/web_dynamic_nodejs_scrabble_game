@@ -939,6 +939,7 @@ export class GameManager {
         passCount,
         exchangeCount,
         tilesUsed,
+        timeRemaining: p.timerRemaining,
       };
     }
 
