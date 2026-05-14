@@ -35,7 +35,6 @@ window._authReady = new Promise(resolve => { _authResolve = resolve; });
       if (window.ws && window.ws.readyState === WebSocket.OPEN && window._logtoUserId) {
         window.ws.send(JSON.stringify({ type: 'UPDATE_USER_ID', userId: window._logtoUserId }));
       }
-    }
     } else {
       // Not signed in — reveal the username/sign-in row
       document.getElementById('username-row').classList.remove('hidden');
