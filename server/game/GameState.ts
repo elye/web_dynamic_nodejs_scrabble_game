@@ -27,7 +27,7 @@ export interface TurnEntry {
   action: 'play' | 'pass' | 'exchange';
   wordsFormed: WordScore[];
   totalScore: number;
-  tilesPlayed: { letter: string; points: number; row: number; col: number }[];
+  tilesPlayed: { letter: string; points: number; row: number; col: number; isBlank?: boolean }[];
   displayWord?: { letter: string; points: number; row: number; col: number; isNew: boolean; premium: string | null }[];
 }
 
@@ -430,9 +430,10 @@ export class GameState {
       totalScore,
       tilesPlayed: placements.map(p => ({
         letter: p.tile.isBlank ? (p.tile.chosenLetter || '?') : p.tile.letter,
-        points: p.tile.points,
+        points: p.tile.isBlank ? 0 : p.tile.points,
         row: p.row,
         col: p.col,
+        isBlank: p.tile.isBlank || false,
       })),
       displayWord,
     });

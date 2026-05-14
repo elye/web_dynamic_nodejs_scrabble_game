@@ -910,11 +910,14 @@ export class GameManager {
       const passCount = game.turnHistory.filter(t => t.playerId === p.id && t.action === 'pass').length;
       const exchangeCount = game.turnHistory.filter(t => t.playerId === p.id && t.action === 'exchange').length;
       const tilesUsed = playerTurns.reduce((sum, t) => sum + (t.tilesPlayed?.length || 0), 0);
+      const rackValue = p.rack.reduce((sum: number, t: any) => sum + (t.points || 0), 0);
 
       rec.stats = {
         score: p.score,
+        tilesRemaining: p.rack.length,
+        rackDeduction: rackValue,
         bestWord: bestWord ? { word: bestWord.word, score: bestWord.score } : null,
-        bestTurn: bestTurn ? { turnNumber: bestTurn.turnNumber, score: bestTurn.totalScore } : null,
+        bestTurn: bestTurn ? { turnNumber: bestTurn.turnNumber, score: bestTurn.totalScore, wordCount: (bestTurn.wordsFormed?.length || 0) } : null,
         longestWord: longestWord ? { word: longestWord.word, length: longestWord.word.length } : null,
         totalWords: allWords.length,
         totalTurns,
@@ -927,6 +930,60 @@ export class GameManager {
       };
     }
 
+    // Compute overall game summary
+    const allPlayTurns = game.turnHistory.filter(t => t.action === 'play');
+    const allGameWords = allPlayTurns.flatMap(t => t.wordsFormed || []);
+    const totalRounds = Math.max(0, ...game.players.map(p => game.turnHistory.filter(t => t.playerId === p.id).length));
+    const totalScoreAll = game.players.reduce((sum, p) => sum + p.score, 0);
+    const avgScoreAll = game.players.length > 0 ? Math.round(totalScoreAll / game.players.length) : 0;
+    const totalBingos = allPlayTurns.filter(t => (t.tilesPlayed?.length || 0) === 7).length;
+    const totalPasses = game.turnHistory.filter(t => t.action === 'pass').length;
+    const totalExchanges = game.turnHistory.filter(t => t.action === 'exchange').length;
+    const totalTilesUsed = allPlayTurns.reduce((sum, t) => sum + (t.tilesPlayed?.length || 0), 0);
+    const overallBestWord = allGameWords.length > 0
+      ? allGameWords.reduce((best, w) => w.score > best.score ? w : best, allGameWords[0])
+      : null;
+    const overallBestWordPlayer = overallBestWord
+      ? allPlayTurns.find(t => (t.wordsFormed || []).some(w => w.word === overallBestWord.word && w.score === overallBestWord.score))
+      : null;
+    const overallBestTurn = allPlayTurns.length > 0
+      ? allPlayTurns.reduce((best, t) => t.totalScore > best.totalScore ? t : best, allPlayTurns[0])
+      : null;
+    const overallLongestWord = allGameWords.length > 0
+      ? allGameWords.reduce((best, w) => w.word.length > best.word.length ? w : best, allGameWords[0])
+      : null;
+    const overallLongestWordPlayer = overallLongestWord
+      ? allPlayTurns.find(t => (t.wordsFormed || []).some(w => w.word === overallLongestWord.word && w.word.length === overallLongestWord.word.length))
+      : null;
+
+    // Compute score progression (cumulative score after each turn)
+    const cumulativeScores: { [id: string]: number } = {};
+    for (const p of game.players) cumulativeScores[p.id] = 0;
+    const scoreProgression: { [id: string]: { turn: number; score: number }[] } = {};
+    const turnEvents: { turn: number; playerId: string; type: string }[] = [];
+    for (const p of game.players) scoreProgression[p.id] = [{ turn: 0, score: 0 }];
+    for (const entry of game.turnHistory) {
+      cumulativeScores[entry.playerId] = (cumulativeScores[entry.playerId] || 0) + entry.totalScore;
+      scoreProgression[entry.playerId]?.push({ turn: entry.turnNumber, score: cumulativeScores[entry.playerId] });
+      if (entry.action === 'play' && (entry.tilesPlayed?.length || 0) === 7) {
+        turnEvents.push({ turn: entry.turnNumber, playerId: entry.playerId, type: 'bingo' });
+      } else if (entry.action === 'pass') {
+        turnEvents.push({ turn: entry.turnNumber, playerId: entry.playerId, type: 'pass' });
+      } else if (entry.action === 'exchange') {
+        turnEvents.push({ turn: entry.turnNumber, playerId: entry.playerId, type: 'exchange' });
+      }
+    }
+    // Add final data points reflecting post-deduction scores
+    const lastTurn = game.turnHistory.length > 0 ? game.turnHistory[game.turnHistory.length - 1].turnNumber : 0;
+    const finalTurnNum = lastTurn + 1;
+    for (const p of game.players) {
+      const arr = scoreProgression[p.id];
+      const lastPt = arr?.[arr.length - 1];
+      if (lastPt && lastPt.score !== p.score) {
+        arr.push({ turn: finalTurnNum, score: p.score });
+      }
+    }
+
     saveGameRecord({
       gameId: game.roomId,
       players: playerRecords,
@@ -935,10 +992,20 @@ export class GameManager {
       reason: game.status === 'finished' ? 'completed' : 'unknown',
       gameSummary: {
         totalTurns: game.turnHistory.length,
-        totalWordsPlayed: game.turnHistory.filter(t => t.action === 'play').flatMap(t => t.wordsFormed || []).length,
+        totalRounds,
+        totalScoreAll,
+        avgScoreAll,
+        totalWordsPlayed: allGameWords.length,
+        totalBingos,
+        totalPasses,
+        totalExchanges,
+        totalTilesUsed,
+        bestWord: overallBestWord ? { word: overallBestWord.word, score: overallBestWord.score, player: overallBestWordPlayer?.username || '' } : null,
+        bestTurn: overallBestTurn ? { turnNumber: overallBestTurn.turnNumber, score: overallBestTurn.totalScore, player: overallBestTurn.username } : null,
+        longestWord: overallLongestWord ? { word: overallLongestWord.word, length: overallLongestWord.word.length, player: overallLongestWordPlayer?.username || '' } : null,
       },
-      scoreProgression: null,
-      turnEvents: null,
+      scoreProgression,
+      turnEvents,
       turnHistory: game.turnHistory,
       settings: game.settings,
       isSolo: game.players.filter(p => !p.isAI).length === 1 && game.players.some(p => p.isAI),

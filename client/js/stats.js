@@ -399,8 +399,8 @@ function buildBoardFromHistory(turnHistory) {
     for (const tile of turn.tilesPlayed) {
       board[tile.row][tile.col] = {
         letter: tile.isBlank ? (tile.chosenLetter || tile.letter) : tile.letter,
-        points: tile.points,
-        isBlank: tile.isBlank,
+        points: tile.isBlank ? 0 : tile.points,
+        isBlank: !!tile.isBlank,
         playerId: turn.playerId,
       };
     }
@@ -432,6 +432,81 @@ function renderDetailBoard(game, container) {
   const wrapper = document.createElement('div');
   wrapper.className = 'detail-board-panel-inner';
 
+  // Sidebar + board row layout
+  const boardWithSidebar = document.createElement('div');
+  boardWithSidebar.className = 'detail-board-with-sidebar';
+
+  // ---- Turn history panel (left) ----
+  const turnHistoryPanel = document.createElement('div');
+  turnHistoryPanel.className = 'detail-turn-history';
+
+  const turnHistoryTitle = document.createElement('div');
+  turnHistoryTitle.className = 'detail-turn-history-title';
+  turnHistoryTitle.textContent = 'Turn History';
+  turnHistoryPanel.appendChild(turnHistoryTitle);
+
+  const playTurns = (game.turnHistory || []).filter(t => t.action === 'play' || t.action === 'pass' || t.action === 'exchange');
+  if (playTurns.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'detail-turn-history-empty';
+    empty.textContent = 'No turns recorded.';
+    turnHistoryPanel.appendChild(empty);
+  } else {
+    for (const turn of playTurns) {
+      const playerColor = getDetailColor(turn.playerId);
+      const item = document.createElement('div');
+      item.className = 'detail-turn-history-item';
+
+      const header = document.createElement('div');
+      header.className = 'detail-turn-header';
+
+      const numEl = document.createElement('span');
+      numEl.className = 'detail-turn-num';
+      numEl.textContent = `#${turn.turnNumber}`;
+
+      const playerEl = document.createElement('span');
+      playerEl.className = 'detail-turn-player';
+      playerEl.style.color = playerColor;
+      playerEl.textContent = turn.username || '';
+
+      const scoreEl = document.createElement('span');
+      scoreEl.className = 'detail-turn-score';
+      scoreEl.textContent = turn.action === 'play' ? `+${turn.totalScore}` : '0';
+
+      header.appendChild(numEl);
+      header.appendChild(playerEl);
+      header.appendChild(scoreEl);
+      item.appendChild(header);
+
+      if (turn.action === 'play' && turn.wordsFormed && turn.wordsFormed.length > 0) {
+        const wordsDiv = document.createElement('div');
+        wordsDiv.className = 'detail-turn-words';
+        for (const w of turn.wordsFormed) {
+          const wordEl = document.createElement('span');
+          wordEl.className = 'detail-turn-word';
+          wordEl.innerHTML = `${escapeHtml(w.word.toUpperCase())} <span class="detail-turn-word-pts">${w.score}</span>`;
+          wordsDiv.appendChild(wordEl);
+        }
+        item.appendChild(wordsDiv);
+      } else if (turn.action === 'pass') {
+        const actionEl = document.createElement('div');
+        actionEl.className = 'detail-turn-action-pass';
+        actionEl.textContent = '⏭ Passed';
+        item.appendChild(actionEl);
+      } else if (turn.action === 'exchange') {
+        const actionEl = document.createElement('div');
+        actionEl.className = 'detail-turn-action-exchange';
+        actionEl.textContent = '🔁 Exchanged';
+        item.appendChild(actionEl);
+      }
+
+      turnHistoryPanel.appendChild(item);
+    }
+  }
+
+  boardWithSidebar.appendChild(turnHistoryPanel);
+
+  // ---- Board (right) ----
   const boardWrap = document.createElement('div');
   boardWrap.className = 'detail-board-wrap';
 
@@ -476,6 +551,7 @@ function renderDetailBoard(game, container) {
       if (tile) {
         const tileEl = document.createElement('div');
         tileEl.className = 'detail-board-tile';
+        if (tile.isBlank) tileEl.classList.add('detail-blank-tile');
         tileEl.style.background = 'var(--tile-color)';
         tileEl.setAttribute('data-player-id', tile.playerId);
 
@@ -484,7 +560,7 @@ function renderDetailBoard(game, container) {
         letterEl.textContent = tile.letter.toUpperCase();
         tileEl.appendChild(letterEl);
 
-        if (tile.points != null) {
+        if (!tile.isBlank && tile.points != null) {
           const ptsEl = document.createElement('span');
           ptsEl.className = 'tile-points';
           ptsEl.textContent = tile.points;
@@ -513,7 +589,8 @@ function renderDetailBoard(game, container) {
   boardBody.appendChild(grid);
   boardWithHeaders.appendChild(boardBody);
   boardWrap.appendChild(boardWithHeaders);
-  wrapper.appendChild(boardWrap);
+  boardWithSidebar.appendChild(boardWrap);
+  wrapper.appendChild(boardWithSidebar);
 
   // Player chips for click-to-highlight
   if (sorted.length > 0) {
@@ -694,7 +771,7 @@ function renderGameDetail(game) {
 
   // Draw graph after DOM is attached so canvas has layout dimensions
   if (pendingGraphDraw) {
-    requestAnimationFrame(() => requestAnimationFrame(pendingGraphDraw));
+    setTimeout(pendingGraphDraw, 50);
   }
 
   // ---- Board panel ----

@@ -2144,3 +2144,116 @@ input[type="text"]:focus {
 .detail-board-tile.detail-tile-dimmed {
   opacity: 0.35;
 }
+
+/* Blank tile styling in detail board */
+.detail-board-tile.detail-blank-tile .tile-letter {
+  color: #e74c3c !important;
+  font-style: italic;
+}
+
+/* Detail board: sidebar + board row layout */
+.detail-board-with-sidebar {
+  display: flex;
+  flex-direction: row;
+  gap: 0.75rem;
+  width: 100%;
+  align-items: flex-start;
+}
+
+/* Turn history sidebar */
+.detail-turn-history {
+  width: 180px;
+  flex-shrink: 0;
+  max-height: 520px;
+  overflow-y: auto;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.15) transparent;
+}
+
+.detail-turn-history-title {
+  padding: 6px 10px 5px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  position: sticky;
+  top: 0;
+  background: var(--modal-bg, #1a1a2e);
+  z-index: 1;
+}
+
+.detail-turn-history-empty {
+  padding: 10px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.detail-turn-history-item {
+  padding: 5px 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.detail-turn-history-item:last-child { border-bottom: none; }
+
+.detail-turn-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 3px;
+}
+
+.detail-turn-num {
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.detail-turn-player {
+  font-weight: 700;
+  font-size: 0.68rem;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail-turn-score {
+  font-weight: 700;
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.detail-turn-words {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.detail-turn-word {
+  background: rgba(255,255,255,0.07);
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-size: 0.62rem;
+  color: var(--text-primary);
+}
+
+.detail-turn-word-pts {
+  color: #e8c84a;
+  font-weight: 700;
+}
+
+.detail-turn-action-pass,
+.detail-turn-action-exchange {
+  font-size: 0.63rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
