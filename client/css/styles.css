@@ -2257,3 +2257,10 @@ input[type="text"]:focus {
   font-style: italic;
 }
 
+/* Highlighted turn history entry when player chip is active */
+.detail-turn-history-item.turn-selected {
+  border-left: 3px solid var(--turn-selected-color, rgba(255,255,255,0.4));
+  padding-left: 5px;
+  background: color-mix(in srgb, var(--turn-selected-color, #fff) 10%, transparent);
+}
+

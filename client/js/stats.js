@@ -248,14 +248,25 @@ async function loadGameDetail(gameId) {
   }
 }
 
-// ---- Detail colour helper (mirrors getAvatarColor in scoreboard.js) ----
+// ---- Detail colour helper ----
+const DETAIL_COLOR_PALETTE = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22', '#e91e63'];
+let _gameColorMap = {};
+
+function buildGameColorMap(players) {
+  _gameColorMap = {};
+  players.forEach((p, i) => {
+    _gameColorMap[p.playerId] = DETAIL_COLOR_PALETTE[i % DETAIL_COLOR_PALETTE.length];
+  });
+}
+
 function getDetailColor(id) {
-  const colors = ['#e74c3c', '#3498db', '#2ecc71', '#9b59b6', '#f39c12', '#1abc9c'];
+  if (_gameColorMap[id]) return _gameColorMap[id];
+  // Fallback for contexts outside a loaded game
   let hash = 0;
   for (let i = 0; i < id.length; i++) {
     hash = id.charCodeAt(i) + ((hash << 5) - hash);
   }
-  return colors[Math.abs(hash) % colors.length];
+  return DETAIL_COLOR_PALETTE[Math.abs(hash) % DETAIL_COLOR_PALETTE.length];
 }
 
 // ---- Score graph helpers (adapted from app.js drawScoreGraph / drawStar) ----
@@ -456,6 +467,7 @@ function renderDetailBoard(game, container) {
       const playerColor = getDetailColor(turn.playerId);
       const item = document.createElement('div');
       item.className = 'detail-turn-history-item';
+      item.dataset.playerId = turn.playerId;
 
       const header = document.createElement('div');
       header.className = 'detail-turn-header';
@@ -504,9 +516,6 @@ function renderDetailBoard(game, container) {
     }
   }
 
-  boardWithSidebar.appendChild(turnHistoryPanel);
-
-  // ---- Board (right) ----
   const boardWrap = document.createElement('div');
   boardWrap.className = 'detail-board-wrap';
 
@@ -590,6 +599,7 @@ function renderDetailBoard(game, container) {
   boardWithHeaders.appendChild(boardBody);
   boardWrap.appendChild(boardWithHeaders);
   boardWithSidebar.appendChild(boardWrap);
+  boardWithSidebar.appendChild(turnHistoryPanel);
   wrapper.appendChild(boardWithSidebar);
 
   // Player chips for click-to-highlight
@@ -597,6 +607,13 @@ function renderDetailBoard(game, container) {
     const chipsDiv = document.createElement('div');
     chipsDiv.className = 'detail-player-chips';
     let activeChipId = null;
+
+    function deselectPlayer() {
+      activeChipId = null;
+      chipsDiv.querySelectorAll('.detail-player-chip').forEach(c => c.classList.remove('active'));
+      grid.querySelectorAll('.detail-board-tile').forEach(t => t.classList.remove('detail-tile-highlighted', 'detail-tile-dimmed'));
+      turnHistoryPanel.querySelectorAll('.detail-turn-history-item').forEach(item => item.classList.remove('turn-selected'));
+    }
 
     for (const p of sorted) {
       const chip = document.createElement('button');
@@ -608,9 +625,7 @@ function renderDetailBoard(game, container) {
       chip.addEventListener('click', () => {
         const allTiles = grid.querySelectorAll('.detail-board-tile');
         if (activeChipId === p.playerId) {
-          activeChipId = null;
-          chip.classList.remove('active');
-          allTiles.forEach(t => t.classList.remove('detail-tile-highlighted', 'detail-tile-dimmed'));
+          deselectPlayer();
         } else {
           activeChipId = p.playerId;
           chipsDiv.querySelectorAll('.detail-player-chip').forEach(c => c.classList.remove('active'));
@@ -624,10 +639,31 @@ function renderDetailBoard(game, container) {
               t.classList.add('detail-tile-dimmed');
             }
           });
+          turnHistoryPanel.querySelectorAll('.detail-turn-history-item').forEach(item => {
+            if (item.dataset.playerId === p.playerId) {
+              item.classList.add('turn-selected');
+              item.style.setProperty('--turn-selected-color', getDetailColor(p.playerId));
+            } else {
+              item.classList.remove('turn-selected');
+            }
+          });
         }
       });
       chipsDiv.appendChild(chip);
     }
+
+    // Deselect when clicking outside the player chips area
+    const clickOutsideHandler = (e) => {
+      if (!wrapper.isConnected) {
+        document.removeEventListener('click', clickOutsideHandler);
+        return;
+      }
+      if (!chipsDiv.contains(e.target)) {
+        deselectPlayer();
+      }
+    };
+    document.addEventListener('click', clickOutsideHandler);
+
     wrapper.appendChild(chipsDiv);
   }
 
@@ -643,6 +679,7 @@ function renderGameDetail(game) {
   const dateStr = date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
   const sorted = [...game.players].sort((a, b) => b.score - a.score);
+  buildGameColorMap(sorted);
   const maxScore = sorted[0]?.score || 0;
 
   let reason = game.reason || '';
