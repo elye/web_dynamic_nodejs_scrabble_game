@@ -585,6 +585,10 @@ export class GameState {
   endGame(reason: string, timedOutPlayer?: string): void {
     this.status = 'finished';
     const savedTimers = this.timer.getAllTimers();
+    // Persist timer values to player objects before destroying the timer
+    for (const p of this.players) {
+      p.timerRemaining = savedTimers[p.id] ?? 0;
+    }
     this.timer.destroy();
 
     // Apply end-game deductions

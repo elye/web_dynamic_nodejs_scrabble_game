@@ -939,7 +939,7 @@ export class GameManager {
         passCount,
         exchangeCount,
         tilesUsed,
-        timeRemaining: game.timer.getRemaining(p.id),
+        timeRemaining: p.timerRemaining,
       };
     }
 
