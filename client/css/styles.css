@@ -2080,3 +2080,67 @@ input[type="text"]:focus {
   display: inline-block;
   flex-shrink: 0;
 }
+
+/* Player chips for click-to-highlight on detail board */
+.detail-player-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: 0.75rem;
+}
+
+.detail-player-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 5px 12px 5px 6px;
+  border-radius: 999px;
+  border: 2px solid var(--chip-color, rgba(255,255,255,0.2));
+  background: rgba(255,255,255,0.05);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.detail-player-chip:hover {
+  background: rgba(255,255,255,0.1);
+  color: var(--text-primary);
+}
+
+.detail-player-chip.active {
+  background: color-mix(in srgb, var(--chip-color, #fff) 20%, transparent);
+  color: var(--text-primary);
+  box-shadow: 0 0 0 1px var(--chip-color, rgba(255,255,255,0.4));
+}
+
+.detail-player-chip-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: rgba(0,0,0,0.85);
+  flex-shrink: 0;
+}
+
+.detail-player-chip-score {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+/* Tile highlight on detail board */
+.detail-board-tile.detail-tile-highlighted {
+  box-shadow: 0 0 0 2px var(--tile-new-glow), 0 0 8px 2px rgba(232,200,74,0.6);
+  filter: brightness(1.15);
+  z-index: 3;
+}
+
+.detail-board-tile.detail-tile-dimmed {
+  opacity: 0.35;
+}

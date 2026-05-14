@@ -476,7 +476,8 @@ function renderDetailBoard(game, container) {
       if (tile) {
         const tileEl = document.createElement('div');
         tileEl.className = 'detail-board-tile';
-        tileEl.style.background = getDetailColor(tile.playerId);
+        tileEl.style.background = 'var(--tile-color)';
+        tileEl.setAttribute('data-player-id', tile.playerId);
 
         const letterEl = document.createElement('span');
         letterEl.className = 'tile-letter';
@@ -514,23 +515,43 @@ function renderDetailBoard(game, container) {
   boardWrap.appendChild(boardWithHeaders);
   wrapper.appendChild(boardWrap);
 
-  // Player colour legend
+  // Player chips for click-to-highlight
   if (sorted.length > 0) {
-    const legend = document.createElement('div');
-    legend.className = 'detail-board-legend';
+    const chipsDiv = document.createElement('div');
+    chipsDiv.className = 'detail-player-chips';
+    let activeChipId = null;
+
     for (const p of sorted) {
-      const item = document.createElement('span');
-      item.className = 'detail-board-legend-item';
-      const dot = document.createElement('span');
-      dot.className = 'detail-board-legend-dot';
-      dot.style.background = getDetailColor(p.playerId);
-      item.appendChild(dot);
-      item.appendChild(document.createTextNode(
-        `${p.username}${p.isAI ? ' 🤖' : ''}${p.playerId === game.winnerId ? ' 🏆' : ''} (${p.score}pts)`
-      ));
-      legend.appendChild(item);
+      const chip = document.createElement('button');
+      chip.className = 'detail-player-chip';
+      chip.dataset.playerId = p.playerId;
+      chip.style.setProperty('--chip-color', getDetailColor(p.playerId));
+      chip.innerHTML = `<span class="detail-player-chip-avatar" style="background:${getDetailColor(p.playerId)}">${p.username.charAt(0).toUpperCase()}</span>${escapeHtml(p.username)}${p.isAI ? ' 🤖' : ''}${p.playerId === game.winnerId ? ' 🏆' : ''} <span class="detail-player-chip-score">${p.score}pts</span>`;
+
+      chip.addEventListener('click', () => {
+        const allTiles = grid.querySelectorAll('.detail-board-tile');
+        if (activeChipId === p.playerId) {
+          activeChipId = null;
+          chip.classList.remove('active');
+          allTiles.forEach(t => t.classList.remove('detail-tile-highlighted', 'detail-tile-dimmed'));
+        } else {
+          activeChipId = p.playerId;
+          chipsDiv.querySelectorAll('.detail-player-chip').forEach(c => c.classList.remove('active'));
+          chip.classList.add('active');
+          allTiles.forEach(t => {
+            if (t.dataset.playerId === p.playerId) {
+              t.classList.add('detail-tile-highlighted');
+              t.classList.remove('detail-tile-dimmed');
+            } else {
+              t.classList.remove('detail-tile-highlighted');
+              t.classList.add('detail-tile-dimmed');
+            }
+          });
+        }
+      });
+      chipsDiv.appendChild(chip);
     }
-    wrapper.appendChild(legend);
+    wrapper.appendChild(chipsDiv);
   }
 
   container.appendChild(wrapper);
@@ -585,15 +606,18 @@ function renderGameDetail(game) {
 
   const statRows = [
     { label: 'Score', format: (s, p) => `<span class="summary-score">${p.score}</span>` },
+    { label: '⏱ Time Left', format: (s) => s?.timeRemaining != null ? formatTime(s.timeRemaining) : '-' },
     { label: '🎯 Best Word', format: (s) => s?.bestWord ? `${s.bestWord.word} <span class="stat-pts">${s.bestWord.score}pts</span>` : '-' },
-    { label: '🔥 Best Turn', format: (s) => s?.bestTurn ? `#${s.bestTurn.turnNumber} <span class="stat-pts">${s.bestTurn.score}pts</span>` : '-' },
+    { label: '🔥 Best Turn', format: (s) => s?.bestTurn ? `#${s.bestTurn.turnNumber} <span class="stat-pts">${s.bestTurn.score}pts</span> <span class="stat-sub">${s.bestTurn.wordCount}w</span>` : '-' },
     { label: '📏 Longest Word', format: (s) => s?.longestWord ? `${s.longestWord.word} <span class="stat-sub">${s.longestWord.length}L</span>` : '-' },
-    { label: '📊 Avg/Turn', format: (s) => s?.avgScorePerTurn != null ? `${s.avgScorePerTurn} pts` : '-' },
+    { label: '📊 Avg/Turn', format: (s) => s?.avgScorePerTurn != null ? `${s.avgScorePerTurn} pts <span class="stat-sub">(${s.playTurns} plays)</span>` : '-' },
     { label: '📝 Words', format: (s) => s?.totalWords ?? '-' },
     { label: '🧱 Tiles Placed', format: (s) => s?.tilesUsed ?? '-' },
+    { label: '🎒 Tiles Left', format: (s) => s?.tilesRemaining != null ? `${s.tilesRemaining} <span class="stat-sub">−${s.rackDeduction ?? 0}pts</span>` : '-' },
+    { label: '🔄 Turns', format: (s) => s?.totalTurns ?? '-' },
     { label: '🌟 Bingos', format: (s) => s?.bingoCount ?? '0' },
     { label: '⏭ Passes', format: (s) => s?.passCount ?? '0' },
-    { label: '🔄 Exchanges', format: (s) => s?.exchangeCount ?? '0' },
+    { label: '🔁 Exchanges', format: (s) => s?.exchangeCount ?? '0' },
   ];
 
   const tbody = document.createElement('tbody');
@@ -622,10 +646,15 @@ function renderGameDetail(game) {
         ${gs.longestWord ? `<div class="overall-stat highlight-stat"><span class="overall-stat-val">${gs.longestWord.word.toUpperCase()}</span><span class="overall-stat-lbl">📏 Longest (${gs.longestWord.length}L)</span><span class="overall-stat-by">by ${escapeHtml(gs.longestWord.player)}</span></div>` : ''}
       </div>
       <div class="overall-stats-grid">
+        <div class="overall-stat"><span class="overall-stat-val">${gs.totalRounds ?? '-'}</span><span class="overall-stat-lbl">Rounds</span></div>
         <div class="overall-stat"><span class="overall-stat-val">${gs.totalTurns ?? '-'}</span><span class="overall-stat-lbl">Total Turns</span></div>
+        <div class="overall-stat"><span class="overall-stat-val">${gs.totalScoreAll ?? '-'}</span><span class="overall-stat-lbl">Combined Score</span></div>
+        <div class="overall-stat"><span class="overall-stat-val">${gs.avgScoreAll ?? '-'}</span><span class="overall-stat-lbl">Avg Score</span></div>
         <div class="overall-stat"><span class="overall-stat-val">${gs.totalWordsPlayed ?? '-'}</span><span class="overall-stat-lbl">Words Played</span></div>
+        <div class="overall-stat"><span class="overall-stat-val">${gs.totalTilesUsed ?? 0}</span><span class="overall-stat-lbl">Tiles Used</span></div>
         <div class="overall-stat"><span class="overall-stat-val">${gs.totalBingos ?? 0}</span><span class="overall-stat-lbl">Bingos</span></div>
         <div class="overall-stat"><span class="overall-stat-val">${gs.totalPasses ?? 0} / ${gs.totalExchanges ?? 0}</span><span class="overall-stat-lbl">Pass / Exchange</span></div>
+        <div class="overall-stat"><span class="overall-stat-val">${gs.totalTimeUsed > 0 ? formatTime(gs.totalTimeUsed) : 'N/A'}</span><span class="overall-stat-lbl">Time Used</span></div>
       </div>
     `;
     summaryInner.appendChild(overallDiv);
