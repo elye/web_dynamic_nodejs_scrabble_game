@@ -418,6 +418,7 @@ function buildBoardFromHistory(turnHistory) {
         points: tile.isBlank ? 0 : tile.points,
         isBlank: !!tile.isBlank,
         playerId: turn.playerId,
+        turnNumber: turn.turnNumber,
       };
     }
   }
@@ -473,6 +474,8 @@ function renderDetailBoard(game, container) {
       const item = document.createElement('div');
       item.className = 'detail-turn-history-item';
       item.dataset.playerId = turn.playerId;
+      item.dataset.turnNumber = String(turn.turnNumber);
+      item.style.cursor = 'pointer';
 
       const header = document.createElement('div');
       header.className = 'detail-turn-header';
@@ -568,6 +571,7 @@ function renderDetailBoard(game, container) {
         if (tile.isBlank) tileEl.classList.add('detail-blank-tile');
         tileEl.style.background = 'var(--tile-color)';
         tileEl.setAttribute('data-player-id', tile.playerId);
+        if (tile.turnNumber != null) tileEl.setAttribute('data-turn-number', tile.turnNumber);
 
         const letterEl = document.createElement('span');
         letterEl.className = 'tile-letter';
@@ -617,7 +621,7 @@ function renderDetailBoard(game, container) {
       activeChipId = null;
       chipsDiv.querySelectorAll('.detail-player-chip').forEach(c => c.classList.remove('active'));
       grid.querySelectorAll('.detail-board-tile').forEach(t => t.classList.remove('detail-tile-highlighted', 'detail-tile-dimmed'));
-      turnHistoryPanel.querySelectorAll('.detail-turn-history-item').forEach(item => item.classList.remove('turn-selected'));
+      turnHistoryPanel.querySelectorAll('.detail-turn-history-item').forEach(item => item.classList.remove('turn-selected', 'turn-active'));
     }
 
     for (const p of sorted) {
@@ -635,6 +639,8 @@ function renderDetailBoard(game, container) {
           activeChipId = p.playerId;
           chipsDiv.querySelectorAll('.detail-player-chip').forEach(c => c.classList.remove('active'));
           chip.classList.add('active');
+          // Clear any active turn selection
+          turnHistoryPanel.querySelectorAll('.detail-turn-history-item').forEach(i => i.classList.remove('turn-active'));
           allTiles.forEach(t => {
             if (t.dataset.playerId === p.playerId) {
               t.classList.add('detail-tile-highlighted');
@@ -663,14 +669,41 @@ function renderDetailBoard(game, container) {
         document.removeEventListener('click', clickOutsideHandler);
         return;
       }
-      if (!chipsDiv.contains(e.target)) {
+      if (!chipsDiv.contains(e.target) && !turnHistoryPanel.contains(e.target)) {
         deselectPlayer();
       }
     };
     document.addEventListener('click', clickOutsideHandler);
 
     wrapper.appendChild(chipsDiv);
-  }
+
+    // Turn history item click — highlight only tiles placed in that specific turn
+    turnHistoryPanel.addEventListener('click', (e) => {
+      const item = e.target.closest('.detail-turn-history-item');
+      if (!item) return;
+      e.stopPropagation();
+      const turnNum = item.dataset.turnNumber;
+      if (!turnNum) return;
+      const allTiles = grid.querySelectorAll('.detail-board-tile');
+      const isAlreadyActive = item.classList.contains('turn-active');
+      // Clear all selection state
+      activeChipId = null;
+      chipsDiv.querySelectorAll('.detail-player-chip').forEach(c => c.classList.remove('active'));
+      turnHistoryPanel.querySelectorAll('.detail-turn-history-item').forEach(i => {
+        i.classList.remove('turn-active', 'turn-selected');
+      });
+      allTiles.forEach(t => t.classList.remove('detail-tile-highlighted', 'detail-tile-dimmed'));
+      if (!isAlreadyActive) {
+        item.classList.add('turn-active');
+        allTiles.forEach(t => {
+          if (t.dataset.turnNumber === turnNum) {
+            t.classList.add('detail-tile-highlighted');
+          } else if (t.dataset.playerId) {
+            t.classList.add('detail-tile-dimmed');
+          }
+        });
+      }
+    });
 
   container.appendChild(wrapper);
 }
