@@ -175,6 +175,9 @@ const gameManager = new GameManager();
 
 setupWebSocketHandlers(wss, gameManager);
 
+// Pre-warm the @logto/node dynamic ESM import so first sign-in is fast
+getNodeClientClass().catch(() => {});
+
 // Connect to MongoDB before starting the server
 connectToMongo()
   .then((db) => {

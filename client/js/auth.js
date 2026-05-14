@@ -8,7 +8,7 @@ window._authReady = new Promise(resolve => { _authResolve = resolve; });
 (async function initAuth() {
   try {
     const res = await fetch('/auth/me');
-    if (!res.ok) { _authResolve(); return; }
+    if (!res.ok) { document.getElementById('username-row').classList.remove('hidden'); _authResolve(); return; }
     const { isAuthenticated, user } = await res.json();
 
     if (isAuthenticated && user) {
@@ -36,9 +36,13 @@ window._authReady = new Promise(resolve => { _authResolve = resolve; });
         window.ws.send(JSON.stringify({ type: 'UPDATE_USER_ID', userId: window._logtoUserId }));
       }
     }
-    // If not signed in: the default username row (input + sign-in button) is already visible
+    } else {
+      // Not signed in — reveal the username/sign-in row
+      document.getElementById('username-row').classList.remove('hidden');
+    }
   } catch (_) {
-    // Auth endpoint unreachable — fail silently, game still works without auth
+    // Auth endpoint unreachable — reveal username row, game still works without auth
+    document.getElementById('username-row').classList.remove('hidden');
   }
   _authResolve();
 })();
