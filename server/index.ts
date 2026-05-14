@@ -130,7 +130,15 @@ const requireAuth: express.RequestHandler = (req, res, next) => {
   next();
 };
 
-app.get('/api/stats/games', withLogto(logtoConfig), requireAuth, async (req, res) => {
+// Prevent caching on all API routes
+const noCache: express.RequestHandler = (_req, res, next) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  next();
+};
+
+app.get('/api/stats/games', withLogto(logtoConfig), requireAuth, noCache, async (req, res) => {
   const userId = req.user.claims!.sub!;
   const page = Math.max(1, parseInt(req.query.page as string) || 1);
   const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
@@ -138,19 +146,19 @@ app.get('/api/stats/games', withLogto(logtoConfig), requireAuth, async (req, res
   res.json(result);
 });
 
-app.get('/api/stats/summary', withLogto(logtoConfig), requireAuth, async (req, res) => {
+app.get('/api/stats/summary', withLogto(logtoConfig), requireAuth, noCache, async (req, res) => {
   const userId = req.user.claims!.sub!;
   const result = await getUserStatsSummary(userId);
   res.json(result || { totalGames: 0, wins: 0, losses: 0, winRate: 0 });
 });
 
-app.get('/api/stats/opponents', withLogto(logtoConfig), requireAuth, async (req, res) => {
+app.get('/api/stats/opponents', withLogto(logtoConfig), requireAuth, noCache, async (req, res) => {
   const userId = req.user.claims!.sub!;
   const result = await getOpponentStats(userId);
   res.json(result);
 });
 
-app.get('/api/stats/games/:gameId', withLogto(logtoConfig), requireAuth, async (req, res) => {
+app.get('/api/stats/games/:gameId', withLogto(logtoConfig), requireAuth, noCache, async (req, res) => {
   const userId = req.user.claims!.sub!;
   const game = await getGameDetail(req.params.gameId as string, userId);
   if (!game) {
