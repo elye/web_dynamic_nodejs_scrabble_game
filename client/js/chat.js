@@ -209,8 +209,15 @@ function fetchWordDefinition(word, defElement) {
   
   // Check cache first
   if (wordDefCache[lowerWord] !== undefined) {
-    defElement.textContent = wordDefCache[lowerWord] || '';
-    if (!wordDefCache[lowerWord]) defElement.remove();
+    const cached = wordDefCache[lowerWord];
+    if (!cached) { defElement.remove(); return; }
+    defElement.textContent = cached.text;
+    if (cached.source) {
+      const src = document.createElement('span');
+      src.className = 'word-def-source';
+      src.textContent = ` [${cached.source}]`;
+      defElement.appendChild(src);
+    }
     return;
   }
 
@@ -225,7 +232,7 @@ function fetchWordDefinition(word, defElement) {
       const def = meaning?.definitions?.[0]?.definition;
       if (def) {
         const partOfSpeech = meaning.partOfSpeech ? `(${meaning.partOfSpeech}) ` : '';
-        return partOfSpeech + def;
+        return { text: partOfSpeech + def, source: null };
       }
       throw new Error('No definition');
     })
@@ -241,14 +248,20 @@ function fetchWordDefinition(word, defElement) {
             const parts = raw.split('\t');
             const pos = parts[0] ? `(${parts[0]}) ` : '';
             const def = parts[1] || raw;
-            return pos + def;
+            return { text: pos + def, source: 'Datamuse' };
           }
           throw new Error('No definition in fallback');
         })
     )
-    .then(text => {
-      wordDefCache[lowerWord] = text;
+    .then(({ text, source }) => {
+      wordDefCache[lowerWord] = { text, source };
       defElement.textContent = text;
+      if (source) {
+        const src = document.createElement('span');
+        src.className = 'word-def-source';
+        src.textContent = ` [${source}]`;
+        defElement.appendChild(src);
+      }
     })
     .catch(() => {
       wordDefCache[lowerWord] = '';
