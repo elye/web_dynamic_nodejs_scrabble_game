@@ -7,7 +7,7 @@ import expressSession from 'express-session';
 import MemoryStore from 'memorystore';
 import { withLogto } from '@logto/express';
 import type { default as NodeClientType } from '@logto/node';
-import { connectToMongo } from './db';
+import { connectToMongo, getDb } from './db';
 import { getUserGames, getGameDetail, getUserStatsSummary, getOpponentStats } from './gameStats';
 
 const SessionStore = MemoryStore(expressSession);
@@ -107,6 +107,37 @@ app.get('/sign-out', async (req, res) => {
 // Health check
 app.get('/health', (_req, res) => {
   res.send('ok');
+});
+
+// Temporary debug endpoint — no auth required
+app.get('/api/debug/stats', async (req, res) => {
+  const db = getDb();
+  if (!db) return res.json({ error: 'MongoDB not connected' });
+
+  const testUserId = req.query.userId as string;
+
+  const allGames = await db.collection('games').countDocuments();
+
+  const userIds = await db.collection('games').distinct('players.userId');
+
+  let matchingGames = 0;
+  if (testUserId) {
+    matchingGames = await db.collection('games').countDocuments({ 'players.userId': testUserId });
+  }
+
+  const sampleGame = await db.collection('games').findOne(
+    {},
+    { projection: { 'players.userId': 1, 'players.username': 1, 'players.playerId': 1 } }
+  );
+
+  res.json({
+    allGames,
+    userIds,
+    matchingGames,
+    queriedUserId: testUserId || 'none provided',
+    sampleGame,
+    mongoConnected: true,
+  });
 });
 
 // Auth status endpoint — returns the current user's info (or null if not signed in)
