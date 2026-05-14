@@ -124,6 +124,7 @@ app.get('/auth/me', withLogto(logtoConfig), (req, res) => {
 // Middleware: require authentication
 const requireAuth: express.RequestHandler = (req, res, next) => {
   if (!req.user?.isAuthenticated || !req.user?.claims?.sub) {
+    console.warn('[requireAuth] Rejected:', req.path, 'isAuthenticated:', req.user?.isAuthenticated);
     res.status(401).json({ error: 'Authentication required' });
     return;
   }
@@ -139,9 +140,14 @@ app.get('/api/stats/games', withLogto(logtoConfig), requireAuth, async (req, res
 });
 
 app.get('/api/stats/summary', withLogto(logtoConfig), requireAuth, async (req, res) => {
-  const userId = req.user.claims!.sub!;
-  const result = await getUserStatsSummary(userId);
-  res.json(result || { totalGames: 0, wins: 0, losses: 0, winRate: 0 });
+  try {
+    const userId = req.user.claims!.sub!;
+    const result = await getUserStatsSummary(userId);
+    res.json(result || { totalGames: 0, wins: 0, losses: 0, winRate: 0 });
+  } catch (err) {
+    console.error('Error loading stats summary:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 app.get('/api/stats/opponents', withLogto(logtoConfig), requireAuth, async (req, res) => {

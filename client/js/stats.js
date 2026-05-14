@@ -79,10 +79,14 @@ function showStatsError(section, message) {
 async function loadSummary() {
   try {
     const res = await fetch('/api/stats/summary');
-    if (!res.ok) throw new Error('Failed to load stats');
+    if (!res.ok) {
+      console.error('Stats summary failed:', res.status, await res.text().catch(() => ''));
+      throw new Error('Failed to load stats');
+    }
     const data = await res.json();
     renderSummary(data);
   } catch (err) {
+    console.error('Stats error:', err);
     showStatsError('summary-grid', 'Could not load stats summary. Make sure you are signed in.');
   }
 }
