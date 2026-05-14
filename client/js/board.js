@@ -134,7 +134,26 @@ function handleTileDrop(tileId, row, col) {
     const actualTileId = tileId.substring(6);
     const pendingIdx = pendingTiles.findIndex(t => t.tileId === actualTileId);
     if (pendingIdx === -1) return;
-    
+
+    const movingTile = pendingTiles[pendingIdx];
+
+    if (movingTile.isBlank) {
+      // Remove from pending and re-trigger blank letter selection at the new position
+      pendingTiles.splice(pendingIdx, 1);
+      const tileObj = {
+        id: movingTile.tileId,
+        letter: movingTile.letter,
+        points: movingTile.points,
+        isBlank: true,
+        chosenLetter: undefined,
+      };
+      if (isMyTurn() && window.ws && window.ws.readyState === WebSocket.OPEN) {
+        window.ws.send(JSON.stringify({ type: 'RECALL_TILE', tileId: movingTile.tileId }));
+      }
+      placeTileOnBoard(tileObj, row, col);
+      return;
+    }
+
     // Move the pending tile to the new position
     pendingTiles[pendingIdx].row = row;
     pendingTiles[pendingIdx].col = col;

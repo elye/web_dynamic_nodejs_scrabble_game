@@ -984,6 +984,12 @@ export class GameManager {
       }
     }
 
+    const firstTurn = game.turnHistory[0];
+    const lastActiveTurn = [...game.turnHistory].reverse().find(t => t.action === 'play' || t.action === 'pass' || t.action === 'exchange');
+    const totalTimeUsed = (firstTurn && lastActiveTurn && firstTurn !== lastActiveTurn)
+      ? Math.round((new Date(lastActiveTurn.timestamp).getTime() - new Date(firstTurn.timestamp).getTime()) / 1000)
+      : 0;
+
     saveGameRecord({
       gameId: game.roomId,
       players: playerRecords,
@@ -1000,6 +1006,7 @@ export class GameManager {
         totalPasses,
         totalExchanges,
         totalTilesUsed,
+        totalTimeUsed,
         bestWord: overallBestWord ? { word: overallBestWord.word, score: overallBestWord.score, player: overallBestWordPlayer?.username || '' } : null,
         bestTurn: overallBestTurn ? { turnNumber: overallBestTurn.turnNumber, score: overallBestTurn.totalScore, player: overallBestTurn.username } : null,
         longestWord: overallLongestWord ? { word: overallLongestWord.word, length: overallLongestWord.word.length, player: overallLongestWordPlayer?.username || '' } : null,

@@ -700,37 +700,7 @@ function renderGameDetail(game) {
   header.innerHTML = `<span class="detail-summary-date">${dateStr}</span>${reason ? `<span class="detail-summary-reason">${escapeHtml(reason)}</span>` : ''}`;
   summaryInner.appendChild(header);
 
-  // Score progression graph (placed AFTER header, BEFORE stats table)
-  const progression = game.scoreProgression;
-  let pendingGraphDraw = null;
-  if (progression && Object.keys(progression).length > 0) {
-    const graphDiv = document.createElement('div');
-    graphDiv.className = 'score-graph-section';
-    graphDiv.innerHTML = '<h3>Score Progression</h3>';
-
-    const canvas = document.createElement('canvas');
-    canvas.className = 'score-graph-canvas';
-    canvas.width = 600;
-    canvas.height = 240;
-    graphDiv.appendChild(canvas);
-
-    const legendDiv = document.createElement('div');
-    legendDiv.className = 'score-graph-legend';
-    for (const player of sorted) {
-      const color = getDetailColor(player.playerId);
-      legendDiv.innerHTML += `<span class="legend-item"><span class="legend-dot" style="background:${color}"></span>${escapeHtml(player.username)}</span>`;
-    }
-    legendDiv.innerHTML += `<span class="legend-item"><span class="legend-dot" style="background:#FFD700"></span>Bingo</span>`;
-    legendDiv.innerHTML += `<span class="legend-item"><span style="font-size:0.8rem;color:#e74c3c">✕</span> Pass/Exchange</span>`;
-    legendDiv.innerHTML += `<span class="legend-item"><span style="font-size:0.8rem;color:#ff6b35">▼</span> Timeout</span>`;
-    graphDiv.appendChild(legendDiv);
-    summaryInner.appendChild(graphDiv);
-
-    const graphPlayers = sorted.map(p => ({ ...p, id: p.playerId }));
-    pendingGraphDraw = () => drawDetailScoreGraph(canvas, graphPlayers, progression, game.turnEvents || []);
-  }
-
-  // Stats table — appended AFTER the graph
+  // Stats table
   const table = document.createElement('table');
   table.className = 'summary-table';
 
@@ -802,6 +772,36 @@ function renderGameDetail(game) {
       </div>
     `;
     summaryInner.appendChild(overallDiv);
+  }
+
+  // Score progression graph — appended LAST so it appears below Game Overview
+  const progression = game.scoreProgression;
+  let pendingGraphDraw = null;
+  if (progression && Object.keys(progression).length > 0) {
+    const graphDiv = document.createElement('div');
+    graphDiv.className = 'score-graph-section';
+    graphDiv.innerHTML = '<h3>Score Progression</h3>';
+
+    const canvas = document.createElement('canvas');
+    canvas.className = 'score-graph-canvas';
+    canvas.width = 600;
+    canvas.height = 240;
+    graphDiv.appendChild(canvas);
+
+    const legendDiv = document.createElement('div');
+    legendDiv.className = 'score-graph-legend';
+    for (const player of sorted) {
+      const color = getDetailColor(player.playerId);
+      legendDiv.innerHTML += `<span class="legend-item"><span class="legend-dot" style="background:${color}"></span>${escapeHtml(player.username)}</span>`;
+    }
+    legendDiv.innerHTML += `<span class="legend-item"><span class="legend-dot" style="background:#FFD700"></span>Bingo</span>`;
+    legendDiv.innerHTML += `<span class="legend-item"><span style="font-size:0.8rem;color:#e74c3c">✕</span> Pass/Exchange</span>`;
+    legendDiv.innerHTML += `<span class="legend-item"><span style="font-size:0.8rem;color:#ff6b35">▼</span> Timeout</span>`;
+    graphDiv.appendChild(legendDiv);
+    summaryInner.appendChild(graphDiv);
+
+    const graphPlayers = sorted.map(p => ({ ...p, id: p.playerId }));
+    pendingGraphDraw = () => drawDetailScoreGraph(canvas, graphPlayers, progression, game.turnEvents || []);
   }
 
   summaryPanel.appendChild(summaryInner);

@@ -613,6 +613,11 @@ input[type="text"]:focus {
   background: #c9a83a;
 }
 
+.board-tile.blank-tile .tile-letter {
+  color: #e74c3c;
+  font-style: italic;
+}
+
 @keyframes tilePlace {
   from { transform: scale(0.9); opacity: 0.7; }
   to { transform: scale(1); opacity: 1; }
@@ -715,6 +720,11 @@ input[type="text"]:focus {
 }
 .rack-tile.blank-tile {
   background: #c9a83a;
+}
+
+.rack-tile.blank-tile .tile-letter {
+  color: #e74c3c;
+  font-style: italic;
 }
 
 .rack-slot-empty {
