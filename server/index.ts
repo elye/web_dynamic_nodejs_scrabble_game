@@ -124,7 +124,6 @@ app.get('/auth/me', withLogto(logtoConfig), (req, res) => {
 // Middleware: require authentication
 const requireAuth: express.RequestHandler = (req, res, next) => {
   if (!req.user?.isAuthenticated || !req.user?.claims?.sub) {
-    console.warn('[requireAuth] Rejected:', req.path, 'isAuthenticated:', req.user?.isAuthenticated);
     res.status(401).json({ error: 'Authentication required' });
     return;
   }
