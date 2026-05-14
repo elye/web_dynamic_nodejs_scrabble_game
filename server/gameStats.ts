@@ -73,7 +73,7 @@ export async function getUserGames(
     .limit(limit)
     .project({
       gameId: 1,
-      players: { userId: 1, username: 1, score: 1, isAI: 1 },
+      players: { userId: 1, playerId: 1, username: 1, score: 1, isAI: 1 },
       winnerId: 1,
       winnerUsername: 1,
       reason: 1,
