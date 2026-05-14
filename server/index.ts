@@ -7,7 +7,7 @@ import expressSession from 'express-session';
 import MemoryStore from 'memorystore';
 import { withLogto } from '@logto/express';
 import type { default as NodeClientType } from '@logto/node';
-import { connectToMongo, getDb } from './db';
+import { connectToMongo } from './db';
 import { getUserGames, getGameDetail, getUserStatsSummary, getOpponentStats } from './gameStats';
 
 const SessionStore = MemoryStore(expressSession);
@@ -109,37 +109,6 @@ app.get('/health', (_req, res) => {
   res.send('ok');
 });
 
-// Temporary debug endpoint — no auth required
-app.get('/api/debug/stats', async (req, res) => {
-  const db = getDb();
-  if (!db) return res.json({ error: 'MongoDB not connected' });
-
-  const testUserId = req.query.userId as string;
-
-  const allGames = await db.collection('games').countDocuments();
-
-  const userIds = await db.collection('games').distinct('players.userId');
-
-  let matchingGames = 0;
-  if (testUserId) {
-    matchingGames = await db.collection('games').countDocuments({ 'players.userId': testUserId });
-  }
-
-  const sampleGame = await db.collection('games').findOne(
-    {},
-    { projection: { 'players.userId': 1, 'players.username': 1, 'players.playerId': 1 } }
-  );
-
-  res.json({
-    allGames,
-    userIds,
-    matchingGames,
-    queriedUserId: testUserId || 'none provided',
-    sampleGame,
-    mongoConnected: true,
-  });
-});
-
 // Auth status endpoint — returns the current user's info (or null if not signed in)
 app.get('/auth/me', withLogto(logtoConfig), (req, res) => {
   const { isAuthenticated, claims } = req.user;
@@ -161,15 +130,7 @@ const requireAuth: express.RequestHandler = (req, res, next) => {
   next();
 };
 
-// Prevent caching on all API routes
-const noCache: express.RequestHandler = (_req, res, next) => {
-  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-  res.setHeader('Pragma', 'no-cache');
-  res.setHeader('Expires', '0');
-  next();
-};
-
-app.get('/api/stats/games', withLogto(logtoConfig), requireAuth, noCache, async (req, res) => {
+app.get('/api/stats/games', withLogto(logtoConfig), requireAuth, async (req, res) => {
   const userId = req.user.claims!.sub!;
   const page = Math.max(1, parseInt(req.query.page as string) || 1);
   const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
@@ -177,19 +138,19 @@ app.get('/api/stats/games', withLogto(logtoConfig), requireAuth, noCache, async 
   res.json(result);
 });
 
-app.get('/api/stats/summary', withLogto(logtoConfig), requireAuth, noCache, async (req, res) => {
+app.get('/api/stats/summary', withLogto(logtoConfig), requireAuth, async (req, res) => {
   const userId = req.user.claims!.sub!;
   const result = await getUserStatsSummary(userId);
   res.json(result || { totalGames: 0, wins: 0, losses: 0, winRate: 0 });
 });
 
-app.get('/api/stats/opponents', withLogto(logtoConfig), requireAuth, noCache, async (req, res) => {
+app.get('/api/stats/opponents', withLogto(logtoConfig), requireAuth, async (req, res) => {
   const userId = req.user.claims!.sub!;
   const result = await getOpponentStats(userId);
   res.json(result);
 });
 
-app.get('/api/stats/games/:gameId', withLogto(logtoConfig), requireAuth, noCache, async (req, res) => {
+app.get('/api/stats/games/:gameId', withLogto(logtoConfig), requireAuth, async (req, res) => {
   const userId = req.user.claims!.sub!;
   const game = await getGameDetail(req.params.gameId as string, userId);
   if (!game) {
@@ -199,14 +160,8 @@ app.get('/api/stats/games/:gameId', withLogto(logtoConfig), requireAuth, noCache
   res.json(game);
 });
 
-// Static files — no caching for HTML/JS/CSS to avoid stale deployments
-app.use(express.static(clientDir, {
-  setHeaders: (res, filePath) => {
-    if (filePath.endsWith('.html') || filePath.endsWith('.js') || filePath.endsWith('.css')) {
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    }
-  }
-}));
+// Static files
+app.use(express.static(clientDir));
 
 // SPA fallback (Express 5 compatible: use app.use instead of app.get('*'))
 app.use((_req, res) => {
