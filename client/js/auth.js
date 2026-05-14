@@ -43,8 +43,10 @@ function showSignedOut() {
     } else {
       // Not authenticated on server — check if user was previously signed in
       if (localStorage.getItem('scrabble_was_signed_in') === '1') {
-        // Auto re-authenticate: redirect to /sign-in (Logto will auto-complete)
+        // Show loading overlay and auto re-authenticate
         localStorage.removeItem('scrabble_was_signed_in');
+        const authOverlay = document.getElementById('auth-overlay');
+        if (authOverlay) authOverlay.style.display = 'flex';
         window.location.href = '/sign-in';
         return; // page will navigate away
       }
