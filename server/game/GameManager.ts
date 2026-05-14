@@ -120,7 +120,7 @@ export class GameManager {
     game.addPlayer(playerId, socket.toString(), username, avatar, elo);
     const aiId = uuidv4();
     const aiLabel = aiDifficulty.charAt(0).toUpperCase() + aiDifficulty.slice(1);
-    game.addPlayer(aiId, '', `AI Bot (${aiLabel})`, '🤖', 1200, true, aiDifficulty);
+    game.addPlayer(aiId, '', `AI ${aiLabel}`, '🤖', 1200, true, aiDifficulty);
 
     const room: Room = { id: roomId, hostId: playerId, game, settings, isSolo: true };
     this.rooms.set(roomId, room);
@@ -201,10 +201,7 @@ export class GameManager {
 
     const aiId = uuidv4();
     const diffLabel = aiDifficulty.charAt(0).toUpperCase() + aiDifficulty.slice(1);
-    const aiBaseNames = ['Bot', 'Alpha', 'Beta', 'Gamma'];
-    const aiCount = room.game.players.filter(p => p.isAI).length;
-    const aiBaseName = aiBaseNames[aiCount] || `${aiCount + 1}`;
-    const aiName = `AI ${aiBaseName} (${diffLabel})`;
+    const aiName = `AI ${diffLabel}`;
     
     const player = room.game.addPlayer(aiId, '', aiName, '🤖', 1200, true, aiDifficulty);
     if (!player) return false;
