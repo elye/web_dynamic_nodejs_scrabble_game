@@ -4,12 +4,11 @@
 
 let statsCurrentPage = 1;
 let statsTotalPages = 1;
-let statsLoaded = false;
 
 function initStats() {
   document.getElementById('stats-btn').addEventListener('click', () => {
     showScreen('stats-screen');
-    if (!statsLoaded) loadStats();
+    loadStats();
   });
 
   document.getElementById('stats-back-btn').addEventListener('click', () => {
@@ -50,7 +49,6 @@ function switchDetailTab(tab) {
 }
 
 async function loadStats() {
-  statsLoaded = true;
   showStatsLoading(true);
   await Promise.all([loadSummary(), loadGames(), loadOpponents()]);
   showStatsLoading(false);
