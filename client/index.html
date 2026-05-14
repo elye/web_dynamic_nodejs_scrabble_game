@@ -385,9 +385,18 @@
 
   <!-- Game Detail Modal -->
   <div id="stats-detail-modal" class="modal hidden">
-    <div class="modal-content modal-wide">
-      <h2>Game Details</h2>
-      <div id="stats-detail-content"></div>
+    <div class="modal-content modal-extra-wide">
+      <div class="detail-modal-header">
+        <h2>Game Details</h2>
+        <div class="detail-tabs">
+          <button id="detail-tab-summary-btn" class="detail-tab-btn active">📊 Summary</button>
+          <button id="detail-tab-board-btn" class="detail-tab-btn">♟ Board</button>
+        </div>
+      </div>
+      <div id="stats-detail-content">
+        <div id="stats-detail-summary-panel" class="detail-tab-panel"></div>
+        <div id="stats-detail-board-panel" class="detail-tab-panel hidden"></div>
+      </div>
       <div class="modal-actions">
         <button id="stats-detail-close-btn" class="btn btn-outlined">Close</button>
       </div>
