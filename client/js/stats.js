@@ -139,7 +139,7 @@ function renderSummary(data) {
     </div>
     <div class="stats-stat-card">
       <span class="stats-stat-val">${bestTurn ? bestTurn.score : '-'}</span>
-      <span class="stats-stat-lbl">Best Turn</span>
+      <span class="stats-stat-lbl">Best Turn Score</span>
     </div>
   `;
 }
