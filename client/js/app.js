@@ -234,6 +234,10 @@ function handleMessage(msg) {
 }
 
 function handleGameState(msg) {
+  // Don't drag user back to finished game if they already returned to lobby
+  if (msg.status === 'finished' && gameStatus === 'lobby') {
+    return;
+  }
   gameStatus = msg.status;
   
   // Clear client-side pending tiles (will restore from server state below if needed)
@@ -475,6 +479,12 @@ function initGameActions() {
   
   // Endgame buttons
   document.getElementById('back-menu-btn').addEventListener('click', () => {
+    if (window.ws && window.ws.readyState === WebSocket.OPEN) {
+      window.ws.send(JSON.stringify({ type: 'LEAVE_ROOM' }));
+    }
+    const url = new URL(window.location);
+    url.searchParams.delete('room');
+    window.history.replaceState({}, '', url);
     showScreen('lobby-screen');
     gameStatus = 'lobby';
   });

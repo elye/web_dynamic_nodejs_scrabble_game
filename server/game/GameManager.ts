@@ -721,7 +721,10 @@ export class GameManager {
       this.sendToPlayer(playerId, 'RECONNECTED', room.game.getStateForPlayer(playerId));
       this.broadcastToRoom(roomId, 'PLAYER_RECONNECTED', { playerId }, playerId);
     } else if (room.game.status === 'finished') {
-      this.sendToPlayer(playerId, 'RECONNECTED', room.game.getStateForPlayer(playerId));
+      // Don't drag user back to finished game — clean up and return false
+      this.playerRooms.delete(playerId);
+      this.updateSessionRoom(playerId, undefined);
+      return false;
     }
 
     return true;
