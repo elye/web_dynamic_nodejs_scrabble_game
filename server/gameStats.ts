@@ -36,7 +36,10 @@ export interface GameRecord {
 export async function saveGameRecord(record: GameRecord): Promise<void> {
   try {
     const db = getDb();
-    if (!db) return;
+    if (!db) {
+      console.warn('⚠️ MongoDB not connected — game stats not saved');
+      return;
+    }
 
     await db.collection('games').insertOne({
       ...record,

@@ -175,12 +175,22 @@ const gameManager = new GameManager();
 
 setupWebSocketHandlers(wss, gameManager);
 
-server.listen(PORT, () => {
-  console.log(`🎮 Scrabble server running on http://localhost:${PORT}`);
-  console.log(`🔌 WebSocket server ready`);
-  // Connect to MongoDB in background (non-blocking)
-  connectToMongo().catch(() => {});
-});
+// Connect to MongoDB before starting the server
+connectToMongo()
+  .then((db) => {
+    if (!db) {
+      console.warn('⚠️  Server starting without MongoDB — game stats will not be saved');
+    }
+  })
+  .catch((err) => {
+    console.warn('⚠️  MongoDB connection failed — server starting without stats:', err);
+  })
+  .finally(() => {
+    server.listen(PORT, () => {
+      console.log(`🎮 Scrabble server running on http://localhost:${PORT}`);
+      console.log(`🔌 WebSocket server ready`);
+    });
+  });
 
 // Ping/pong keepalive to detect dead connections
 const PING_INTERVAL = 15000;

@@ -16,24 +16,39 @@ export async function connectToMongo(): Promise<Db | null> {
     return null;
   }
 
-  try {
-    client = new MongoClient(MONGODB_URI);
-    await client.connect();
-    db = client.db(DB_NAME);
-    console.log('📦 Connected to MongoDB');
+  const MAX_RETRIES = 3;
+  const RETRY_DELAY_MS = 2000;
 
-    // Create indexes for efficient queries
-    await db.collection('games').createIndex({ 'players.userId': 1, endedAt: -1 });
-    await db.collection('games').createIndex({ gameId: 1 }, { unique: true });
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      client = new MongoClient(MONGODB_URI, {
+        serverSelectionTimeoutMS: 5000,
+        connectTimeoutMS: 5000,
+      });
+      await client.connect();
+      db = client.db(DB_NAME);
+      console.log('📦 Connected to MongoDB');
 
-    return db;
-  } catch (err) {
-    console.error('❌ MongoDB connection failed — game stats will not be saved:', err);
-    connectionFailed = true;
-    client = null;
-    db = null;
-    return null;
+      // Create indexes for efficient queries
+      await db.collection('games').createIndex({ 'players.userId': 1, endedAt: -1 });
+      await db.collection('games').createIndex({ gameId: 1 }, { unique: true });
+
+      return db;
+    } catch (err) {
+      console.error(`❌ MongoDB connection attempt ${attempt}/${MAX_RETRIES} failed:`, err);
+      client = null;
+      db = null;
+
+      if (attempt < MAX_RETRIES) {
+        console.log(`⏳ Retrying in ${RETRY_DELAY_MS / 1000}s...`);
+        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+      }
+    }
   }
+
+  console.error('❌ MongoDB connection failed after all retries — game stats will not be saved');
+  connectionFailed = true;
+  return null;
 }
 
 export function getDb(): Db | null {
