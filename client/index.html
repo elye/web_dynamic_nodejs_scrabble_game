@@ -44,6 +44,7 @@
           <button id="solo-btn" class="btn btn-accent btn-large">🤖 Solo (vs AI)</button>
           <button id="multiplayer-btn" class="btn btn-accent btn-large">👥 Multiplayer</button>
           <button id="join-game-btn" class="btn btn-outlined btn-large">🔗 Join Game</button>
+          <button id="stats-btn" class="btn btn-outlined btn-large hidden">📊 My Stats</button>
         </div>
       </div>
 
@@ -316,6 +317,83 @@
     </div>
   </div>
 
+  <!-- STATS SCREEN -->
+  <div id="stats-screen" class="screen">
+    <div class="stats-container">
+      <div class="stats-header">
+        <button id="stats-back-btn" class="btn btn-outlined">← Back</button>
+        <h1 class="stats-title">📊 My Stats</h1>
+      </div>
+
+      <div id="stats-loading" class="stats-loading">
+        <div class="reconnect-spinner"></div>
+        <span>Loading stats...</span>
+      </div>
+
+      <div id="stats-content" class="stats-content hidden">
+        <!-- Summary -->
+        <section class="stats-section">
+          <h2 class="stats-section-title">Overview</h2>
+          <div id="stats-summary-grid" class="stats-summary-grid"></div>
+        </section>
+
+        <!-- Past Games -->
+        <section class="stats-section">
+          <h2 class="stats-section-title">Past Games</h2>
+          <div class="stats-table-wrap">
+            <table class="stats-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Opponent</th>
+                  <th>Score</th>
+                  <th>Result</th>
+                  <th>End Reason</th>
+                </tr>
+              </thead>
+              <tbody id="stats-games-body"></tbody>
+            </table>
+          </div>
+          <div class="stats-pagination">
+            <button id="stats-prev-btn" class="btn btn-sm btn-outlined" disabled>← Prev</button>
+            <span id="stats-page-info" class="stats-page-info">Page 1 of 1</span>
+            <button id="stats-next-btn" class="btn btn-sm btn-outlined" disabled>Next →</button>
+          </div>
+        </section>
+
+        <!-- Opponents -->
+        <section class="stats-section">
+          <h2 class="stats-section-title">Opponents</h2>
+          <div class="stats-table-wrap">
+            <table class="stats-table">
+              <thead>
+                <tr>
+                  <th>Opponent</th>
+                  <th>Wins</th>
+                  <th>Losses</th>
+                  <th>Draws</th>
+                  <th>Last Played</th>
+                </tr>
+              </thead>
+              <tbody id="stats-opponents-body"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Detail Modal -->
+  <div id="stats-detail-modal" class="modal hidden">
+    <div class="modal-content modal-wide">
+      <h2>Game Details</h2>
+      <div id="stats-detail-content"></div>
+      <div class="modal-actions">
+        <button id="stats-detail-close-btn" class="btn btn-outlined">Close</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Reconnecting overlay -->
   <div id="reconnect-overlay" class="reconnect-overlay" style="display:none">
     <div class="reconnect-message">
@@ -331,6 +409,7 @@
   <script src="js/rack.js"></script>
   <script src="js/scoreboard.js"></script>
   <script src="js/chat.js"></script>
+  <script src="js/stats.js"></script>
   <script src="js/lobby.js"></script>
 </body>
 </html>

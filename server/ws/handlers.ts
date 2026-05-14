@@ -22,7 +22,8 @@ export function setupWebSocketHandlers(wss: WebSocket.Server, gameManager: GameM
               sessionId, ws,
               message.username || 'Player',
               message.avatar || '',
-              message.elo || 1200
+              message.elo || 1200,
+              message.userId
             );
             playerId = result.playerId;
 

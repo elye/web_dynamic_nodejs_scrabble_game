@@ -1602,3 +1602,250 @@ input[type="text"]:focus {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* ============================================
+   Stats Screen
+   ============================================ */
+.stats-container {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+  min-height: 100vh;
+}
+
+.stats-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stats-title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--tile-color), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.stats-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 4rem 0;
+  color: var(--text-muted);
+}
+
+.stats-section {
+  margin-bottom: 2rem;
+}
+
+.stats-section-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 0.8rem;
+  color: var(--text-primary);
+}
+
+.stats-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.8rem;
+}
+
+.stats-stat-card {
+  background: var(--bg-secondary);
+  border-radius: 10px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.stats-stat-val {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.stats-stat-lbl {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-align: center;
+}
+
+.stats-val-win { color: var(--success); }
+.stats-val-loss { color: var(--danger); }
+
+/* Stats tables */
+.stats-table-wrap {
+  overflow-x: auto;
+}
+
+.stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-secondary);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.stats-table th,
+.stats-table td {
+  padding: 0.6rem 0.8rem;
+  text-align: left;
+  font-size: 0.88rem;
+}
+
+.stats-table thead th {
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.stats-table tbody tr {
+  border-top: 1px solid var(--cell-border);
+}
+
+.stats-game-row {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.stats-game-row:hover {
+  background: var(--bg-tertiary);
+}
+
+.stats-table-empty {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 2rem 1rem !important;
+}
+
+.stats-result-win {
+  color: var(--success);
+  font-weight: 700;
+}
+
+.stats-result-loss {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.stats-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 0.8rem;
+}
+
+.stats-page-info {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.stats-error {
+  color: var(--danger);
+  text-align: center;
+  padding: 1rem;
+}
+
+/* Game Detail Modal */
+.stats-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.stats-detail-date {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.stats-detail-reason {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  background: var(--bg-tertiary);
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+}
+
+.stats-detail-players {
+  display: flex;
+  gap: 0.8rem;
+  margin-bottom: 1.2rem;
+  flex-wrap: wrap;
+}
+
+.stats-detail-player {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--bg-tertiary);
+  padding: 0.5rem 0.8rem;
+  border-radius: 8px;
+  flex: 1;
+  min-width: 120px;
+}
+
+.stats-detail-player.winner {
+  border: 1px solid var(--accent);
+}
+
+.stats-detail-player-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  flex: 1;
+}
+
+.stats-detail-player-score {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.stats-detail-table {
+  margin-bottom: 1rem;
+}
+
+.stats-detail-table th,
+.stats-detail-table td {
+  text-align: center;
+}
+
+.stats-detail-table td:first-child,
+.stats-detail-table th:first-child {
+  text-align: left;
+}
+
+.stats-detail-summary {
+  display: flex;
+  gap: 1.5rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+@media (max-width: 600px) {
+  .stats-container {
+    padding: 1rem;
+  }
+  .stats-summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .stats-title {
+    font-size: 1.3rem;
+  }
+}

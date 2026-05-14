@@ -47,6 +47,7 @@ function connectWebSocket() {
       sessionId: getSessionId(),
       username,
       avatar: '',
+      userId: window._logtoUserId || undefined,
     }));
 
     // Detect stale connections (no message in 120s means connection likely dropped)
@@ -796,6 +797,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initRack();
   initChat();
   initLobby();
+  initStats();
   initGameActions();
   connectWebSocket();
 });

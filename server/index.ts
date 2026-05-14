@@ -7,6 +7,8 @@ import expressSession from 'express-session';
 import MemoryStore from 'memorystore';
 import { withLogto } from '@logto/express';
 import type { default as NodeClientType } from '@logto/node';
+import { connectToMongo } from './db';
+import { getUserGames, getGameDetail, getUserStatsSummary, getOpponentStats } from './gameStats';
 
 const SessionStore = MemoryStore(expressSession);
 
@@ -117,6 +119,47 @@ app.get('/auth/me', withLogto(logtoConfig), (req, res) => {
   res.json({ isAuthenticated: true, user: { sub: claims?.sub, name: claims?.name, email: claims?.email } });
 });
 
+// --- Stats API (protected — logged-in users only) ---
+
+// Middleware: require authentication
+const requireAuth: express.RequestHandler = (req, res, next) => {
+  if (!req.user?.isAuthenticated || !req.user?.claims?.sub) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
+  next();
+};
+
+app.get('/api/stats/games', withLogto(logtoConfig), requireAuth, async (req, res) => {
+  const userId = req.user.claims!.sub!;
+  const page = Math.max(1, parseInt(req.query.page as string) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
+  const result = await getUserGames(userId, page, limit);
+  res.json(result);
+});
+
+app.get('/api/stats/summary', withLogto(logtoConfig), requireAuth, async (req, res) => {
+  const userId = req.user.claims!.sub!;
+  const result = await getUserStatsSummary(userId);
+  res.json(result || { totalGames: 0, wins: 0, losses: 0, winRate: 0 });
+});
+
+app.get('/api/stats/opponents', withLogto(logtoConfig), requireAuth, async (req, res) => {
+  const userId = req.user.claims!.sub!;
+  const result = await getOpponentStats(userId);
+  res.json(result);
+});
+
+app.get('/api/stats/games/:gameId', withLogto(logtoConfig), requireAuth, async (req, res) => {
+  const userId = req.user.claims!.sub!;
+  const game = await getGameDetail(req.params.gameId as string, userId);
+  if (!game) {
+    res.status(404).json({ error: 'Game not found' });
+    return;
+  }
+  res.json(game);
+});
+
 // Static files
 app.use(express.static(clientDir));
 
@@ -135,6 +178,8 @@ setupWebSocketHandlers(wss, gameManager);
 server.listen(PORT, () => {
   console.log(`🎮 Scrabble server running on http://localhost:${PORT}`);
   console.log(`🔌 WebSocket server ready`);
+  // Connect to MongoDB in background (non-blocking)
+  connectToMongo().catch(() => {});
 });
 
 // Ping/pong keepalive to detect dead connections

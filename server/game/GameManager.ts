@@ -3,6 +3,7 @@ import { GameState, GameSettings, Player } from './GameState';
 import { Validator } from './Validator';
 import { AI } from './AI';
 import WebSocket from 'ws';
+import { saveGameRecord, GamePlayerRecord } from '../gameStats';
 
 export interface Room {
   id: string;
@@ -19,6 +20,7 @@ interface SessionInfo {
   avatar: string;
   elo: number;
   roomId?: string;
+  userId?: string; // Logto sub — present only for logged-in players
 }
 
 export class GameManager {
@@ -53,7 +55,7 @@ export class GameManager {
 
   // --- Session management ---
 
-  resolveSession(sessionId: string, socket: WebSocket, username: string, avatar: string, elo: number): { playerId: string; reconnected: boolean; roomId?: string } {
+  resolveSession(sessionId: string, socket: WebSocket, username: string, avatar: string, elo: number, userId?: string): { playerId: string; reconnected: boolean; roomId?: string } {
     const existing = this.sessions.get(sessionId);
 
     if (existing) {
@@ -68,6 +70,7 @@ export class GameManager {
       existing.username = username || existing.username;
       existing.avatar = avatar || existing.avatar;
       existing.elo = elo || existing.elo;
+      if (userId) existing.userId = userId;
 
       // Re-bind socket
       this.playerSockets.set(existing.playerId, socket);
@@ -85,7 +88,7 @@ export class GameManager {
 
     // New session
     const playerId = uuidv4();
-    this.sessions.set(sessionId, { playerId, username, avatar, elo });
+    this.sessions.set(sessionId, { playerId, username, avatar, elo, userId });
     this.playerSessions.set(playerId, sessionId);
     this.playerSockets.set(playerId, socket);
     this.socketPlayers.set(socket, playerId);
@@ -830,6 +833,9 @@ export class GameManager {
     const room = this.rooms.get(roomId);
     if (!room) return;
 
+    // Save game stats to MongoDB if at least 1 logged-in player
+    this.saveGameStats(room);
+
     // Clean up finished room after 30 minutes
     setTimeout(() => {
       const r = this.rooms.get(roomId);
@@ -843,6 +849,101 @@ export class GameManager {
       }
       this.rooms.delete(roomId);
     }, 30 * 60 * 1000);
+  }
+
+  private saveGameStats(room: Room): void {
+    const game = room.game;
+
+    // Build player records and check for logged-in players
+    let hasLoggedInPlayer = false;
+    const playerRecords: GamePlayerRecord[] = game.players.map(p => {
+      const sessionId = this.playerSessions.get(p.id);
+      const session = sessionId ? this.sessions.get(sessionId) : undefined;
+      const userId = session?.userId;
+      if (userId) hasLoggedInPlayer = true;
+
+      return {
+        playerId: p.id,
+        userId,
+        username: p.username,
+        avatar: p.avatar,
+        elo: p.elo,
+        score: p.score,
+        isAI: p.isAI,
+        aiDifficulty: p.aiDifficulty,
+        stats: {}, // filled below from the GAME_OVER payload data
+      };
+    });
+
+    if (!hasLoggedInPlayer) return;
+
+    // Recompute the same stats/summary that endGame sends in GAME_OVER
+    // We can access them from the game's state directly
+    const finalScores: { [id: string]: number } = {};
+    for (const p of game.players) {
+      finalScores[p.id] = p.score;
+    }
+    const winner = game.players.reduce((best, p) =>
+      p.score > best.score ? p : best,
+      game.players[0]
+    );
+
+    // Per-player stats (mirrors endGame logic)
+    for (const rec of playerRecords) {
+      const p = game.players.find(pl => pl.id === rec.playerId);
+      if (!p) continue;
+      const playerTurns = game.turnHistory.filter(t => t.playerId === p.id && t.action === 'play');
+      const allWords = playerTurns.flatMap(t => t.wordsFormed || []);
+      const bestWord = allWords.length > 0
+        ? allWords.reduce((best, w) => w.score > best.score ? w : best, allWords[0])
+        : null;
+      const bestTurn = playerTurns.length > 0
+        ? playerTurns.reduce((best, t) => t.totalScore > best.totalScore ? t : best, playerTurns[0])
+        : null;
+      const longestWord = allWords.length > 0
+        ? allWords.reduce((best, w) => w.word.length > best.word.length ? w : best, allWords[0])
+        : null;
+      const totalTurns = game.turnHistory.filter(t => t.playerId === p.id).length;
+      const playTurns = playerTurns.length;
+      const avgScore = playTurns > 0 ? Math.round(playerTurns.reduce((sum, t) => sum + t.totalScore, 0) / playTurns) : 0;
+      const bingoCount = playerTurns.filter(t => (t.tilesPlayed?.length || 0) === 7).length;
+      const passCount = game.turnHistory.filter(t => t.playerId === p.id && t.action === 'pass').length;
+      const exchangeCount = game.turnHistory.filter(t => t.playerId === p.id && t.action === 'exchange').length;
+      const tilesUsed = playerTurns.reduce((sum, t) => sum + (t.tilesPlayed?.length || 0), 0);
+
+      rec.stats = {
+        score: p.score,
+        bestWord: bestWord ? { word: bestWord.word, score: bestWord.score } : null,
+        bestTurn: bestTurn ? { turnNumber: bestTurn.turnNumber, score: bestTurn.totalScore } : null,
+        longestWord: longestWord ? { word: longestWord.word, length: longestWord.word.length } : null,
+        totalWords: allWords.length,
+        totalTurns,
+        playTurns,
+        avgScorePerTurn: avgScore,
+        bingoCount,
+        passCount,
+        exchangeCount,
+        tilesUsed,
+      };
+    }
+
+    saveGameRecord({
+      gameId: game.roomId,
+      players: playerRecords,
+      winnerId: winner.id,
+      winnerUsername: winner.username,
+      reason: game.status === 'finished' ? 'completed' : 'unknown',
+      gameSummary: {
+        totalTurns: game.turnHistory.length,
+        totalWordsPlayed: game.turnHistory.filter(t => t.action === 'play').flatMap(t => t.wordsFormed || []).length,
+      },
+      scoreProgression: null,
+      turnEvents: null,
+      turnHistory: game.turnHistory,
+      settings: game.settings,
+      isSolo: game.players.filter(p => !p.isAI).length === 1 && game.players.some(p => p.isAI),
+      endedAt: new Date(),
+    });
   }
 
   getRoomState(room: Room): any {
