@@ -2274,9 +2274,3 @@ input[type="text"]:focus {
   background: color-mix(in srgb, var(--turn-selected-color, #fff) 10%, transparent);
 }
 
-.detail-turn-history-item.turn-active {
-  border-left: 3px solid #f39c12;
-  padding-left: 5px;
-  background: rgba(243, 156, 18, 0.15);
-}
-
