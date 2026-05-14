@@ -96,6 +96,15 @@ export class GameManager {
     return { playerId, reconnected: false };
   }
 
+  updateUserId(playerId: string, userId: string): void {
+    const sessionId = this.playerSessions.get(playerId);
+    if (!sessionId) return;
+    const session = this.sessions.get(sessionId);
+    if (session) {
+      session.userId = userId;
+    }
+  }
+
   // --- Solo game (atomic: create + add AI + start) ---
 
   createSoloGame(playerId: string, socket: WebSocket, username: string, avatar: string, elo: number, aiDifficulty: 'easy' | 'medium' | 'hard', timeLimit: number, randomOrder: boolean = false): Room {

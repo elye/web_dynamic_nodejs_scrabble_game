@@ -237,6 +237,14 @@ export function setupWebSocketHandlers(wss: WebSocket.Server, gameManager: GameM
             break;
           }
 
+          case 'UPDATE_USER_ID': {
+            if (!playerId) return;
+            if (message.userId && typeof message.userId === 'string') {
+              gameManager.updateUserId(playerId, message.userId);
+            }
+            break;
+          }
+
           case 'GET_ROOMS': {
             ws.send(JSON.stringify({
               type: 'LOBBY_STATE',

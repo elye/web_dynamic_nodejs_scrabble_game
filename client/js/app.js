@@ -792,12 +792,19 @@ function showRoundSummary() {
 // Initialize
 // ============================================
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   initBoard();
   initRack();
   initChat();
   initLobby();
   initStats();
   initGameActions();
+
+  // Wait for auth check before connecting (with 2s timeout)
+  await Promise.race([
+    window._authReady || Promise.resolve(),
+    new Promise(resolve => setTimeout(resolve, 2000)),
+  ]);
+
   connectWebSocket();
 });
