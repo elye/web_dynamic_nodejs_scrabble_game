@@ -160,8 +160,14 @@ app.get('/api/stats/games/:gameId', withLogto(logtoConfig), requireAuth, async (
   res.json(game);
 });
 
-// Static files
-app.use(express.static(clientDir));
+// Static files — no caching for HTML/JS/CSS to avoid stale deployments
+app.use(express.static(clientDir, {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html') || filePath.endsWith('.js') || filePath.endsWith('.css')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    }
+  }
+}));
 
 // SPA fallback (Express 5 compatible: use app.use instead of app.get('*'))
 app.use((_req, res) => {

@@ -18,6 +18,7 @@ export function setupWebSocketHandlers(wss: WebSocket.Server, gameManager: GameM
               return;
             }
 
+            console.log(`[DEBUG handler] JOIN_LOBBY userId=${message.userId}`);
             const result = gameManager.resolveSession(
               sessionId, ws,
               message.username || 'Player',
