@@ -4,13 +4,14 @@ import * as fs from 'fs';
 import * as path from 'path';
 import express from 'express';
 import expressSession from 'express-session';
+import MongoStore from 'connect-mongo';
 import MemoryStore from 'memorystore';
 import { withLogto } from '@logto/express';
 import type { default as NodeClientType } from '@logto/node';
 import { connectToMongo } from './db';
 import { getUserGames, getGameDetail, getUserStatsSummary, getOpponentStats } from './gameStats';
 
-const SessionStore = MemoryStore(expressSession);
+const MemorySessionStore = MemoryStore(expressSession);
 
 import WebSocket from 'ws';
 import { GameManager } from './game/GameManager';
@@ -71,9 +72,19 @@ const app = express();
 app.set('trust proxy', 1);
 
 // Session middleware (required by @logto/express)
-// Uses memorystore (LRU-evicting) instead of the default MemoryStore to avoid memory leaks in production
+// Use MongoDB-backed store so sessions survive server restarts; fall back to in-memory if no URI
+const sessionStore = process.env.MONGODB_URI
+  ? MongoStore.create({
+      mongoUrl: process.env.MONGODB_URI,
+      dbName: 'scrabble',
+      collectionName: 'sessions',
+      ttl: 14 * 24 * 60 * 60, // 14 days
+      autoRemove: 'native',
+    })
+  : new MemorySessionStore({ checkPeriod: 86400000 });
+
 app.use(expressSession({
-  store: new SessionStore({ checkPeriod: 86400000 }), // prune expired sessions every 24h
+  store: sessionStore,
   secret: process.env.SESSION_SECRET!,
   resave: false,
   saveUninitialized: false,
@@ -81,6 +92,7 @@ app.use(expressSession({
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
     sameSite: 'lax',
+    maxAge: 14 * 24 * 60 * 60 * 1000, // 14 days
   },
 }));
 
