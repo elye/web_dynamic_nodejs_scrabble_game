@@ -163,7 +163,12 @@ function renderGames(games) {
 
     const myScore = me ? me.score : '-';
     const isWin = me && game.winnerId === me.playerId;
-    const resultText = isWin ? 'Win' : 'Loss';
+
+    // Compute position by ranking all players by score descending
+    const ranked = [...game.players].sort((a, b) => b.score - a.score);
+    const myRank = me ? ranked.findIndex(p => p.playerId === me.playerId) + 1 : 0;
+    const ordinals = ['', '1st', '2nd', '3rd', '4th', '5th', '6th'];
+    const resultText = isWin ? 'Win' : (ordinals[myRank] || `${myRank}th`);
     const resultClass = isWin ? 'stats-result-win' : 'stats-result-loss';
 
     let reason = game.reason || '';
