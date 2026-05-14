@@ -213,7 +213,8 @@ function fetchWordDefinition(word, defElement) {
     if (!wordDefCache[lowerWord]) defElement.remove();
     return;
   }
-  
+
+  // Try Free Dictionary API first, then fall back to Datamuse
   fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(lowerWord)}`)
     .then(res => {
       if (!res.ok) throw new Error('Not found');
@@ -224,13 +225,30 @@ function fetchWordDefinition(word, defElement) {
       const def = meaning?.definitions?.[0]?.definition;
       if (def) {
         const partOfSpeech = meaning.partOfSpeech ? `(${meaning.partOfSpeech}) ` : '';
-        const text = partOfSpeech + def;
-        wordDefCache[lowerWord] = text;
-        defElement.textContent = text;
-      } else {
-        wordDefCache[lowerWord] = '';
-        defElement.remove();
+        return partOfSpeech + def;
       }
+      throw new Error('No definition');
+    })
+    .catch(() =>
+      // Fallback: Datamuse API
+      fetch(`https://api.datamuse.com/words?sp=${encodeURIComponent(lowerWord)}&md=d&max=1`)
+        .then(res => res.json())
+        .then(data => {
+          const entry = data?.[0];
+          // Only use if the returned word closely matches (same first 4 chars)
+          if (entry?.defs?.length && entry.word.toLowerCase().startsWith(lowerWord.slice(0, 4))) {
+            const raw = entry.defs[0]; // format: "pos\tdefinition"
+            const parts = raw.split('\t');
+            const pos = parts[0] ? `(${parts[0]}) ` : '';
+            const def = parts[1] || raw;
+            return pos + def;
+          }
+          throw new Error('No definition in fallback');
+        })
+    )
+    .then(text => {
+      wordDefCache[lowerWord] = text;
+      defElement.textContent = text;
     })
     .catch(() => {
       wordDefCache[lowerWord] = '';
