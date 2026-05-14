@@ -254,10 +254,22 @@ function renderOpponents(opponents) {
 // --- Game Detail ---
 async function loadGameDetail(gameId) {
   const modal = document.getElementById('stats-detail-modal');
+  const content = document.getElementById('stats-detail-content');
   const summaryPanel = document.getElementById('stats-detail-summary-panel');
   const boardPanel = document.getElementById('stats-detail-board-panel');
-  summaryPanel.innerHTML = '<p class="text-muted">Loading game details...</p>';
+
+  // Show modal with spinner, hide actual content
+  summaryPanel.innerHTML = '';
   boardPanel.innerHTML = '';
+  content.classList.add('hidden');
+  let spinner = modal.querySelector('.detail-loading-spinner');
+  if (!spinner) {
+    spinner = document.createElement('div');
+    spinner.className = 'detail-loading-spinner';
+    spinner.innerHTML = '<div class="spinner"></div><p>Loading game details...</p>';
+    content.parentNode.insertBefore(spinner, content);
+  }
+  spinner.classList.remove('hidden');
   switchDetailTab('summary');
   modal.classList.remove('hidden');
 
@@ -266,7 +278,11 @@ async function loadGameDetail(gameId) {
     if (!res.ok) throw new Error('Game not found');
     const game = await res.json();
     renderGameDetail(game);
+    spinner.classList.add('hidden');
+    content.classList.remove('hidden');
   } catch (err) {
+    spinner.classList.add('hidden');
+    content.classList.remove('hidden');
     summaryPanel.innerHTML = '<p class="stats-error">Could not load game details.</p>';
   }
 }
