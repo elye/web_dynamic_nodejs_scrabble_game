@@ -17,6 +17,7 @@ A full-stack, real-time multiplayer Scrabble board game for 1–4 players built 
 - **Chat & turn history** — Real-time messaging and detailed move log with word definitions from the Free Dictionary API
 - **Dark-themed UI** — Clean, responsive design for desktop and mobile
 - **Authentication** — Login and logout via [Logto](https://logto.io) (OAuth 2.0 / OIDC), with session management through Express
+- **Game statistics** — Stats page with game history, per-opponent win/loss records, placement overview (1st/2nd/3rd/4th), and best scores by player count. Powered by MongoDB Atlas
 
 ## Requirements
 
@@ -24,7 +25,7 @@ A full-stack, real-time multiplayer Scrabble board game for 1–4 players built 
 - **npm** v7 or higher
 - **TypeScript** v5.3+ (installed as a dev dependency)
 
-No database required. The dictionary file is bundled. A [Logto](https://logto.io) account and application are required for authentication.
+No database required for core gameplay. The dictionary file is bundled. A [Logto](https://logto.io) account and application are required for authentication. Optionally, a [MongoDB Atlas](https://www.mongodb.com/atlas) connection can be configured to persist game statistics — without it, the game works normally but stats won't be saved.
 
 ## Quick Start
 
@@ -60,6 +61,7 @@ Create a `.env` file at the project root (see `.env.example`):
 | `LOGTO_REDIRECT_URI` | OAuth callback URL, must match Logto Console (e.g. `https://your-app.onrender.com/callback`) |
 | `LOGTO_POST_LOGOUT_REDIRECT_URI` | Redirect after logout (e.g. `https://your-app.onrender.com`) |
 | `SESSION_SECRET` | Random secret for Express sessions — generate with `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"` |
+| `MONGODB_URI` | MongoDB Atlas connection string for game stats (optional — stats won't be saved without it) |
 
 Open **http://localhost:3000** in your browser. The port can be changed via the `PORT` environment variable:
 
@@ -131,6 +133,8 @@ The application follows a **client-server** architecture with WebSocket-based re
 | `game/Validator.ts` | Dictionary loading and word validation against SOWPODS. |
 | `game/AI.ts` | AI opponent. Trie-based word search with anchor square detection. Three difficulty levels control move selection strategy. |
 | `game/Timer.ts` | Per-player countdown timers with 1-second tick intervals. Supports sudden death and penalty overtime modes. |
+| `gameStats.ts` | Game stats persistence (MongoDB). Aggregation queries for summary, opponent stats, and game history. |
+| `db.ts` | MongoDB connection management. |
 | `dictionary/sowpods.txt` | SOWPODS word list (267,751 words). |
 
 ### Client (`client/`)
@@ -139,13 +143,14 @@ The application follows a **client-server** architecture with WebSocket-based re
 |------|---------------|
 | `index.html` | Single-page HTML with lobby modals, game board, rack, scoreboard, chat panel, and round summary overlay. |
 | `css/styles.css` | Dark-themed styles. Board grid, tile rendering, premium square colors, animations (shake, flash), modals, responsive layout. |
-| `js/auth.js` | Auth state check on page load. Calls `/auth/me`, shows signed-in user name + sign-out button, or sign-in button if not authenticated. |
+| `js/auth.js` | Auth state check on page load. Calls `/auth/me`, shows signed-in user name + sign-out button, or sign-in button if not authenticated. Supports auto re-authentication after server restart via a localStorage flag, and uses an `UPDATE_USER_ID` WebSocket fallback to handle auth race conditions. |
 | `js/app.js` | WebSocket connection and message dispatcher. Routes incoming messages to UI handlers. Manages game state variables, round summary rendering with canvas-based score graph. |
 | `js/board.js` | Board rendering and interaction. Drag-and-drop tile placement, click-to-place, board-to-board moves, score preview requests, tentative placement during opponent's turn. |
 | `js/rack.js` | Tile rack management. Drag-and-drop reordering, shuffle, sort, add/remove tiles. |
 | `js/scoreboard.js` | Player cards with scores, timers, avatars, AI badges, and active-turn highlighting. |
 | `js/chat.js` | Real-time chat and turn history panel. Displays move details with word definitions fetched from the Free Dictionary API. |
 | `js/lobby.js` | Lobby UI. Solo/multiplayer/join modals, waiting room management, AI bot controls, game settings configuration. |
+| `js/stats.js` | Stats page UI. Overview with placement stats, game history with pagination, opponent win/loss records, and game detail view with board replay. |
 
 ### AI Difficulty Levels
 
@@ -171,12 +176,15 @@ The AI uses a trie built from the SOWPODS dictionary to efficiently generate val
 - The player's timer is paused while disconnected
 - On reconnection, full game state is restored and play resumes
 - In the waiting room, disconnected players are removed after 30 seconds
+- If the server restarts, signed-in users are automatically re-authenticated on next page load via Logto's persistent session
 
 ## Project Structure
 
 ```
 ├── server/
 │   ├── index.ts              # HTTP + WebSocket server entry point
+│   ├── db.ts                 # MongoDB connection management
+│   ├── gameStats.ts          # Game stats persistence + aggregation queries
 │   ├── game/
 │   │   ├── GameManager.ts    # Room management, game lifecycle, AI coordination
 │   │   ├── GameState.ts      # Core game state, rules, scoring, turn history
@@ -200,7 +208,8 @@ The AI uses a trie built from the SOWPODS dictionary to efficiently generate val
 │   │   ├── rack.js           # Tile rack management
 │   │   ├── scoreboard.js     # Player scores + timers
 │   │   ├── chat.js           # Chat + turn history with word definitions
-│   │   └── lobby.js          # Room creation, joining, waiting room
+│   │   ├── lobby.js          # Room creation, joining, waiting room
+│   │   └── stats.js          # Stats page UI (overview, history, opponents, board replay)
 │   └── assets/
 │       └── sounds/           # Sound effects
 ├── .env                      # Local secrets (gitignored)
@@ -218,11 +227,22 @@ The AI uses a trie built from the SOWPODS dictionary to efficiently generate val
 | `GET /sign-out` | Clears session and redirects to Logto logout |
 | `GET /auth/me` | Returns `{ isAuthenticated, user }` for the active session |
 
+### Stats API Endpoints
+
+All stats endpoints require authentication.
+
+| Route | Description |
+|-------|-------------|
+| `GET /api/stats/summary` | User stats overview (games played, placements, best scores) |
+| `GET /api/stats/games` | Paginated game history |
+| `GET /api/stats/games/:gameId` | Detailed game view with board state |
+| `GET /api/stats/opponents` | Per-opponent win/loss records |
+
 ## WebSocket Protocol
 
 All messages are JSON objects with a `type` field. Key message flows:
 
-**Lobby & Rooms**: `JOIN_LOBBY` → `LOBBY_STATE`, `CREATE_ROOM` → `ROOM_CREATED`, `JOIN_ROOM` → `ROOM_JOINED`, `START_GAME` → `GAME_START`
+**Lobby & Rooms**: `JOIN_LOBBY` → `LOBBY_STATE`, `CREATE_ROOM` → `ROOM_CREATED`, `JOIN_ROOM` → `ROOM_JOINED`, `UPDATE_USER_ID` (auth race condition fallback), `START_GAME` → `GAME_START`
 
 **Gameplay**: `PLACE_TILE` → `PLACE_TILE_RESULT`, `SUBMIT_WORD` → `WORD_ACCEPTED` / `WORD_REJECTED`, `PASS_TURN` → `TURN_PASSED`, `EXCHANGE_TILES` → `TILES_EXCHANGED`
 
