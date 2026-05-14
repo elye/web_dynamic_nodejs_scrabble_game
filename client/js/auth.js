@@ -17,6 +17,11 @@
       signedInRow.classList.remove('hidden');
       document.getElementById('auth-username-display').textContent = displayName;
 
+      // Store userId for WebSocket JOIN_LOBBY message
+      window._logtoUserId = user.sub || null;
+      // Show stats button for signed-in users
+      const statsBtn = document.getElementById('stats-btn');
+      if (statsBtn) statsBtn.classList.remove('hidden');
       // Keep username input populated for the WebSocket JOIN_LOBBY message
       const usernameInput = document.getElementById('username-input');
       if (usernameInput) {
