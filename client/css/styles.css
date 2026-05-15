@@ -1669,7 +1669,7 @@ input[type="text"]:focus {
 
 .stats-summary-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(7, 1fr);
   gap: 0.8rem;
 }
 

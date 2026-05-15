@@ -245,12 +245,6 @@ export class GameManager {
     const humanCount = room.game.players.filter(p => !p.isAI).length;
     if (humanCount < 1) return false;
 
-    // If only 1 human player, add an AI opponent
-    if (room.game.players.length < 2) {
-      const aiId = uuidv4();
-      room.game.addPlayer(aiId, '', 'AI Bot', '🤖', true, 'medium');
-    }
-
     const started = room.game.startGame();
     if (!started) return false;
 

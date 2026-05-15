@@ -5,6 +5,7 @@
 let soloSettings = {
   aiDifficulty: 'medium',
   timeLimit: 0,
+  gameType: 'friendly',
 };
 
 let multiSettings = {
@@ -38,6 +39,14 @@ function initLobby() {
     });
   });
 
+  document.querySelectorAll('.type-btn-solo').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.type-btn-solo').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      soloSettings.gameType = btn.dataset.type;
+    });
+  });
+
   document.getElementById('confirm-solo-btn').addEventListener('click', () => {
     const username = document.getElementById('username-input').value.trim() || 'Player';
     const randomOrder = document.getElementById('solo-random-order').checked;
@@ -50,6 +59,7 @@ function initLobby() {
         avatar: '',
         aiDifficulty: soloSettings.aiDifficulty,
         timeLimit: soloSettings.timeLimit,
+        gameType: soloSettings.gameType,
         randomOrder,
       }));
     }

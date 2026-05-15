@@ -150,6 +150,7 @@ export async function getUserStatsSummary(userId: string): Promise<any> {
     {
       $facet: {
         totals: [
+          { $match: { isSolo: false } },
           {
             $group: {
               _id: null,
@@ -158,23 +159,34 @@ export async function getUserStatsSummary(userId: string): Promise<any> {
               second: { $sum: { $cond: [{ $eq: ['$_userPosition', 2] }, 1, 0] } },
               third: { $sum: { $cond: [{ $eq: ['$_userPosition', 3] }, 1, 0] } },
               fourth: { $sum: { $cond: [{ $eq: ['$_userPosition', 4] }, 1, 0] } },
+              lastPlace: { $sum: { $cond: [{ $eq: ['$_userPosition', '$_playerCount'] }, 1, 0] } },
             },
           },
         ],
+        soloGamesTotal: [
+          { $match: { isSolo: true } },
+          { $count: 'count' },
+        ],
+        bestScore1p: [
+          { $match: { isSolo: true } },
+          { $sort: { '_userPlayer.score': -1 } },
+          { $limit: 1 },
+          { $project: { score: '$_userPlayer.score' } },
+        ],
         bestScore2p: [
-          { $match: { _playerCount: 2 } },
+          { $match: { isSolo: false, _playerCount: 2 } },
           { $sort: { '_userPlayer.score': -1 } },
           { $limit: 1 },
           { $project: { score: '$_userPlayer.score' } },
         ],
         bestScore3p: [
-          { $match: { _playerCount: 3 } },
+          { $match: { isSolo: false, _playerCount: 3 } },
           { $sort: { '_userPlayer.score': -1 } },
           { $limit: 1 },
           { $project: { score: '$_userPlayer.score' } },
         ],
         bestScore4p: [
-          { $match: { _playerCount: 4 } },
+          { $match: { isSolo: false, _playerCount: 4 } },
           { $sort: { '_userPlayer.score': -1 } },
           { $limit: 1 },
           { $project: { score: '$_userPlayer.score' } },
@@ -190,6 +202,24 @@ export async function getUserStatsSummary(userId: string): Promise<any> {
           { $sort: { '_userPlayer.stats.bestTurn.score': -1 } },
           { $limit: 1 },
           { $project: { bestTurn: '$_userPlayer.stats.bestTurn' } },
+        ],
+        totalBingos: [
+          {
+            $addFields: {
+              _userStats: {
+                $arrayElemAt: [
+                  { $filter: { input: '$players', as: 'p', cond: { $eq: ['$$p.userId', userId] } } },
+                  0,
+                ],
+              },
+            },
+          },
+          {
+            $group: {
+              _id: null,
+              total: { $sum: '$_userStats.stats.bingoCount' },
+            },
+          },
         ],
         recentGames: [
           { $sort: { endedAt: -1 } },
@@ -210,7 +240,7 @@ export async function getUserStatsSummary(userId: string): Promise<any> {
   const results = await db.collection('games').aggregate(pipeline).toArray();
   const data = results[0] || {};
 
-  const totals = data.totals?.[0] || { totalGames: 0, wins: 0, second: 0, third: 0, fourth: 0 };
+  const totals = data.totals?.[0] || { totalGames: 0, wins: 0, second: 0, third: 0, fourth: 0, lastPlace: 0 };
 
   return {
     totalGames: totals.totalGames,
@@ -218,6 +248,10 @@ export async function getUserStatsSummary(userId: string): Promise<any> {
     second: totals.second,
     third: totals.third,
     fourth: totals.fourth,
+    lastPlace: totals.lastPlace ?? 0,
+    soloGames: data.soloGamesTotal?.[0]?.count ?? 0,
+    totalBingos: data.totalBingos?.[0]?.total ?? 0,
+    bestScore1p: data.bestScore1p?.[0]?.score ?? null,
     bestScore2p: data.bestScore2p?.[0]?.score ?? null,
     bestScore3p: data.bestScore3p?.[0]?.score ?? null,
     bestScore4p: data.bestScore4p?.[0]?.score ?? null,
