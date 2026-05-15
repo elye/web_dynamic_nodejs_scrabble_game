@@ -23,7 +23,6 @@ export function setupWebSocketHandlers(wss: WebSocket.Server, gameManager: GameM
               sessionId, ws,
               message.username || 'Player',
               message.avatar || '',
-              message.elo || 1200,
               message.userId
             );
             playerId = result.playerId;
@@ -53,9 +52,9 @@ export function setupWebSocketHandlers(wss: WebSocket.Server, gameManager: GameM
               playerId, ws,
               message.username || 'Player',
               message.avatar || '',
-              message.elo || 1200,
               message.aiDifficulty || 'medium',
               message.timeLimit ?? 0,
+              message.gameType || 'friendly',
               message.randomOrder || false
             );
             // GAME_START is already sent inside createSoloGame
@@ -68,7 +67,7 @@ export function setupWebSocketHandlers(wss: WebSocket.Server, gameManager: GameM
               maxPlayers: Math.min(4, Math.max(2, message.maxPlayers || 4)),
               timeLimit: message.timeLimit ?? 45,
               dictionary: message.dictionary || 'en_us',
-              gameType: message.gameType || 'friend',
+              gameType: message.gameType || 'friendly',
               timeoutMode: message.timeoutMode || 'sudden',
               randomOrder: message.randomOrder || false,
             };
@@ -77,7 +76,6 @@ export function setupWebSocketHandlers(wss: WebSocket.Server, gameManager: GameM
               playerId, ws,
               message.username || 'Player',
               message.avatar || '',
-              message.elo || 1200,
               settings
             );
             
@@ -94,8 +92,7 @@ export function setupWebSocketHandlers(wss: WebSocket.Server, gameManager: GameM
               message.roomId,
               playerId, ws,
               message.username || 'Player',
-              message.avatar || '',
-              message.elo || 1200
+              message.avatar || ''
             );
             
             if (room) {

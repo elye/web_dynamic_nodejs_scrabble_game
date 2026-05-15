@@ -10,7 +10,7 @@ let soloSettings = {
 let multiSettings = {
   maxPlayers: 4,
   timeLimit: 30,
-  gameType: 'friend',
+  gameType: 'friendly',
   timeoutMode: 'sudden',
 };
 
@@ -48,7 +48,6 @@ function initLobby() {
         type: 'CREATE_SOLO',
         username,
         avatar: '',
-        elo: 1200,
         aiDifficulty: soloSettings.aiDifficulty,
         timeLimit: soloSettings.timeLimit,
         randomOrder,
@@ -105,7 +104,6 @@ function initLobby() {
         type: 'CREATE_ROOM',
         username,
         avatar: '',
-        elo: 1200,
         maxPlayers: 4,
         timeLimit: multiSettings.timeLimit,
         gameType: multiSettings.gameType,
@@ -152,7 +150,6 @@ function initLobby() {
         roomId: roomCode,
         username,
         avatar: '',
-        elo: 1200,
       }));
     }
   });
@@ -239,7 +236,6 @@ function updateWaitingRoom(data) {
     card.innerHTML = `
       <div class="avatar" style="background: ${getAvatarColor(player.id)}">${initial}</div>
       <div class="player-name">${escapeHtml(player.username)}${aiBadge}${disconnectedBadge}</div>
-      <div class="player-elo" style="color: var(--text-muted); font-size: 0.8rem;">Elo: ${player.elo}</div>
       ${removeBtn}
     `;
     container.appendChild(card);

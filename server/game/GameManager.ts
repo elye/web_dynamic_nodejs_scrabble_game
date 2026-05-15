@@ -18,7 +18,6 @@ interface SessionInfo {
   playerId: string;
   username: string;
   avatar: string;
-  elo: number;
   roomId?: string;
   userId?: string; // Logto sub — present only for logged-in players
 }
@@ -55,7 +54,7 @@ export class GameManager {
 
   // --- Session management ---
 
-  resolveSession(sessionId: string, socket: WebSocket, username: string, avatar: string, elo: number, userId?: string): { playerId: string; reconnected: boolean; roomId?: string } {
+  resolveSession(sessionId: string, socket: WebSocket, username: string, avatar: string, userId?: string): { playerId: string; reconnected: boolean; roomId?: string } {
     const existing = this.sessions.get(sessionId);
 
     if (existing) {
@@ -69,7 +68,6 @@ export class GameManager {
       // Update session info
       existing.username = username || existing.username;
       existing.avatar = avatar || existing.avatar;
-      existing.elo = elo || existing.elo;
       if (userId) existing.userId = userId;
 
       // Re-bind socket
@@ -88,7 +86,7 @@ export class GameManager {
 
     // New session
     const playerId = uuidv4();
-    this.sessions.set(sessionId, { playerId, username, avatar, elo, userId });
+    this.sessions.set(sessionId, { playerId, username, avatar, userId });
     this.playerSessions.set(playerId, sessionId);
     this.playerSockets.set(playerId, socket);
     this.socketPlayers.set(socket, playerId);
@@ -107,12 +105,12 @@ export class GameManager {
 
   // --- Solo game (atomic: create + add AI + start) ---
 
-  createSoloGame(playerId: string, socket: WebSocket, username: string, avatar: string, elo: number, aiDifficulty: 'easy' | 'medium' | 'hard', timeLimit: number, randomOrder: boolean = false): Room {
+  createSoloGame(playerId: string, socket: WebSocket, username: string, avatar: string, aiDifficulty: 'easy' | 'medium' | 'hard', timeLimit: number, gameType: 'friendly' | 'formal' = 'friendly', randomOrder: boolean = false): Room {
     const settings: GameSettings = {
       maxPlayers: 2,
       timeLimit,
       dictionary: 'en_us',
-      gameType: 'friend',
+      gameType,
       timeoutMode: 'sudden',
       randomOrder,
     };
@@ -126,10 +124,10 @@ export class GameManager {
       (reason) => this.handleGameOver(roomId, reason)
     );
 
-    game.addPlayer(playerId, socket.toString(), username, avatar, elo);
+    game.addPlayer(playerId, socket.toString(), username, avatar);
     const aiId = uuidv4();
     const aiLabel = aiDifficulty.charAt(0).toUpperCase() + aiDifficulty.slice(1);
-    game.addPlayer(aiId, '', `AI ${aiLabel}`, '🤖', 1200, true, aiDifficulty);
+    game.addPlayer(aiId, '', `AI ${aiLabel}`, '🤖', true, aiDifficulty);
 
     const room: Room = { id: roomId, hostId: playerId, game, settings, isSolo: true };
     this.rooms.set(roomId, room);
@@ -153,7 +151,7 @@ export class GameManager {
 
   // --- Multiplayer room ---
 
-  createRoom(playerId: string, socket: WebSocket, username: string, avatar: string, elo: number, settings: GameSettings): Room {
+  createRoom(playerId: string, socket: WebSocket, username: string, avatar: string, settings: GameSettings): Room {
     // Clean up any existing room association
     this.cleanupPlayerRoom(playerId);
 
@@ -166,7 +164,7 @@ export class GameManager {
       (reason) => this.handleGameOver(roomId, reason)
     );
 
-    game.addPlayer(playerId, socket.toString(), username, avatar, elo);
+    game.addPlayer(playerId, socket.toString(), username, avatar);
 
     const room: Room = { id: roomId, hostId: playerId, game, settings, isSolo: false };
     this.rooms.set(roomId, room);
@@ -176,7 +174,7 @@ export class GameManager {
     return room;
   }
 
-  joinRoom(roomId: string, playerId: string, socket: WebSocket, username: string, avatar: string, elo: number): Room | null {
+  joinRoom(roomId: string, playerId: string, socket: WebSocket, username: string, avatar: string): Room | null {
     const room = this.rooms.get(roomId);
     if (!room) return null;
     if (room.isSolo) return null; // Can't join solo rooms
@@ -185,7 +183,7 @@ export class GameManager {
     // Clean up any existing room association
     this.cleanupPlayerRoom(playerId);
 
-    const player = room.game.addPlayer(playerId, socket.toString(), username, avatar, elo);
+    const player = room.game.addPlayer(playerId, socket.toString(), username, avatar);
     if (!player) return null;
 
     this.playerRooms.set(playerId, roomId);
@@ -212,7 +210,7 @@ export class GameManager {
     const diffLabel = aiDifficulty.charAt(0).toUpperCase() + aiDifficulty.slice(1);
     const aiName = `AI ${diffLabel}`;
     
-    const player = room.game.addPlayer(aiId, '', aiName, '🤖', 1200, true, aiDifficulty);
+    const player = room.game.addPlayer(aiId, '', aiName, '🤖', true, aiDifficulty);
     if (!player) return false;
 
     this.broadcastToRoom(roomId, 'ROOM_UPDATE', this.getRoomState(room));
@@ -250,7 +248,7 @@ export class GameManager {
     // If only 1 human player, add an AI opponent
     if (room.game.players.length < 2) {
       const aiId = uuidv4();
-      room.game.addPlayer(aiId, '', 'AI Bot', '🤖', 1200, true, 'medium');
+      room.game.addPlayer(aiId, '', 'AI Bot', '🤖', true, 'medium');
     }
 
     const started = room.game.startGame();
@@ -537,7 +535,6 @@ export class GameManager {
       socketId: p.socketId,
       username: p.username,
       avatar: p.avatar,
-      elo: p.elo,
       isAI: p.isAI,
       aiDifficulty: p.aiDifficulty,
       connected: p.connected,
@@ -554,7 +551,7 @@ export class GameManager {
 
     // Re-add all players
     for (const info of playerInfos) {
-      game.addPlayer(info.id, info.socketId, info.username, info.avatar, info.elo, info.isAI, info.aiDifficulty);
+      game.addPlayer(info.id, info.socketId, info.username, info.avatar, info.isAI, info.aiDifficulty);
       const player = game.players.find(p => p.id === info.id);
       if (player) {
         player.connected = info.connected;
@@ -868,6 +865,8 @@ export class GameManager {
   private saveGameStats(room: Room, reason: string): void {
     const game = room.game;
 
+    if (game.settings.gameType !== 'formal') return;
+
     // Build player records and check for logged-in players
     let hasLoggedInPlayer = false;
     const playerRecords: GamePlayerRecord[] = game.players.map(p => {
@@ -881,7 +880,6 @@ export class GameManager {
         userId,
         username: p.username,
         avatar: p.avatar,
-        elo: p.elo,
         score: p.score,
         isAI: p.isAI,
         aiDifficulty: p.aiDifficulty,

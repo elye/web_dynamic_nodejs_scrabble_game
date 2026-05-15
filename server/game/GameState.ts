@@ -10,7 +10,6 @@ export interface Player {
   socketId: string;
   username: string;
   avatar: string;
-  elo: number;
   score: number;
   rack: Tile[];
   timerRemaining: number;
@@ -35,7 +34,7 @@ export interface GameSettings {
   maxPlayers: number;
   timeLimit: number; // minutes, 0 = unlimited
   dictionary: 'en_us' | 'en_gb';
-  gameType: 'friend' | 'ranked';
+  gameType: 'friendly' | 'formal';
   timeoutMode: 'sudden' | 'penalty'; // sudden = score 0 & game over, penalty = -10pts/min overtime
   randomOrder?: boolean; // shuffle player order at game start
 }
@@ -91,12 +90,12 @@ export class GameState {
     this.onGameOver = onGameOver;
   }
 
-  addPlayer(id: string, socketId: string, username: string, avatar: string, elo: number, isAI: boolean = false, aiDifficulty?: 'easy' | 'medium' | 'hard'): Player | null {
+  addPlayer(id: string, socketId: string, username: string, avatar: string, isAI: boolean = false, aiDifficulty?: 'easy' | 'medium' | 'hard'): Player | null {
     if (this.players.length >= this.settings.maxPlayers) return null;
     if (this.status !== 'waiting') return null;
 
     const player: Player = {
-      id, socketId, username, avatar, elo,
+      id, socketId, username, avatar,
       score: 0,
       rack: [],
       timerRemaining: this.settings.timeLimit * 60,
@@ -793,7 +792,6 @@ export class GameState {
         id: p.id,
         username: p.username,
         avatar: p.avatar,
-        elo: p.elo,
         score: p.score,
         rackCount: p.rack.length,
         connected: p.connected,
@@ -827,7 +825,6 @@ export class GameState {
         id: p.id,
         username: p.username,
         avatar: p.avatar,
-        elo: p.elo,
         score: p.score,
         rackCount: p.rack.length,
         connected: p.connected,

@@ -34,7 +34,6 @@ function updateScoreboard(players, currentTurnId, timers, tileBagCount) {
         }</div>
         <div class="player-info">
           <div class="player-name">${escapeHtml(player.username)}${player.isAI ? ' 🤖' : ''}</div>
-          <div class="player-elo">Elo Score: ${player.elo}</div>
         </div>
       </div>
       <div class="player-card-body">
@@ -138,7 +137,7 @@ function updateGameInfo(settings) {
   const timeLimitText = settings.timeLimit === 0 ? 'Unlimited' : `${settings.timeLimit} Minutes`;
   document.getElementById('time-limit-text').textContent = timeLimitText;
   document.getElementById('game-type-text').textContent = 
-    settings.gameType === 'ranked' ? 'Ranked' : 'Friend Match';
+    settings.gameType === 'formal' ? 'Formal' : 'Friendly';
 }
 
 function showEndgameButtons() {

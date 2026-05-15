@@ -6,7 +6,6 @@ export interface GamePlayerRecord {
   userId?: string;       // Logto sub — present only for logged-in players
   username: string;
   avatar: string;
-  elo: number;
   score: number;
   isAI: boolean;
   aiDifficulty?: string;
