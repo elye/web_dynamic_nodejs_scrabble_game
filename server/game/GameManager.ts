@@ -123,7 +123,7 @@ export class GameManager {
     game.setCallbacks(
       (type, data, excludePlayer) => this.broadcastToRoom(roomId, type, data, excludePlayer),
       (pid, type, data) => this.sendToPlayer(pid, type, data),
-      () => this.handleGameOver(roomId)
+      (reason) => this.handleGameOver(roomId, reason)
     );
 
     game.addPlayer(playerId, socket.toString(), username, avatar, elo);
@@ -163,7 +163,7 @@ export class GameManager {
     game.setCallbacks(
       (type, data, excludePlayer) => this.broadcastToRoom(roomId, type, data, excludePlayer),
       (pid, type, data) => this.sendToPlayer(pid, type, data),
-      () => this.handleGameOver(roomId)
+      (reason) => this.handleGameOver(roomId, reason)
     );
 
     game.addPlayer(playerId, socket.toString(), username, avatar, elo);
@@ -455,6 +455,9 @@ export class GameManager {
     const room = this.rooms.get(roomId);
     if (!room) return;
 
+    const resigningPlayer = room.game.players.find(p => p.id === playerId);
+    if (resigningPlayer) resigningPlayer.score = 0;
+
     room.game.endGame('resign', playerId);
   }
 
@@ -546,7 +549,7 @@ export class GameManager {
     game.setCallbacks(
       (type, data, excludePlayer) => this.broadcastToRoom(roomId, type, data, excludePlayer),
       (pid, type, data) => this.sendToPlayer(pid, type, data),
-      () => this.handleGameOver(roomId)
+      (reason) => this.handleGameOver(roomId, reason)
     );
 
     // Re-add all players
@@ -841,12 +844,11 @@ export class GameManager {
     }
   }
 
-  private handleGameOver(roomId: string): void {
+  private handleGameOver(roomId: string, reason: string): void {
     const room = this.rooms.get(roomId);
     if (!room) return;
 
-    // Save game stats to MongoDB if at least 1 logged-in player
-    this.saveGameStats(room);
+    this.saveGameStats(room, reason);
 
     // Clean up finished room after 30 minutes
     setTimeout(() => {
@@ -863,7 +865,7 @@ export class GameManager {
     }, 30 * 60 * 1000);
   }
 
-  private saveGameStats(room: Room): void {
+  private saveGameStats(room: Room, reason: string): void {
     const game = room.game;
 
     // Build player records and check for logged-in players
@@ -1003,12 +1005,18 @@ export class GameManager {
       ? Math.round((new Date(lastActiveTurn.timestamp).getTime() - new Date(firstTurn.timestamp).getTime()) / 1000)
       : 0;
 
+    const savedReason = reason === 'resign' ? 'resign'
+      : reason === 'timeout' ? 'timeout'
+      : reason === 'timeout_penalty' ? 'timeout_penalty'
+      : reason === 'all_passed' ? 'all_passed'
+      : 'completed';
+
     saveGameRecord({
       gameId: game.roomId,
       players: playerRecords,
       winnerId: winner.id,
       winnerUsername: winner.username,
-      reason: game.status === 'finished' ? 'completed' : 'unknown',
+      reason: savedReason,
       gameSummary: {
         totalTurns: game.turnHistory.length,
         totalRounds,
@@ -1028,6 +1036,8 @@ export class GameManager {
       turnEvents,
       turnHistory: game.turnHistory,
       settings: game.settings,
+      gameTime: game.settings.timeLimit === 0 ? 'Unlimited' : `${game.settings.timeLimit} min`,
+      timeoutMode: game.settings.timeLimit === 0 ? 'N/A' : game.settings.timeoutMode,
       isSolo: game.players.filter(p => !p.isAI).length === 1 && game.players.some(p => p.isAI),
       endedAt: new Date(),
     });

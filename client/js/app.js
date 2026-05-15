@@ -409,7 +409,7 @@ function initGameActions() {
   // Exit game / Back to menu
   document.getElementById('exit-game-btn').addEventListener('click', () => {
     if (gameStatus === 'playing') {
-      if (!confirm('Are you sure you want to leave the game? This will count as a resignation.')) {
+      if (!confirm('Are you sure you want to leave the game? This will count as a resignation and your score will be set to 0.')) {
         return;
       }
       if (window.ws && window.ws.readyState === WebSocket.OPEN) {

@@ -25,6 +25,8 @@ export interface GameRecord {
   turnEvents: any;
   turnHistory: any;
   settings: any;
+  gameTime?: string;    // e.g. "15 min", "Unlimited"
+  timeoutMode?: string; // e.g. "sudden", "penalty", "N/A"
   isSolo: boolean;
   endedAt: Date;
 }

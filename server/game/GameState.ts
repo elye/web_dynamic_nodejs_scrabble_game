@@ -64,7 +64,7 @@ export class GameState {
   private validator: Validator;
   private onBroadcast: ((type: string, data: any, excludePlayer?: string) => void) | null = null;
   private onSendToPlayer: ((playerId: string, type: string, data: any) => void) | null = null;
-  private onGameOver: (() => void) | null = null;
+  private onGameOver: ((reason: string) => void) | null = null;
 
   constructor(roomId: string, settings: GameSettings, validator: Validator) {
     this.roomId = roomId;
@@ -84,7 +84,7 @@ export class GameState {
   setCallbacks(
     onBroadcast: (type: string, data: any, excludePlayer?: string) => void,
     onSendToPlayer: (playerId: string, type: string, data: any) => void,
-    onGameOver: () => void
+    onGameOver: (reason: string) => void
   ): void {
     this.onBroadcast = onBroadcast;
     this.onSendToPlayer = onSendToPlayer;
@@ -742,7 +742,7 @@ export class GameState {
 
       // Add final score data point for timeout/penalty (score dropped to 0 or reduced)
       const lastTurn = this.turnHistory.length > 0 ? this.turnHistory[this.turnHistory.length - 1].turnNumber : 0;
-      if (timedOutPlayer && (reason === 'timeout' || reason === 'timeout_penalty')) {
+      if (timedOutPlayer && (reason === 'timeout' || reason === 'timeout_penalty' || reason === 'resign')) {
         const finalTurn = lastTurn + 1;
         const timedPlayer = this.players.find(p => p.id === timedOutPlayer);
         if (timedPlayer && scoreProgression[timedOutPlayer]) {
@@ -779,7 +779,7 @@ export class GameState {
     }
 
     if (this.onGameOver) {
-      this.onGameOver();
+      this.onGameOver(reason);
     }
   }
 
