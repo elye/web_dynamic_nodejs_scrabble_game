@@ -150,7 +150,7 @@ export async function getUserStatsSummary(userId: string): Promise<any> {
     {
       $facet: {
         totals: [
-          { $match: { isSolo: false } },
+          { $match: { $expr: { $gt: ['$_playerCount', 1] } } },
           {
             $group: {
               _id: null,
@@ -164,29 +164,29 @@ export async function getUserStatsSummary(userId: string): Promise<any> {
           },
         ],
         soloGamesTotal: [
-          { $match: { isSolo: true } },
+          { $match: { $expr: { $eq: ['$_playerCount', 1] } } },
           { $count: 'count' },
         ],
         bestScore1p: [
-          { $match: { isSolo: true } },
+          { $match: { $expr: { $eq: ['$_playerCount', 1] } } },
           { $sort: { '_userPlayer.score': -1 } },
           { $limit: 1 },
           { $project: { score: '$_userPlayer.score' } },
         ],
         bestScore2p: [
-          { $match: { isSolo: false, _playerCount: 2 } },
+          { $match: { $expr: { $eq: ['$_playerCount', 2] } } },
           { $sort: { '_userPlayer.score': -1 } },
           { $limit: 1 },
           { $project: { score: '$_userPlayer.score' } },
         ],
         bestScore3p: [
-          { $match: { isSolo: false, _playerCount: 3 } },
+          { $match: { $expr: { $eq: ['$_playerCount', 3] } } },
           { $sort: { '_userPlayer.score': -1 } },
           { $limit: 1 },
           { $project: { score: '$_userPlayer.score' } },
         ],
         bestScore4p: [
-          { $match: { isSolo: false, _playerCount: 4 } },
+          { $match: { $expr: { $eq: ['$_playerCount', 4] } } },
           { $sort: { '_userPlayer.score': -1 } },
           { $limit: 1 },
           { $project: { score: '$_userPlayer.score' } },

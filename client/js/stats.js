@@ -203,9 +203,7 @@ function renderGames(games) {
     const ranked = [...game.players].sort((a, b) => b.score - a.score);
     const myRank = me ? ranked.findIndex(p => p.playerId === me.playerId) + 1 : 0;
     const ordinals = ['', '1st', '2nd', '3rd', '4th', '5th', '6th'];
-    // Count human (non-AI) players in this game
-    const humanCount = game.players.filter(p => !p.isAI).length;
-    const isSoloGame = humanCount === 1;
+    const isSoloGame = game.players.length === 1;
 
     const resultText = isSoloGame ? '-' : (isWin ? 'Win' : (ordinals[myRank] || `${myRank}th`));
     const resultClass = isSoloGame ? '' : (isWin ? 'stats-result-win' : 'stats-result-loss');
