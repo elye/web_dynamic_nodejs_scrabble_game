@@ -1498,6 +1498,55 @@ input[type="text"]:focus {
   font-style: normal;
 }
 
+/* ============================================
+   Mobile / Phone Layout (≤ 768px)
+   ============================================ */
+@media (max-width: 768px) {
+  /* Stack panels vertically so the board is never shrunk */
+  .game-layout {
+    flex-direction: column;
+  }
+
+  .left-panel {
+    flex: 0 0 auto;
+    max-width: 100%;
+    width: 100%;
+    padding: 0.5rem;
+    gap: 0.5rem;
+  }
+
+  .right-panel {
+    flex: 0 0 auto;
+    max-width: 100%;
+    width: 100%;
+    padding: 0.5rem;
+    /* Remove the 100vh cap so it scrolls naturally below the board */
+    max-height: none;
+    overflow-y: visible;
+  }
+
+  /* Board fills the full panel width */
+  .board-wrapper {
+    max-width: 100%;
+  }
+
+  /* Shrink rack tiles slightly to fit narrow screens */
+  .rack-tile,
+  .rack-slot-empty {
+    width: 40px;
+    height: 44px;
+  }
+  .rack-tile .tile-letter {
+    font-size: 18px;
+  }
+
+  /* Cap the chat/history panel height so it doesn't dominate the page */
+  .chat-history-panel {
+    min-height: 200px;
+    max-height: 350px;
+  }
+}
+
 /* Score Hint */
 .score-hint {
   position: absolute;
@@ -2289,5 +2338,43 @@ input[type="text"]:focus {
   border-left: 3px solid var(--turn-selected-color, rgba(255,255,255,0.4));
   padding-left: 5px;
   background: color-mix(in srgb, var(--turn-selected-color, #fff) 10%, transparent);
+}
+
+/* ============================================
+   Past Game Detail Modal — Mobile layout
+   ============================================ */
+@media (max-width: 768px) {
+  /* Make the modal full-width on phones */
+  .modal-content.modal-extra-wide {
+    max-width: 100%;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    border-radius: 0;
+  }
+
+  /* Stack board + sidebar vertically */
+  .detail-board-with-sidebar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  /* Board takes full container width */
+  .detail-board-wrap {
+    width: 100%;
+  }
+
+  /* Board scales to fit phone width (~15 cols × cell + gap + 18px header) */
+  .detail-board-with-headers {
+    min-width: 0;
+    width: 100%;
+  }
+
+  /* Move turn history below the board with a capped height */
+  .detail-turn-history {
+    width: 100%;
+    max-height: 320px;
+    flex-shrink: unset;
+  }
 }
 
