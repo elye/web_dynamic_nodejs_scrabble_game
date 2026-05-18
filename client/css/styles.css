@@ -1528,6 +1528,22 @@ input[type="text"]:focus {
   /* Board fills the full panel width */
   .board-wrapper {
     max-width: 100%;
+    /* Fixed origin so JS can pan via translate(tx,ty) without changing origin */
+    transform-origin: 0 0;
+    /* Promote to GPU compositing layer for smooth zoom animation */
+    will-change: transform;
+    /* No transition here — board-zoom.js applies transitions directly via
+       inline style so it can control when they are active vs inactive. */
+  }
+
+  /* Board zoom — clip the scaled board so it never overflows its container */
+  .board-container {
+    overflow: hidden;
+  }
+
+  /* Zoom state marker (transform itself is set by board-zoom.js) */
+  .board-wrapper.board-zoomed {
+    /* transform applied dynamically via inline style */
   }
 
   /* Shrink rack tiles slightly to fit narrow screens */

@@ -292,7 +292,18 @@ function handleGameState(msg) {
   if (msg.turnHistory) {
     updateTurnHistory(msg.turnHistory);
   }
-  
+
+  // On mobile, zoom out if no pending (new) tiles remain after the state update
+  // (e.g. opponent/AI submitted a move and our pending tiles were recalled).
+  if (window.BoardZoom) {
+    setTimeout(window.BoardZoom.checkZoomPersistence, 0);
+  }
+
+  // Cancel any in-progress tile drag (ghost cleanup) when opponent/AI moves
+  if (window.TouchDrag) {
+    window.TouchDrag.cancelActiveDrag();
+  }
+
   if (msg.status === 'finished') {
     showEndgameButtons();
   }
@@ -326,6 +337,16 @@ function handleWordAccepted(msg) {
   if (msg.totalTurnScore && msg.tilesPlayed && msg.tilesPlayed.length > 0) {
     removeScoreHint();
     showBoardScoreIndicator(msg.tilesPlayed, msg.totalTurnScore);
+  }
+
+  // On mobile, zoom out if the accepted word cleared all pending tiles
+  if (window.BoardZoom) {
+    setTimeout(window.BoardZoom.checkZoomPersistence, 0);
+  }
+
+  // Cancel any in-progress tile drag (ghost cleanup) when tiles are recalled
+  if (window.TouchDrag) {
+    window.TouchDrag.cancelActiveDrag();
   }
 }
 

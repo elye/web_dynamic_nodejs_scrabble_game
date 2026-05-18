@@ -152,5 +152,16 @@
     activeDrag.ghost.remove();
     activeDrag = null;
   });
+
+  function cancelActiveDrag() {
+    if (activeDrag) {
+      activeDrag.el.style.visibility = '';
+      activeDrag.ghost.remove();
+      activeDrag = null;
+    }
+    pendingTouch = null;
+  }
+
+  window.TouchDrag = { cancelActiveDrag: cancelActiveDrag };
 })();
 
