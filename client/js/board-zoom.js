@@ -634,6 +634,10 @@
    */
   function checkZoomPersistence() {
     if (!isMobile()) return;
+    // Don't zoom out while the blank-letter selection dialog is open —
+    // the tile hasn't been committed to the board yet.
+    var blankModal = document.getElementById('blank-modal');
+    if (blankModal && !blankModal.classList.contains('hidden')) return;
     var newTiles = document.querySelectorAll('.board-tile.new-tile');
     if (newTiles.length === 0) {
       zoomOut(true);
