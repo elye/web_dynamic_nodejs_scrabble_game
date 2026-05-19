@@ -43,7 +43,7 @@
   'use strict';
 
   // Width of a rack tile on mobile — must match `.rack-tile { width: 40px }`
-  // in styles.css @media (max-width: 768px).
+  // in styles.css @media (max-width: 600px).
   var RACK_TILE_WIDTH = 40;
 
   // Drag threshold in px — keep in sync with touch-drag.js.
@@ -93,7 +93,7 @@
   // ---- Helpers ----
 
   function isMobile() {
-    return window.innerWidth <= 768;
+    return window.innerWidth <= 600;
   }
 
   function clamp(v, lo, hi) {

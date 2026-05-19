@@ -49,6 +49,14 @@ function renderRack() {
     slot.className = 'rack-slot-empty';
     rack.appendChild(slot);
   }
+  updateRackButtons();
+}
+
+function updateRackButtons() {
+  const shuffleBtn = document.getElementById('shuffle-btn');
+  const sortBtn = document.getElementById('sort-btn');
+  if (shuffleBtn) shuffleBtn.disabled = false; // shuffle is always enabled
+  if (sortBtn) sortBtn.disabled = (typeof pendingTiles !== 'undefined') ? pendingTiles.length === 0 : true;
 }
 
 function createRackTileElement(tile) {

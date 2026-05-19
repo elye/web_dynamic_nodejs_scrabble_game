@@ -275,6 +275,7 @@ function renderBoard() {
       }
     }
   });
+  if (typeof updateRackButtons === 'function') updateRackButtons();
 }
 
 function createBoardTileElement(tile, isNew, isLastMove) {

@@ -170,6 +170,14 @@
 
   <!-- GAME SCREEN -->
   <div id="game-screen" class="screen">
+    <button id="fullscreen-btn" class="fullscreen-btn" title="Enter fullscreen" aria-label="Toggle fullscreen">
+      <svg class="fs-enter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+      </svg>
+      <svg class="fs-exit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+        <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>
+      </svg>
+    </button>
     <div class="game-layout">
       <!-- LEFT PANEL - Board -->
       <div class="left-panel">
@@ -207,23 +215,35 @@
 
         <!-- Tile Rack -->
         <div class="rack-container">
-          <button id="shuffle-btn" class="rack-btn" title="Shuffle tiles">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>
-            </svg>
-          </button>
           <div id="tile-rack" class="tile-rack"></div>
-          <button id="sort-btn" class="rack-btn" title="Recall tiles from board">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 5v14M5 12l7 7 7-7"/>
-            </svg>
-          </button>
+          <div class="rack-utility-btns">
+            <button id="shuffle-btn" class="rack-btn" title="Shuffle tiles">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>
+              </svg>
+            </button>
+            <button id="sort-btn" class="rack-btn" title="Recall tiles from board">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 5v14M5 12l7 7 7-7"/>
+              </svg>
+            </button>
+          </div>
         </div>
 
         <!-- Action Buttons -->
         <div id="game-actions" class="game-actions">
-          <button id="exit-game-btn" class="btn btn-outlined">Back to Menu</button>
-          <button id="pass-btn" class="btn btn-warning-outlined">Pass / Exchange</button>
+          <button id="exit-game-btn" class="btn btn-outlined">
+            <svg class="btn-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            <span class="btn-text">Back to Menu</span>
+          </button>
+          <button id="pass-btn" class="btn btn-warning-outlined">
+            <svg class="btn-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M7 16V4m0 0L3 8m4-4 4 4M17 8v12m0 0 4-4m-4 4-4-4"/>
+            </svg>
+            <span class="btn-text">Pass / Exchange</span>
+          </button>
           <button id="submit-btn" class="btn btn-success">Submit</button>
         </div>
         <div id="endgame-actions" class="game-actions hidden">
