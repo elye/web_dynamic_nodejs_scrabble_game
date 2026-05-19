@@ -434,8 +434,8 @@ input[type="text"]:focus {
 }
 
 .left-panel {
-  flex: 0 0 60%;
-  max-width: 60%;
+  flex: 1 1 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   padding: 0.8rem;
@@ -444,8 +444,9 @@ input[type="text"]:focus {
 }
 
 .right-panel {
-  flex: 0 0 40%;
+  flex: 0 0 340px;
   max-width: 40%;
+  min-width: 280px;
   display: flex;
   flex-direction: column;
   padding: 0.8rem;
@@ -463,7 +464,7 @@ input[type="text"]:focus {
   min-height: 0;
   display: flex;
   align-items: flex-start;
-  justify-content: center;
+  justify-content: flex-start;
   overflow: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -482,7 +483,8 @@ input[type="text"]:focus {
 
 .board-wrapper {
   width: 100%;
-  max-width: 680px;
+  max-width: min(680px, 100%);
+  margin: auto;
   user-select: none;
   -webkit-user-select: none;
 }
@@ -583,6 +585,7 @@ input[type="text"]:focus {
 
 .board-cell .premium-label {
   font-size: 9px;
+  font-size: calc(var(--board-cell-size, 18px) * 0.45);
   font-weight: 700;
   line-height: 1;
   text-align: center;
@@ -601,7 +604,7 @@ input[type="text"]:focus {
   z-index: 2;
 }
 .board-tile .tile-letter {
-  font-size: 18px;
+  font-size: calc(var(--board-cell-size, 30px) * 0.6);
   font-weight: 800;
   color: var(--tile-text);
   line-height: 1;
@@ -610,7 +613,7 @@ input[type="text"]:focus {
   position: absolute;
   bottom: 1px;
   right: 3px;
-  font-size: 8px;
+  font-size: calc(var(--board-cell-size, 30px) * 0.25);
   font-weight: 700;
   color: var(--tile-text);
   opacity: 0.7;
@@ -744,6 +747,7 @@ input[type="text"]:focus {
   cursor: grab;
   user-select: none;
   transition: transform 0.1s, box-shadow 0.1s;
+  container-type: inline-size;
 }
 .rack-tile:hover {
   transform: translateY(-3px);
@@ -763,7 +767,7 @@ input[type="text"]:focus {
   transform: translateX(3px);
 }
 .rack-tile .tile-letter {
-  font-size: 22px;
+  font-size: 45cqi;
   font-weight: 800;
   color: var(--tile-text);
 }
@@ -771,7 +775,7 @@ input[type="text"]:focus {
   position: absolute;
   bottom: 2px;
   right: 4px;
-  font-size: 9px;
+  font-size: 18cqi;
   font-weight: 700;
   color: var(--tile-text);
   opacity: 0.7;
@@ -1661,7 +1665,7 @@ input[type="text"]:focus {
     flex-shrink: 0;
   }
   .rack-tile .tile-letter {
-    font-size: 18px;
+    font-size: 45cqi;
   }
 
   .tile-rack {
@@ -2842,7 +2846,7 @@ input[type="text"]:focus {
   }
 
   .rack-tile .tile-letter {
-    font-size: 16px;
+    font-size: 45cqi;
   }
 
   .rack-utility-btns {

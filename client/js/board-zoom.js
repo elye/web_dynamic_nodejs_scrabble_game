@@ -92,8 +92,20 @@
 
   // ---- Helpers ----
 
-  function isMobile() {
-    return window.innerWidth <= 600;
+  function isZoomEnabled() {
+    if (window.innerWidth <= 600) return true;
+    var w = document.querySelector('.board-wrapper');
+    return w ? w.classList.contains('board-zoom-enabled') : false;
+  }
+
+  /** Measure the actual rack tile width; used for zoom scale calculation. */
+  function getRackTileWidth() {
+    var el = document.querySelector('.rack-tile, .rack-slot-empty');
+    if (el) {
+      var w = el.getBoundingClientRect().width;
+      if (w > 0) return w;
+    }
+    return RACK_TILE_WIDTH;
   }
 
   function clamp(v, lo, hi) {
@@ -136,7 +148,7 @@
     var bcr = bc ? bc.getBoundingClientRect() : wr;
     var cw  = gr.width  / 15;
     var ch  = gr.height / 15;
-    var s   = (cw > 0) ? Math.max(1, RACK_TILE_WIDTH / cw) : 1;
+    var s   = (cw > 0) ? Math.max(1, getRackTileWidth() / cw) : 1;
 
     measurements = {
       wrapperW    : wr.width,
@@ -301,7 +313,7 @@
    * smooth = false           → updates the RAF lerp target; used during drag.
    */
   function zoomToCell(row, col, smooth) {
-    if (!isMobile()) return;
+    if (!isZoomEnabled()) return;
     smooth = (smooth !== false);
 
     // Reset container scroll for accurate zoom measurements
@@ -405,7 +417,7 @@
 
   // touchstart: detect the start of a potential tile drag or free-finger pan.
   document.addEventListener('touchstart', function (e) {
-    if (!isMobile()) return;
+    if (!isZoomEnabled()) return;
     var touch  = e.touches[0];
     var tileEl = e.target.closest('.rack-tile, .board-tile.new-tile');
     if (tileEl) {
@@ -432,7 +444,7 @@
   // While the finger stays inside the safe zone the board remains stationary.
   // passive:false so we can call preventDefault() during a free-finger pan.
   document.addEventListener('touchmove', function (e) {
-    if (!isMobile()) return;
+    if (!isZoomEnabled()) return;
     var touch  = e.touches[0];
     var touchX = touch.clientX;
     var touchY = touch.clientY;
@@ -599,7 +611,7 @@
   // Use setTimeout so touch-drag.js has a chance to place the tile in the DOM
   // before we check for .board-tile.new-tile elements.
   document.addEventListener('touchend', function (e) {
-    if (!isMobile()) return;
+    if (!isZoomEnabled()) return;
 
     if (isDragging) {
       isDragging = false;
@@ -617,7 +629,7 @@
   // before touch-drag.js has placed the tile.  Use a short delay and defer to
   // checkZoomPersistence so we don't blindly zoom out when tiles are on the board.
   document.addEventListener('touchcancel', function () {
-    if (!isMobile()) return;
+    if (!isZoomEnabled()) return;
     cancelEdgeDwell();
     dragStartPos = null;
     dragOrigin   = null;
@@ -656,7 +668,7 @@
    * smooth CSS transition.
    */
   function checkZoomPersistence() {
-    if (!isMobile()) return;
+    if (!isZoomEnabled()) return;
     // Don't zoom out while the blank-letter selection dialog is open —
     // the tile hasn't been committed to the board yet.
     var blankModal = document.getElementById('blank-modal');
@@ -667,6 +679,59 @@
     }
     // else: tiles still on board — keep current zoom position
   }
+
+  // ---- Desktop HTML5 drag zoom ----
+  // When zoom is enabled on non-touch screens, auto-zoom during HTML5
+  // drag-and-drop operations so cells are large enough to target.
+
+  var desktopDragActive = false;
+
+  // Listen on the board grid for dragover — zoom to the cell under the cursor
+  document.addEventListener('dragover', function (e) {
+    if (!isZoomEnabled() || window.innerWidth <= 600) return; // touch handled above
+    var cell = e.target.closest('.board-cell');
+    if (!cell) return;
+    var row = parseInt(cell.dataset.row, 10);
+    var col = parseInt(cell.dataset.col, 10);
+    if (isNaN(row) || isNaN(col)) return;
+
+    if (!desktopDragActive) {
+      desktopDragActive = true;
+      measurements = null; // force fresh measurements
+      // Lock container scroll and overflow for zoom
+      var bc = document.querySelector('.board-container');
+      if (bc) {
+        bc.scrollTop = 0;
+        bc.scrollLeft = 0;
+        bc.style.overflow = 'hidden';
+      }
+    }
+
+    // Use smooth (CSS transition) for the first cell, then lerp for subsequent
+    if (!isZoomed) {
+      zoomToCell(row, col, true);
+    } else {
+      zoomToCell(row, col, false);
+    }
+  }, { passive: true });
+
+  // When the drag leaves the board entirely, don't zoom out yet — wait for
+  // dragend so the tile can be placed on a zoomed cell.
+
+  // dragend fires on the source element when the drag operation finishes
+  document.addEventListener('dragend', function () {
+    if (!desktopDragActive) return;
+    desktopDragActive = false;
+    // Defer to let the drop handler place the tile first
+    setTimeout(checkZoomPersistence, 50);
+  }, { passive: true });
+
+  // Also handle drop — the board may receive the tile
+  document.addEventListener('drop', function () {
+    if (!desktopDragActive) return;
+    desktopDragActive = false;
+    setTimeout(checkZoomPersistence, 50);
+  }, { passive: true });
 
   // ---- Public API (optional external use) ----
   window.BoardZoom = { zoomToCell: zoomToCell, zoomOut: zoomOut, checkZoomPersistence: checkZoomPersistence };
