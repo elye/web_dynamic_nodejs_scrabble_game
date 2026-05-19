@@ -428,7 +428,9 @@ input[type="text"]:focus {
 .game-layout {
   display: flex;
   width: 100%;
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
 }
 
 .left-panel {
@@ -438,6 +440,7 @@ input[type="text"]:focus {
   flex-direction: column;
   padding: 0.8rem;
   gap: 0.6rem;
+  overflow: hidden;
 }
 
 .right-panel {
@@ -456,10 +459,25 @@ input[type="text"]:focus {
    Board
    ============================================ */
 .board-container {
-  flex: 1;
+  flex: 1 1 0;
+  min-height: 0;
   display: flex;
   align-items: flex-start;
   justify-content: center;
+  overflow: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.board-container::-webkit-scrollbar {
+  display: none;
+}
+.board-container.board-pannable {
+  cursor: grab;
+}
+.board-container.board-pan-active {
+  cursor: grabbing !important;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .board-wrapper {
@@ -647,6 +665,7 @@ input[type="text"]:focus {
   border-radius: 12px;
   padding: 8px 12px;
   gap: 24px;
+  flex-shrink: 0;
   user-select: none;
   -webkit-user-select: none;
 }
@@ -785,8 +804,16 @@ input[type="text"]:focus {
 .game-actions {
   display: flex;
   gap: 0.6rem;
+  flex-shrink: 0;
   user-select: none;
   -webkit-user-select: none;
+}
+
+/* In landscape / desktop, the wrapper is transparent (children act as
+   direct flex children of .left-panel). In portrait, it becomes a real
+   sticky element — see the portrait media query below. */
+.portrait-bottom-bar {
+  display: contents;
 }
 .game-actions .btn {
   flex: 1;
@@ -1587,34 +1614,38 @@ input[type="text"]:focus {
     overflow-y: auto;
   }
 
-  /* Board wrapper fills the container */
+  /* Board wrapper — natural height so the board can overflow and be pannable */
   .board-wrapper {
     width: 100%;
-    height: 100%;
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    overflow: hidden;
+    overflow: visible;
     max-width: 100%;
+    margin: auto;
     transform-origin: 0 0;
     will-change: transform;
   }
 
-  /* board-body fills the space below the column headers */
+  /* board-body — natural height (grid determines size via aspect-ratio) */
   .board-body {
-    flex: 1;
-    min-height: 0;
+    flex: none;
   }
 
-  /* Board container takes all remaining height after rack */
+  /* Board container — scrollable when board overflows vertically */
   .board-container {
     flex: 1 1 0;
     min-height: 0;
     min-width: 0;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
-    overflow: hidden;
+    overflow: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .board-container::-webkit-scrollbar {
+    display: none;
   }
 
   /* Zoom state marker (transform itself is set by board-zoom.js) */
@@ -1642,12 +1673,10 @@ input[type="text"]:focus {
     overflow: visible;
   }
 
-  /* The board grid is a square that fits within the container */
+  /* Board grid — full width, square; overflows container if constrained */
   #board-grid {
     max-width: 100%;
-    max-height: 100%;
     aspect-ratio: 1;
-    width: auto;
     height: auto;
   }
 
@@ -1727,6 +1756,10 @@ input[type="text"]:focus {
     display: none;
   }
 
+  .player-score {
+    font-size: 1.6rem;
+  }
+
 }
 
 /* Score Hint */
@@ -1780,107 +1813,110 @@ input[type="text"]:focus {
   opacity: 0;
 }
 
+/* (Generic :fullscreen layout overrides removed — media queries handle all cases.) */
+
 /* ============================================
-   Responsive
+   Portrait layout for wider viewports (tablets, desktop windows)
+   Triggers when the viewport height >= width and width > 768px.
+   The max-width: 768px query above handles narrow phones.
    ============================================ */
-@media (max-width: 768px) {
+@media (orientation: portrait) and (min-width: 769px) {
   .game-layout {
     flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
   }
+
   .left-panel {
-    flex: 1 1 0;
-    min-height: 0;
+    display: flex;
+    flex-direction: column;
     max-width: 100%;
     width: 100%;
   }
+
   .right-panel {
+    flex-shrink: 0;
     max-width: 100%;
     width: 100%;
-  }
-  .right-panel {
-    padding-left: 0.8rem;
-    max-height: 35vh;
     overflow-y: auto;
   }
-  .board-wrapper {
-    max-width: 100%;
-    overflow: hidden;
+
+  .board-container {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
   }
-  .rack-tile {
-    width: min(44px, calc((100vw - 32px) / 7 - 4px));
-    height: min(44px, calc((100vw - 32px) / 7 - 4px));
+
+  .board-container::-webkit-scrollbar {
+    display: none;
+  }
+
+  .rack-container {
     flex-shrink: 0;
   }
-  .rack-tile .tile-letter {
-    font-size: 18px;
-  }
-  .player-score {
-    font-size: 1.6rem;
+
+  .game-actions {
+    flex-shrink: 0;
   }
 }
 
 /* ============================================
-   Fullscreen layout — mirror the mobile space-efficient layout
-   so board + rack + buttons always fit within the screen.
+   Portrait: full-width board with sticky rack/buttons overlay
+   Applies to ALL portrait viewports (phones + tablets + desktop).
+   Board always renders at 100% container width (square via
+   aspect-ratio on .board-grid). When the viewport is too short
+   for board + rack + buttons, the rack/buttons stick to the bottom
+   and overlay the board, which is pannable underneath.
    ============================================ */
-:fullscreen .game-layout,
-:-webkit-full-screen .game-layout {
-  height: 100vh;
-  overflow: hidden;
-  flex-direction: column;
-}
-:fullscreen .left-panel,
-:-webkit-full-screen .left-panel {
-  flex: 1 1 0;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  height: auto;
-  max-width: 100%;
-  width: 100%;
-  padding: 0.5rem;
-  gap: 0.5rem;
-}
-:fullscreen .right-panel,
-:-webkit-full-screen .right-panel {
-  flex-shrink: 0;
-  max-height: 35vh;
-  overflow-y: auto;
-  max-width: 100%;
-  width: 100%;
-}
-:fullscreen .board-container,
-:-webkit-full-screen .board-container {
-  flex: 1 1 0;
-  min-height: 0;
-  overflow: hidden;
-}
-:fullscreen .board-wrapper,
-:-webkit-full-screen .board-wrapper {
-  width: 100%;
-  height: 100%;
-  max-width: none;
-  display: flex;
-  flex-direction: column;
-}
-:fullscreen .board-body,
-:-webkit-full-screen .board-body {
-  flex: 1;
-  min-height: 0;
-}
-:fullscreen .board-grid,
-:-webkit-full-screen .board-grid {
-  max-height: 100%;
-  max-width: 100%;
-}
-:fullscreen .rack-container,
-:-webkit-full-screen .rack-container {
-  flex-shrink: 0;
-}
-:fullscreen .game-actions,
-:-webkit-full-screen .game-actions {
-  flex-shrink: 0;
+@media (orientation: portrait) {
+  /* Make the game-layout scrollable so the board can be panned
+     by scrolling, while the portrait-bottom-bar sticks at the bottom. */
+  .game-layout {
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .game-layout::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Left panel: natural height (no flex-shrink/grow), let the board
+     determine its height. No overflow clipping. */
+  .left-panel {
+    flex: none;
+    overflow: visible;
+  }
+
+  /* Board container: natural height, no internal scrolling.
+     Scrolling/panning now happens on .game-layout. */
+  .board-container {
+    flex: none;
+    overflow: visible;
+  }
+
+  /* Remove the 680px cap so the board is truly full-width */
+  .board-wrapper {
+    max-width: 100%;
+  }
+
+  /* Sticky wrapper: rack + buttons stick at the viewport bottom
+     when the board pushes them out of view. */
+  .portrait-bottom-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    position: sticky;
+    bottom: 0;
+    z-index: 100;
+    background: var(--bg-primary);
+    padding-top: 0.4rem;
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.45);
+  }
+
+  /* Right panel: remove height cap; it lives below the fold. */
+  .right-panel {
+    max-height: none;
+  }
 }
 
 /* Reconnecting overlay */
@@ -2674,33 +2710,24 @@ input[type="text"]:focus {
 
 /* ============================================
    Fullscreen Layout Fix
-   Targets the game-screen when the browser enters
-   native fullscreen (Chromium, WebKit, Firefox).
+   Only constrains height/overflow — does NOT change flex-direction.
+   The orientation / width media queries above handle portrait vs
+   landscape identically in fullscreen and normal modes.
    ============================================ */
 #game-screen:fullscreen,
 #game-screen:-webkit-full-screen,
 #game-screen:-moz-full-screen {
-  overflow-y: auto;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg-primary);
 }
 
-/* Constrain game-layout to exactly the viewport height so content
-   cannot grow beyond the screen and become unreachable. */
 #game-screen:fullscreen .game-layout,
 #game-screen:-webkit-full-screen .game-layout,
 #game-screen:-moz-full-screen .game-layout {
   height: 100vh;
   min-height: unset;
-}
-
-/* Allow the left panel to scroll vertically in fullscreen so the
-   action buttons (Submit / Pass / Return) at the bottom are always
-   reachable even when the board is wider than the viewport height.
-   min-height: 0 on .board-container lets it shrink in the flex
-   column so the buttons stay in view whenever possible. */
-#game-screen:fullscreen .left-panel,
-#game-screen:-webkit-full-screen .left-panel,
-#game-screen:-moz-full-screen .left-panel {
-  overflow-y: auto;
 }
 
 #game-screen:fullscreen .board-container,
@@ -2709,9 +2736,6 @@ input[type="text"]:focus {
   min-height: 0;
 }
 
-/* Right panel: the existing overflow-y: auto + max-height: 100vh
-   are already correct; re-assert max-height under fullscreen to be
-   safe against any inherited overrides. */
 #game-screen:fullscreen .right-panel,
 #game-screen:-webkit-full-screen .right-panel,
 #game-screen:-moz-full-screen .right-panel {
@@ -2759,11 +2783,12 @@ input[type="text"]:focus {
     justify-content: center;
   }
 
-  /* Board wrapper: fills board-container, column-stacks headers above body */
+  /* Board wrapper: fit-content width keeps legends aligned with the grid
+     when height constrains the grid to be narrower than available width. */
   .board-wrapper {
-    width: 100%;
+    width: fit-content;
+    max-width: 100%;
     height: 100%;
-    max-width: none;
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -2778,13 +2803,20 @@ input[type="text"]:focus {
     display: flex;
   }
 
-  /* board-grid: square that fits within the container */
+  /* board-grid: square that fits within the container.
+     flex: none + height: 100% + aspect-ratio: 1 → width = height,
+     so the grid is sized by the available height. */
   #board-grid {
+    flex: none;
     max-width: 100%;
-    max-height: 100%;
+    height: 100%;
     aspect-ratio: 1;
     width: auto;
-    height: auto;
+  }
+
+  /* Row headers: match the grid height exactly */
+  .board-row-headers {
+    height: 100%;
   }
 
   /* Rack: never shrink, always visible */

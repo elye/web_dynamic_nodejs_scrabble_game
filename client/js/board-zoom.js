@@ -304,6 +304,14 @@
     if (!isMobile()) return;
     smooth = (smooth !== false);
 
+    // Reset container scroll for accurate zoom measurements
+    var bc = document.querySelector('.board-container');
+    if (bc) {
+      bc.scrollTop = 0;
+      bc.scrollLeft = 0;
+      bc.style.overflow = 'hidden';
+    }
+
     var m = ensureMeasurements();
     if (!m) return;
 
@@ -349,6 +357,13 @@
     smooth = (smooth !== false);
     var wrapper = document.querySelector('.board-wrapper');
     if (!wrapper) return;
+
+    // Restore container scroll ability
+    var bc = document.querySelector('.board-container');
+    if (bc) {
+      bc.style.overflow = '';
+    }
+    if (window.BoardPan) window.BoardPan.checkPannable();
 
     stopRaf();
 
@@ -459,7 +474,15 @@
       var dy = touchY - dragStartPos.y;
       if (Math.sqrt(dx * dx + dy * dy) < DRAG_THRESHOLD) return;
 
-      // Drag threshold crossed — ensure layout is measured (once per session).
+      // Drag threshold crossed — reset container scroll and lock overflow
+      var bc = document.querySelector('.board-container');
+      if (bc) {
+        bc.scrollTop = 0;
+        bc.scrollLeft = 0;
+        bc.style.overflow = 'hidden';
+      }
+
+      // Ensure layout is measured (once per session).
       var m = ensureMeasurements();
       if (!m) return;
 

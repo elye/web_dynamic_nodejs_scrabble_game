@@ -834,7 +834,9 @@ function initFullscreen() {
   }
 
   function enterFullscreen() {
-    const el = document.documentElement;
+    // Fullscreen the game-screen element so that #game-screen:fullscreen
+    // CSS selectors match and constrain the layout correctly.
+    const el = document.getElementById('game-screen') || document.documentElement;
     if (el.requestFullscreen) {
       el.requestFullscreen();
     } else if (el.webkitRequestFullscreen) {
@@ -887,10 +889,21 @@ function initFullscreen() {
     }
   });
 
-  document.addEventListener('fullscreenchange', updateIcon);
-  document.addEventListener('webkitfullscreenchange', updateIcon);
-  document.addEventListener('mozfullscreenchange', updateIcon);
-  document.addEventListener('MSFullscreenChange', updateIcon);
+  // Re-check pannable state and zoom when entering/exiting fullscreen
+  // because the viewport dimensions change.
+  function onFullscreenChange() {
+    updateIcon();
+    if (window.BoardPan) {
+      setTimeout(function () { window.BoardPan.checkPannable(); }, 100);
+    }
+    if (window.BoardZoom) {
+      setTimeout(function () { window.BoardZoom.zoomOut(false); }, 50);
+    }
+  }
+  document.addEventListener('fullscreenchange', onFullscreenChange);
+  document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+  document.addEventListener('mozfullscreenchange', onFullscreenChange);
+  document.addEventListener('MSFullscreenChange', onFullscreenChange);
 }
 
 // ============================================
