@@ -26,7 +26,11 @@
       transform: scale(1.1);
       transition: none;
     `;
-    document.body.appendChild(ghost);
+    // Append to the fullscreen element when active, otherwise document.body.
+    // In fullscreen mode only the fullscreen element and its descendants are
+    // rendered, so a ghost on document.body would be invisible.
+    const container = document.fullscreenElement || document.webkitFullscreenElement || document.body;
+    container.appendChild(ghost);
     return ghost;
   }
 
