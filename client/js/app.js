@@ -292,7 +292,18 @@ function handleGameState(msg) {
   if (msg.turnHistory) {
     updateTurnHistory(msg.turnHistory);
   }
-  
+
+  // On mobile, zoom out if no pending (new) tiles remain after the state update
+  // (e.g. opponent/AI submitted a move and our pending tiles were recalled).
+  if (window.BoardZoom) {
+    setTimeout(window.BoardZoom.checkZoomPersistence, 0);
+  }
+
+  // Cancel any in-progress tile drag (ghost cleanup) when opponent/AI moves
+  if (window.TouchDrag) {
+    window.TouchDrag.cancelActiveDrag();
+  }
+
   if (msg.status === 'finished') {
     showEndgameButtons();
   }
@@ -326,6 +337,16 @@ function handleWordAccepted(msg) {
   if (msg.totalTurnScore && msg.tilesPlayed && msg.tilesPlayed.length > 0) {
     removeScoreHint();
     showBoardScoreIndicator(msg.tilesPlayed, msg.totalTurnScore);
+  }
+
+  // On mobile, zoom out if the accepted word cleared all pending tiles
+  if (window.BoardZoom) {
+    setTimeout(window.BoardZoom.checkZoomPersistence, 0);
+  }
+
+  // Cancel any in-progress tile drag (ghost cleanup) when tiles are recalled
+  if (window.TouchDrag) {
+    window.TouchDrag.cancelActiveDrag();
   }
 }
 
@@ -799,6 +820,154 @@ function showRoundSummary() {
 }
 
 // ============================================
+// Fullscreen Toggle
+// ============================================
+function initFullscreen() {
+  const btn = document.getElementById('fullscreen-btn');
+  if (!btn) return;
+
+  // Hide on devices that have no fullscreen support (e.g. iOS Safari)
+  const fsEnabled = document.fullscreenEnabled || document.webkitFullscreenEnabled;
+  if (!fsEnabled) {
+    btn.style.display = 'none';
+    return;
+  }
+
+  function enterFullscreen() {
+    // Fullscreen the game-screen element so that #game-screen:fullscreen
+    // CSS selectors match and constrain the layout correctly.
+    const el = document.getElementById('game-screen') || document.documentElement;
+    if (el.requestFullscreen) {
+      el.requestFullscreen();
+    } else if (el.webkitRequestFullscreen) {
+      el.webkitRequestFullscreen();
+    } else if (el.mozRequestFullScreen) {
+      el.mozRequestFullScreen();
+    } else if (el.msRequestFullscreen) {
+      el.msRequestFullscreen();
+    }
+  }
+
+  function exitFullscreen() {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    } else if (document.mozCancelFullScreen) {
+      document.mozCancelFullScreen();
+    } else if (document.msExitFullscreen) {
+      document.msExitFullscreen();
+    }
+  }
+
+  function isFullscreen() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement ||
+              document.mozFullScreenElement || document.msFullscreenElement);
+  }
+
+  function updateIcon() {
+    const enterIcon = btn.querySelector('.fs-enter');
+    const exitIcon = btn.querySelector('.fs-exit');
+    if (isFullscreen()) {
+      enterIcon.style.display = 'none';
+      exitIcon.style.display = 'block';
+      btn.title = 'Exit fullscreen';
+      btn.setAttribute('aria-label', 'Exit fullscreen');
+    } else {
+      enterIcon.style.display = 'block';
+      exitIcon.style.display = 'none';
+      btn.title = 'Enter fullscreen';
+      btn.setAttribute('aria-label', 'Enter fullscreen');
+    }
+  }
+
+  btn.addEventListener('click', () => {
+    if (isFullscreen()) {
+      exitFullscreen();
+    } else {
+      enterFullscreen();
+    }
+  });
+
+  // Re-check pannable state and zoom when entering/exiting fullscreen
+  // because the viewport dimensions change.
+  function onFullscreenChange() {
+    updateIcon();
+    if (window.BoardPan) {
+      setTimeout(function () { window.BoardPan.checkPannable(); }, 100);
+    }
+    if (window.BoardZoom) {
+      setTimeout(function () { window.BoardZoom.zoomOut(false); }, 50);
+    }
+  }
+  document.addEventListener('fullscreenchange', onFullscreenChange);
+  document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+  document.addEventListener('mozfullscreenchange', onFullscreenChange);
+  document.addEventListener('MSFullscreenChange', onFullscreenChange);
+}
+
+// ============================================
+// Responsive Rack Layout
+// ============================================
+function initRackLayout() {
+  const rackContainer = document.querySelector('.rack-container');
+  const utilityBtns = document.querySelector('.rack-utility-btns');
+  const tileRack = document.getElementById('tile-rack');
+  const gameActions = document.getElementById('game-actions');
+  const submitBtn = document.getElementById('submit-btn');
+  const shuffleBtn = document.getElementById('shuffle-btn');
+  const sortBtn = document.getElementById('sort-btn');
+  const exitBtn = document.getElementById('exit-game-btn');
+  const passBtn = document.getElementById('pass-btn');
+
+  if (!rackContainer || !gameActions || !shuffleBtn || !sortBtn) return;
+
+  function applyLayout() {
+    const narrow = window.innerWidth < 500;
+
+    if (narrow) {
+      // Move shuffle and sort into game-actions (before submit)
+      if (shuffleBtn.parentElement !== gameActions) {
+        gameActions.appendChild(shuffleBtn);
+        gameActions.appendChild(sortBtn);
+      }
+      // Ensure exit and pass remain before submit
+      if (exitBtn && exitBtn.parentElement === gameActions) {
+        gameActions.insertBefore(exitBtn, submitBtn);
+      }
+      if (passBtn && passBtn.parentElement === gameActions) {
+        gameActions.insertBefore(passBtn, submitBtn);
+      }
+      // Make exit and pass icon-only
+      if (exitBtn) exitBtn.classList.add('icon-only');
+      if (passBtn) passBtn.classList.add('icon-only');
+    } else {
+      // Move shuffle to start of rackContainer, sort to end
+      if (shuffleBtn.parentElement !== rackContainer) {
+        rackContainer.insertBefore(shuffleBtn, tileRack);
+        // Append sort after tileRack (before rack-utility-btns if present)
+        if (utilityBtns) {
+          rackContainer.insertBefore(sortBtn, utilityBtns);
+        } else {
+          rackContainer.appendChild(sortBtn);
+        }
+      }
+      // Restore full text
+      if (exitBtn) exitBtn.classList.remove('icon-only');
+      if (passBtn) passBtn.classList.remove('icon-only');
+    }
+  }
+
+  applyLayout();
+
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(applyLayout, 80);
+  });
+}
+
+// ============================================
 // Initialize
 // ============================================
 
@@ -809,6 +978,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   initLobby();
   initStats();
   initGameActions();
+  initFullscreen();
+  initRackLayout();
+
+  // Release button focus/active state immediately on touchend so icon buttons
+  // don't stay visually highlighted after a tap on iOS/iPadOS.
+  document.addEventListener('touchend', function(e) {
+    var btn = e.target.closest('.rack-btn, .btn.icon-only');
+    if (btn) { setTimeout(function() { btn.blur(); }, 50); }
+  }, { passive: true });
 
   // Wait for auth check before connecting (with 2s timeout)
   await Promise.race([
