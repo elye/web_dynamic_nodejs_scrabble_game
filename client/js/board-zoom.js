@@ -93,7 +93,8 @@
   // ---- Helpers ----
 
   function isZoomEnabled() {
-    if (window.innerWidth <= 600) return true;
+    // Always enable zoom on phones (portrait: width ≤ 600, landscape: height ≤ 600)
+    if (window.innerWidth <= 600 || window.innerHeight <= 600) return true;
     var w = document.querySelector('.board-wrapper');
     return w ? w.classList.contains('board-zoom-enabled') : false;
   }
@@ -118,6 +119,7 @@
     if (!wrapper) return;
     wrapper.style.transform =
       'translate(' + tx + 'px,' + ty + 'px) scale(' + s + ')';
+    wrapper.style.setProperty('--zoom-scale', s);
   }
 
   /**
