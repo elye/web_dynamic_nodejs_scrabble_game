@@ -8,7 +8,7 @@ import MemoryStore from 'memorystore';
 import { withLogto } from '@logto/express';
 import type { default as NodeClientType } from '@logto/node';
 import { connectToMongo } from './db';
-import { getUserGames, getGameDetail, getUserStatsSummary, getOpponentStats } from './gameStats';
+import { getUserGames, getGameDetail, getUserStatsSummary, getOpponentStats, deleteUserGameData } from './gameStats';
 
 const SessionStore = MemoryStore(expressSession);
 
@@ -163,6 +163,54 @@ app.get('/api/stats/games/:gameId', withLogto(logtoConfig), requireAuth, async (
     return;
   }
   res.json(game);
+});
+
+// --- Account Danger Zone endpoints ---
+
+// Delete all game data for the authenticated user
+app.post('/api/account/delete-data', express.json(), withLogto(logtoConfig), requireAuth, async (req, res) => {
+  try {
+    const claims = req.user.claims!;
+    const userId = claims.sub!;
+    const expectedUsername = claims.name || claims.email || claims.sub || 'Player';
+
+    const { confirmUsername } = req.body;
+    if (!confirmUsername || confirmUsername !== expectedUsername) {
+      res.status(400).json({ error: 'Username confirmation does not match' });
+      return;
+    }
+
+    const deletedCount = await deleteUserGameData(userId);
+    res.json({ success: true, deletedGames: deletedCount });
+  } catch (err) {
+    console.error('Error deleting user data:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Delete all game data AND sign the user out (account deletion)
+app.post('/api/account/delete-account', express.json(), withLogto(logtoConfig), requireAuth, async (req, res) => {
+  try {
+    const claims = req.user.claims!;
+    const userId = claims.sub!;
+    const expectedUsername = claims.name || claims.email || claims.sub || 'Player';
+
+    const { confirmUsername } = req.body;
+    if (!confirmUsername || confirmUsername !== expectedUsername) {
+      res.status(400).json({ error: 'Username confirmation does not match' });
+      return;
+    }
+
+    const deletedCount = await deleteUserGameData(userId);
+
+    // Destroy the session so the user is fully logged out
+    (req.session as any)?.destroy?.();
+
+    res.json({ success: true, deletedGames: deletedCount });
+  } catch (err) {
+    console.error('Error deleting account:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // Static files

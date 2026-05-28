@@ -325,3 +325,16 @@ export async function getOpponentStats(userId: string): Promise<any[]> {
 
   return db.collection('games').aggregate(pipeline).toArray();
 }
+
+/**
+ * Delete all games where the given user participated.
+ * Returns the number of deleted game documents.
+ */
+export async function deleteUserGameData(userId: string): Promise<number> {
+  const db = getDb();
+  if (!db) return 0;
+
+  const result = await db.collection('games').deleteMany({ 'players.userId': userId });
+  console.log(`🗑️ Deleted ${result.deletedCount} games for user ${userId}`);
+  return result.deletedCount;
+}
