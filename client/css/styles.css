@@ -233,6 +233,15 @@ input[type="text"]:focus {
   background: var(--danger);
   color: white;
 }
+.btn-danger-outlined {
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid var(--danger);
+}
+.btn-danger-outlined:hover {
+  background: var(--danger);
+  color: white;
+}
 .btn-sm {
   padding: 0.4rem 0.8rem;
   font-size: 0.8rem;
@@ -2892,6 +2901,119 @@ input[type="text"]:focus {
     flex: 1 1 0;
     min-height: 100px;
     max-height: none;
+  }
+}
+
+/* ============================================
+   Advanced Settings / Danger Zone
+   ============================================ */
+.btn-advanced-settings {
+  display: inline-block;
+  margin-top: 2rem;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid var(--text-muted);
+  border-radius: 6px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+.btn-advanced-settings:hover {
+  opacity: 1;
+}
+.danger-zone {
+  border: 1px solid var(--danger);
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin-top: 2rem;
+}
+.danger-zone-title {
+  color: var(--danger) !important;
+}
+.danger-zone-items {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.danger-zone-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(231, 76, 60, 0.06);
+  border-radius: 8px;
+  border: 1px solid rgba(231, 76, 60, 0.15);
+}
+.danger-zone-item-info {
+  flex: 1;
+}
+.danger-zone-item-info strong {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 1rem;
+}
+.danger-zone-item-info p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+/* Danger Confirmation Modal */
+.danger-modal-content {
+  border: 1px solid var(--danger);
+}
+.danger-modal-content h2 {
+  color: var(--danger);
+}
+.danger-confirm-msg {
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+.danger-confirm-input-wrap {
+  margin-bottom: 0.5rem;
+}
+.danger-confirm-input-wrap label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+.danger-confirm-input {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--text-muted);
+  border-radius: 6px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-family: var(--font-family);
+  box-sizing: border-box;
+}
+.danger-confirm-input:focus {
+  outline: none;
+  border-color: var(--danger);
+}
+.danger-confirm-error {
+  color: var(--danger);
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+.danger-confirm-error.hidden {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .danger-zone-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .danger-zone-item .btn {
+    align-self: flex-end;
   }
 }
 

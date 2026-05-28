@@ -409,6 +409,47 @@
             </table>
           </div>
         </section>
+
+        <!-- Advanced Settings Toggle -->
+        <button id="advanced-settings-btn" class="btn btn-advanced-settings">⚙️ Advanced Settings</button>
+
+        <!-- Danger Zone (hidden by default) -->
+        <section class="stats-section danger-zone hidden">
+          <h2 class="stats-section-title danger-zone-title">⚠️ Danger Zone</h2>
+          <div class="danger-zone-items">
+            <div class="danger-zone-item">
+              <div class="danger-zone-item-info">
+                <strong>Delete Game Data</strong>
+                <p>Permanently delete all your game history, stats, and records. This cannot be undone. You will remain signed in.</p>
+              </div>
+              <button id="danger-delete-data-btn" class="btn btn-danger-outlined">Delete Data</button>
+            </div>
+            <div class="danger-zone-item">
+              <div class="danger-zone-item-info">
+                <strong>Delete Account</strong>
+                <p>Permanently delete all your game data and sign out. This cannot be undone.</p>
+              </div>
+              <button id="danger-delete-account-btn" class="btn btn-danger">Delete Account</button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- Danger Zone Confirmation Modal -->
+  <div id="danger-confirm-modal" class="modal hidden">
+    <div class="modal-content danger-modal-content">
+      <h2 id="danger-confirm-title">Confirm Deletion</h2>
+      <p id="danger-confirm-message" class="danger-confirm-msg"></p>
+      <div class="danger-confirm-input-wrap">
+        <label for="danger-confirm-input">Type your username to confirm:</label>
+        <input type="text" id="danger-confirm-input" class="danger-confirm-input" placeholder="" autocomplete="off">
+      </div>
+      <p id="danger-confirm-error" class="danger-confirm-error hidden"></p>
+      <div class="modal-actions">
+        <button id="danger-confirm-cancel-btn" class="btn btn-outlined">Cancel</button>
+        <button id="danger-confirm-proceed-btn" class="btn btn-danger" disabled>Confirm Delete</button>
       </div>
     </div>
   </div>

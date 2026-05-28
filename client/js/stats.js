@@ -39,6 +39,13 @@ function initStats() {
   document.getElementById('detail-tab-board-btn').addEventListener('click', () => {
     switchDetailTab('board');
   });
+
+  initDangerZone();
+
+  document.getElementById('advanced-settings-btn').addEventListener('click', () => {
+    const dangerZone = document.querySelector('.danger-zone');
+    dangerZone.classList.toggle('hidden');
+  });
 }
 
 function switchDetailTab(tab) {
@@ -878,4 +885,131 @@ function renderGameDetail(game) {
 function refreshStats() {
   statsLoaded = false;
   statsCurrentPage = 1;
+}
+
+// ============================================
+// Danger Zone - Delete Data / Delete Account
+// ============================================
+
+let _dangerAction = null; // 'delete-data' or 'delete-account'
+
+function initDangerZone() {
+  const modal = document.getElementById('danger-confirm-modal');
+  const input = document.getElementById('danger-confirm-input');
+  const proceedBtn = document.getElementById('danger-confirm-proceed-btn');
+  const cancelBtn = document.getElementById('danger-confirm-cancel-btn');
+  const errorEl = document.getElementById('danger-confirm-error');
+
+  document.getElementById('danger-delete-data-btn').addEventListener('click', () => {
+    openDangerModal('delete-data');
+  });
+
+  document.getElementById('danger-delete-account-btn').addEventListener('click', () => {
+    openDangerModal('delete-account');
+  });
+
+  input.addEventListener('input', () => {
+    const username = getDisplayUsername();
+    proceedBtn.disabled = input.value !== username;
+    errorEl.classList.add('hidden');
+  });
+
+  cancelBtn.addEventListener('click', () => {
+    closeDangerModal();
+  });
+
+  proceedBtn.addEventListener('click', () => {
+    executeDangerAction();
+  });
+}
+
+function getDisplayUsername() {
+  const el = document.getElementById('auth-username-display');
+  return el ? el.textContent.trim() : '';
+}
+
+function openDangerModal(action) {
+  _dangerAction = action;
+  const modal = document.getElementById('danger-confirm-modal');
+  const title = document.getElementById('danger-confirm-title');
+  const message = document.getElementById('danger-confirm-message');
+  const input = document.getElementById('danger-confirm-input');
+  const proceedBtn = document.getElementById('danger-confirm-proceed-btn');
+  const errorEl = document.getElementById('danger-confirm-error');
+
+  const username = getDisplayUsername();
+
+  if (action === 'delete-data') {
+    title.textContent = '⚠️ Delete All Game Data';
+    message.textContent = 'This will permanently delete all your game history, statistics, and records. This action cannot be undone. You will remain signed in.';
+    proceedBtn.textContent = 'Delete All Data';
+  } else {
+    title.textContent = '⚠️ Delete Account';
+    message.textContent = 'This will permanently delete all your game data and sign you out. This action cannot be undone.';
+    proceedBtn.textContent = 'Delete Account';
+  }
+
+  input.value = '';
+  input.placeholder = username;
+  proceedBtn.disabled = true;
+  errorEl.classList.add('hidden');
+  modal.classList.remove('hidden');
+  input.focus();
+}
+
+function closeDangerModal() {
+  _dangerAction = null;
+  document.getElementById('danger-confirm-modal').classList.add('hidden');
+  document.getElementById('danger-confirm-input').value = '';
+  document.getElementById('danger-confirm-error').classList.add('hidden');
+}
+
+async function executeDangerAction() {
+  const action = _dangerAction;
+  const input = document.getElementById('danger-confirm-input');
+  const proceedBtn = document.getElementById('danger-confirm-proceed-btn');
+  const errorEl = document.getElementById('danger-confirm-error');
+  const confirmUsername = input.value;
+
+  proceedBtn.disabled = true;
+  proceedBtn.textContent = 'Deleting...';
+  errorEl.classList.add('hidden');
+
+  const endpoint = action === 'delete-account'
+    ? '/api/account/delete-account'
+    : '/api/account/delete-data';
+
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirmUsername }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      errorEl.textContent = data.error || 'Something went wrong. Please try again.';
+      errorEl.classList.remove('hidden');
+      proceedBtn.disabled = false;
+      proceedBtn.textContent = _dangerAction === 'delete-account' ? 'Delete Account' : 'Delete All Data';
+      return;
+    }
+
+    closeDangerModal();
+
+    if (action === 'delete-account') {
+      // Clear auth state and redirect to sign-out
+      localStorage.removeItem('scrabble_was_signed_in');
+      window.location.href = '/sign-out';
+    } else {
+      // Stay signed in, go back to lobby
+      showScreen('lobby-screen');
+    }
+  } catch (err) {
+    errorEl.textContent = 'Network error. Please try again.';
+    errorEl.classList.remove('hidden');
+    proceedBtn.disabled = false;
+    proceedBtn.textContent = _dangerAction === 'delete-account' ? 'Delete Account' : 'Delete All Data';
+  }
 }
