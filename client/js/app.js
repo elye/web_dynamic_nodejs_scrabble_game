@@ -415,7 +415,10 @@ function showNotification(text, type = 'info') {
   `;
   document.head.appendChild(style);
   
-  document.body.appendChild(toast);
+  // Append to the fullscreen element when active, otherwise document.body.
+  // In fullscreen mode only the fullscreen element and its descendants are visible.
+  const container = document.fullscreenElement || document.webkitFullscreenElement || document.body;
+  container.appendChild(toast);
   setTimeout(() => {
     toast.remove();
     style.remove();
