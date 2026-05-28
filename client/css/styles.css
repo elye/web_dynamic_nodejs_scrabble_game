@@ -2905,8 +2905,24 @@ input[type="text"]:focus {
 }
 
 /* ============================================
-   Danger Zone
+   Advanced Settings / Danger Zone
    ============================================ */
+.btn-advanced-settings {
+  display: inline-block;
+  margin-top: 2rem;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid var(--text-muted);
+  border-radius: 6px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+.btn-advanced-settings:hover {
+  opacity: 1;
+}
 .danger-zone {
   border: 1px solid var(--danger);
   border-radius: 10px;

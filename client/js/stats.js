@@ -41,6 +41,11 @@ function initStats() {
   });
 
   initDangerZone();
+
+  document.getElementById('advanced-settings-btn').addEventListener('click', () => {
+    const dangerZone = document.querySelector('.danger-zone');
+    dangerZone.classList.toggle('hidden');
+  });
 }
 
 function switchDetailTab(tab) {
