@@ -1123,7 +1123,7 @@ export class GameManager {
       scoreProgression,
       turnEvents,
       turnHistory: game.turnHistory,
-      settings: game.settings,
+      settings: (({ gameType, ...rest }) => rest)(game.settings),
       timeoutMode: game.settings.timeLimit === 0 ? 'N/A' : (game.settings.timeoutMode === 'penalty' ? 'OT' : 'SD'),
       isSolo: game.players.filter(p => !p.isAI).length === 1 && game.players.some(p => p.isAI),
       endedAt: new Date(),
