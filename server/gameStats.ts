@@ -385,19 +385,23 @@ export async function deleteUserGameDataAcrossCluster(
   const mongoClient = getClient();
   if (!mongoClient) return { deleted: 0, anonymized: 0, databases: [] };
 
-  const currentDbName = getDb()?.databaseName || 'scrabble';
-  const adminDb = mongoClient.db().admin();
-  const { databases: dbList } = await adminDb.listDatabases();
+  const gameDbs = process.env.GAME_DBS;
+  if (!gameDbs) {
+    console.warn('⚠️  GAME_DBS not set — skipping cross-cluster deletion');
+    return { deleted: 0, anonymized: 0, databases: [] };
+  }
+
+  const currentDbName = getDb()?.databaseName;
+  const sharedDbName = getSharedDb()?.databaseName;
+  const allowedDbs = gameDbs.split(',').map(s => s.trim()).filter(s => s);
 
   let totalDeleted = 0;
   let totalAnonymized = 0;
   const touchedDbs: string[] = [];
 
-  for (const dbInfo of dbList) {
-    const dbName = dbInfo.name;
-    // Skip system databases, the current game database, and the shared users database
-    const sharedDbName = getSharedDb()?.databaseName || 'shared';
-    if (['admin', 'local', 'config', currentDbName, sharedDbName].includes(dbName)) continue;
+  for (const dbName of allowedDbs) {
+    // Skip the current game database and the shared users database (handled separately)
+    if (dbName === currentDbName || dbName === sharedDbName) continue;
 
     const otherDb = mongoClient.db(dbName);
     const collections = await otherDb.listCollections({ name: 'games' }).toArray();
