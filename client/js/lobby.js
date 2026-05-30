@@ -2,6 +2,29 @@
 // Lobby & Room Management
 // ============================================
 
+// Returns true if user is a guest (not signed in)
+function isGuest() {
+  return !document.getElementById('username-row').classList.contains('hidden');
+}
+
+// Validates that a guest has entered a username.
+// Returns the username if valid, or empty string if invalid (with UI feedback).
+function requireGuestUsername() {
+  if (!isGuest()) return document.getElementById('username-input').value.trim();
+  const input = document.getElementById('username-input');
+  const error = document.getElementById('username-error');
+  const name = input.value.trim();
+  if (!name) {
+    input.classList.add('input-error');
+    error.classList.remove('hidden');
+    input.focus();
+    return '';
+  }
+  input.classList.remove('input-error');
+  error.classList.add('hidden');
+  return name;
+}
+
 let soloSettings = {
   aiDifficulty: 'medium',
   timeLimit: 0,
@@ -16,11 +39,23 @@ let multiSettings = {
 };
 
 function initLobby() {
+  // Clear validation error when guest types a username
+  const usernameInput = document.getElementById('username-input');
+  usernameInput.addEventListener('input', () => {
+    if (usernameInput.value.trim()) {
+      usernameInput.classList.remove('input-error');
+      document.getElementById('username-error').classList.add('hidden');
+    }
+  });
+
   // --- Solo ---
   const soloBtn = document.getElementById('solo-btn');
   const soloModal = document.getElementById('solo-modal');
 
-  soloBtn.addEventListener('click', () => soloModal.classList.remove('hidden'));
+  soloBtn.addEventListener('click', () => {
+    if (isGuest() && !requireGuestUsername()) return;
+    soloModal.classList.remove('hidden');
+  });
   document.getElementById('cancel-solo-btn').addEventListener('click', () => soloModal.classList.add('hidden'));
 
   document.querySelectorAll('.ai-diff-btn').forEach(btn => {
@@ -48,7 +83,8 @@ function initLobby() {
   });
 
   document.getElementById('confirm-solo-btn').addEventListener('click', () => {
-    const username = document.getElementById('username-input').value.trim() || 'Player';
+    const username = requireGuestUsername();
+    if (!username) { soloModal.classList.add('hidden'); return; }
     const randomOrder = document.getElementById('solo-random-order').checked;
     soloModal.classList.add('hidden');
 
@@ -69,7 +105,10 @@ function initLobby() {
   const multiBtn = document.getElementById('multiplayer-btn');
   const createModal = document.getElementById('create-modal');
 
-  multiBtn.addEventListener('click', () => createModal.classList.remove('hidden'));
+  multiBtn.addEventListener('click', () => {
+    if (isGuest() && !requireGuestUsername()) return;
+    createModal.classList.remove('hidden');
+  });
   document.getElementById('cancel-create-btn').addEventListener('click', () => createModal.classList.add('hidden'));
 
   document.querySelectorAll('.player-count-btn').forEach(btn => {
@@ -105,7 +144,8 @@ function initLobby() {
   });
 
   document.getElementById('confirm-create-btn').addEventListener('click', () => {
-    const username = document.getElementById('username-input').value.trim() || 'Player';
+    const username = requireGuestUsername();
+    if (!username) { createModal.classList.add('hidden'); return; }
     const randomOrder = document.getElementById('multi-random-order').checked;
     createModal.classList.add('hidden');
 
@@ -128,6 +168,7 @@ function initLobby() {
   const joinModal = document.getElementById('join-modal');
 
   joinBtn.addEventListener('click', () => {
+    if (isGuest() && !requireGuestUsername()) return;
     // Pre-fill join username from main username input
     const mainUsername = document.getElementById('username-input').value.trim();
     const joinUsernameInput = document.getElementById('join-username-input');
@@ -144,8 +185,8 @@ function initLobby() {
   document.getElementById('confirm-join-btn').addEventListener('click', () => {
     const roomCode = document.getElementById('room-code-input').value.trim().toUpperCase();
     const joinUsername = document.getElementById('join-username-input').value.trim();
-    const username = joinUsername || document.getElementById('username-input').value.trim() || 'Player';
-    if (!roomCode) return;
+    const username = joinUsername || requireGuestUsername();
+    if (!roomCode || !username) return;
 
     // Sync back to main username input
     if (joinUsername) {

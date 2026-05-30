@@ -86,6 +86,23 @@ body {
   align-items: flex-end;
   gap: 0.6rem;
 }
+.username-error {
+  color: var(--danger);
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+.username-error.hidden {
+  display: none;
+}
+#username-input.input-error {
+  border-color: var(--danger);
+  animation: shake 0.3s ease;
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}
 .username-row-auth {
   display: flex;
   flex-direction: column;
