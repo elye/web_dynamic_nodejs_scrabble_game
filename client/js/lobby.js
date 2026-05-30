@@ -95,14 +95,19 @@ function initLobby() {
       document.querySelectorAll('.type-btn-solo').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       soloSettings.gameType = btn.dataset.type;
+      const soloRandomCb = document.getElementById('solo-random-order');
       // Show/hide hint option (only for Friendly)
       const hintGroup = document.getElementById('solo-hint-group');
       if (btn.dataset.type === 'formal') {
         hintGroup.classList.add('hidden');
         document.getElementById('solo-allow-hint').checked = false;
         soloSettings.allowHint = false;
+        // Formal games always use random turn order
+        soloRandomCb.checked = true;
+        soloRandomCb.disabled = true;
       } else {
         hintGroup.classList.remove('hidden');
+        soloRandomCb.disabled = false;
       }
     });
   });
@@ -174,14 +179,19 @@ function initLobby() {
       document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       multiSettings.gameType = btn.dataset.type;
+      const multiRandomCb = document.getElementById('multi-random-order');
       // Show/hide hint option (only for Friendly)
       const hintGroup = document.getElementById('multi-hint-group');
       if (btn.dataset.type === 'formal') {
         hintGroup.classList.add('hidden');
         document.getElementById('multi-allow-hint').checked = false;
         multiSettings.allowHint = false;
+        // Formal games always use random turn order
+        multiRandomCb.checked = true;
+        multiRandomCb.disabled = true;
       } else {
         hintGroup.classList.remove('hidden');
+        multiRandomCb.disabled = false;
       }
     });
   });
@@ -626,27 +636,30 @@ function checkUrlRoomCode() {
   const params = new URLSearchParams(window.location.search);
   const roomCode = params.get('room');
   if (roomCode) {
-    // Pre-fill room code and show join dialog
-    document.getElementById('room-code-input').value = roomCode.toUpperCase();
-    const mainUsername = document.getElementById('username-input').value.trim();
-    const joinUsernameInput = document.getElementById('join-username-input');
-    if (mainUsername) {
-      joinUsernameInput.value = mainUsername;
-    }
-    // Disable join username if signed in or main username already provided
-    if (!isGuest() || mainUsername) {
-      joinUsernameInput.disabled = true;
-    } else {
-      joinUsernameInput.disabled = false;
-    }
-    document.getElementById('join-modal').classList.remove('hidden');
-    // Focus on username if guest and empty
-    if (isGuest() && !mainUsername) {
-      joinUsernameInput.focus();
-    }
-    // Clean up URL
-    const url = new URL(window.location);
-    url.searchParams.delete('room');
-    window.history.replaceState({}, '', url);
+    // Wait for auth to be ready before showing join modal
+    const ready = window._authReady || Promise.resolve();
+    ready.then(() => {
+      document.getElementById('room-code-input').value = roomCode.toUpperCase();
+      const mainUsername = document.getElementById('username-input').value.trim();
+      const joinUsernameInput = document.getElementById('join-username-input');
+      if (mainUsername) {
+        joinUsernameInput.value = mainUsername;
+      }
+      // Disable join username if signed in or main username already provided
+      if (!isGuest() || mainUsername) {
+        joinUsernameInput.disabled = true;
+      } else {
+        joinUsernameInput.disabled = false;
+      }
+      document.getElementById('join-modal').classList.remove('hidden');
+      // Focus on username if guest and empty
+      if (isGuest() && !mainUsername) {
+        joinUsernameInput.focus();
+      }
+      // Clean up URL
+      const url = new URL(window.location);
+      url.searchParams.delete('room');
+      window.history.replaceState({}, '', url);
+    });
   }
 }
