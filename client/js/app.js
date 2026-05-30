@@ -282,6 +282,9 @@ function handleGameState(msg) {
   if (msg.players) {
     updateScoreboard(msg.players, msg.currentTurn, msg.timers, msg.tileBagCount);
   }
+
+  // Enable/disable submit button based on turn
+  updateSubmitButtonState(msg.currentTurn);
   
   // Update game info
   if (msg.settings) {
@@ -423,6 +426,18 @@ function showNotification(text, type = 'info') {
     toast.remove();
     style.remove();
   }, 3000);
+}
+
+// ============================================
+// Submit Button Turn State
+// ============================================
+
+function updateSubmitButtonState(currentTurnId) {
+  const submitBtn = document.getElementById('submit-btn');
+  if (!submitBtn) return;
+  const isMyTurn = currentTurnId === window.playerId;
+  submitBtn.disabled = !isMyTurn;
+  submitBtn.classList.toggle('btn-disabled', !isMyTurn);
 }
 
 // ============================================

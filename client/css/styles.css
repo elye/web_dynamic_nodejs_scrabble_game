@@ -885,6 +885,10 @@ input[type="text"]:focus {
   border-color: var(--text-primary);
   background: #33334d;
 }
+.player-card.player-card-self {
+  border-left: 3px solid var(--accent);
+  background: rgba(99, 102, 241, 0.08);
+}
 
 .player-card-header {
   display: flex;
@@ -1006,6 +1010,16 @@ input[type="text"]:focus {
 }
 .player-card.active {
   animation: activePulse 2s ease-in-out infinite;
+}
+.player-card.player-card-self .player-name {
+  font-weight: 800;
+}
+
+/* Disabled submit button when not player's turn */
+#submit-btn.btn-disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 /* ============================================

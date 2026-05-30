@@ -21,6 +21,9 @@ function updateScoreboard(players, currentTurnId, timers, tileBagCount) {
     if (player.id === currentTurnId) {
       card.classList.add('active');
     }
+    if (player.id === window.playerId) {
+      card.classList.add('player-card-self');
+    }
     
     const timer = timers ? timers[player.id] : null;
     const timerDisplay = timer !== null && timer !== undefined ? formatTime(timer) : '--:--';
