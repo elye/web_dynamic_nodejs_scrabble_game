@@ -23,8 +23,18 @@ function showSignedOut() {
   document.getElementById('username-row').classList.remove('hidden');
 }
 
+// Derive a suggested display name from Logto user data
+function deriveSuggestedName(userData) {
+  if (!userData) return '';
+  const raw = userData.name || userData.username ||
+    (userData.email ? userData.email.split('@')[0] : '');
+  if (!raw) return '';
+  // Keep only letters, numbers, spaces, hyphens, underscores; trim to 20 chars
+  return raw.replace(/[^a-zA-Z0-9 _-]/g, '').trim().slice(0, 20);
+}
+
 // Show username setup modal for first-time logged-in users
-function showUsernameSetup() {
+async function showUsernameSetup(userData) {
   const modal = document.getElementById('username-setup-modal');
   const input = document.getElementById('username-setup-input');
   const btn = document.getElementById('username-setup-btn');
@@ -36,6 +46,25 @@ function showUsernameSetup() {
   btn.disabled = true;
   statusEl.classList.add('hidden');
   errorEl.classList.add('hidden');
+
+  // Pre-populate with a suggested name from user data
+  const suggested = deriveSuggestedName(userData);
+  if (suggested && suggested.length >= 2) {
+    try {
+      const res = await fetch(`/api/profile/check-name?name=${encodeURIComponent(suggested)}`);
+      const data = await res.json();
+      if (data.available) {
+        input.value = suggested;
+      } else {
+        const suffix = Math.floor(100 + Math.random() * 9000);
+        input.value = (suggested + suffix).slice(0, 20);
+      }
+    } catch {
+      input.value = suggested;
+    }
+    // Trigger the input event so availability check runs on the pre-filled value
+    input.dispatchEvent(new Event('input'));
+  }
 
   let checkTimeout = null;
 
@@ -131,7 +160,7 @@ function showUsernameSetup() {
         displayName = profile.displayName;
       } else {
         // First-time login — prompt user to choose a username
-        displayName = await showUsernameSetup();
+        displayName = await showUsernameSetup(user);
       }
 
       showSignedIn(displayName);
