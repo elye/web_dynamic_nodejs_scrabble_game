@@ -470,16 +470,22 @@ function handleHintResult(msg) {
     return;
   }
 
-  // Recall any existing tiles first
-  recallAllTiles();
+  // Clear any client-side pending tiles locally (don't send RECALL_TILES to server —
+  // the hint click handler already sent it before REQUEST_HINT, and sending another
+  // would cause a TILES_RECALLED response that wipes the hint tiles we're about to place)
+  if (pendingTiles.length > 0) {
+    pendingTiles.forEach(t => {
+      rackTiles.push({ id: t.tileId, letter: t.letter, points: t.points, isBlank: t.isBlank });
+    });
+    pendingTiles = [];
+  }
+  removeScoreHint();
 
   // Place hint tiles from rack to board
   for (const p of msg.placements) {
-    // Remove tile from rack
-    removeTileFromRack(p.tileId);
-
-    // If blank, set the chosen letter
-    const tileObj = { id: p.tileId, letter: p.letter, points: p.points, isBlank: p.isBlank, chosenLetter: p.chosenLetter };
+    // Remove tile from rack (don't re-render each time, we'll render once at the end)
+    const idx = rackTiles.findIndex(t => t.id === p.tileId);
+    if (idx !== -1) rackTiles.splice(idx, 1);
 
     // Add to pending tiles
     pendingTiles.push({
