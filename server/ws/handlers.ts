@@ -54,7 +54,8 @@ export function setupWebSocketHandlers(wss: WebSocket.Server, gameManager: GameM
               message.aiDifficulty || 'medium',
               message.timeLimit ?? 0,
               message.gameType || 'friendly',
-              message.randomOrder || false
+              message.randomOrder || false,
+              Math.min(3, Math.max(1, parseInt(message.aiCount) || 1))
             );
             // GAME_START is already sent inside createSoloGame
             break;

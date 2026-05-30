@@ -121,9 +121,10 @@ export class GameManager {
 
   // --- Solo game (atomic: create + add AI + start) ---
 
-  createSoloGame(playerId: string, socket: WebSocket, username: string, avatar: string, aiDifficulty: 'easy' | 'medium' | 'hard', timeLimit: number, gameType: 'friendly' | 'formal' = 'friendly', randomOrder: boolean = false): Room {
+  createSoloGame(playerId: string, socket: WebSocket, username: string, avatar: string, aiDifficulty: 'easy' | 'medium' | 'hard', timeLimit: number, gameType: 'friendly' | 'formal' = 'friendly', randomOrder: boolean = false, aiCount: number = 1): Room {
+    const clampedAiCount = Math.min(3, Math.max(1, aiCount));
     const settings: GameSettings = {
-      maxPlayers: 2,
+      maxPlayers: 1 + clampedAiCount,
       timeLimit,
       dictionary: 'en_us',
       gameType,
@@ -141,9 +142,12 @@ export class GameManager {
     );
 
     game.addPlayer(playerId, socket.toString(), username, avatar, false, undefined, this.getUserIdForPlayer(playerId));
-    const aiId = uuidv4();
     const aiLabel = aiDifficulty.charAt(0).toUpperCase() + aiDifficulty.slice(1);
-    game.addPlayer(aiId, '', `AI ${aiLabel}`, '🤖', true, aiDifficulty);
+    for (let i = 0; i < clampedAiCount; i++) {
+      const aiId = uuidv4();
+      const aiName = clampedAiCount === 1 ? `AI ${aiLabel}` : `AI Bot ${i + 1} (${aiLabel})`;
+      game.addPlayer(aiId, '', aiName, '🤖', true, aiDifficulty);
+    }
 
     const room: Room = { id: roomId, hostId: playerId, game, settings, isSolo: true };
     this.rooms.set(roomId, room);

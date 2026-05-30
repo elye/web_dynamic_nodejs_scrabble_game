@@ -29,6 +29,7 @@ let soloSettings = {
   aiDifficulty: 'medium',
   timeLimit: 0,
   gameType: 'friendly',
+  aiCount: 1,
 };
 
 let multiSettings = {
@@ -74,6 +75,14 @@ function initLobby() {
     });
   });
 
+  document.querySelectorAll('.ai-count-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.ai-count-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      soloSettings.aiCount = parseInt(btn.dataset.count);
+    });
+  });
+
   document.querySelectorAll('.type-btn-solo').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.type-btn-solo').forEach(b => b.classList.remove('active'));
@@ -94,6 +103,7 @@ function initLobby() {
         username,
         avatar: '',
         aiDifficulty: soloSettings.aiDifficulty,
+        aiCount: soloSettings.aiCount,
         timeLimit: soloSettings.timeLimit,
         gameType: soloSettings.gameType,
         randomOrder,
