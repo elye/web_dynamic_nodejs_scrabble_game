@@ -202,7 +202,7 @@ function renderGames(games) {
     const me = game.players.find(p => p.userId === window._logtoUserId);
     const opponents = game.players.filter(p => p.userId !== window._logtoUserId);
     const opponentNames = opponents.map(p => {
-      const badge = p.isAI ? ' 🤖' : p.userId ? ' <span class="verified-badge" title="Registered player">✓</span>' : '';
+      const badge = p.isAI ? ' 🤖' : p.isDeleted ? ' <span class="deleted-badge" title="Deleted account">🚫</span>' : p.userId ? ' <span class="verified-badge" title="Registered player">✓</span>' : '';
       return escapeHtml(p.username) + badge;
     }).join(', ') || 'Solo';
 
@@ -224,9 +224,9 @@ function renderGames(games) {
     else if (reason === 'timeout') reason = 'Timeout';
     else if (reason === 'resignation') reason = 'Resigned';
 
-    // Show delete button if no opponent is a registered user
-    const hasRegisteredOpponent = opponents.some(p => p.userId && !p.isAI);
-    const deleteBtn = !hasRegisteredOpponent
+    // Show delete button if no opponent is an active registered user
+    const hasActiveRegisteredOpponent = opponents.some(p => p.userId && !p.isAI && !p.isDeleted);
+    const deleteBtn = !hasActiveRegisteredOpponent
       ? `<button class="btn btn-sm btn-danger-outlined delete-game-btn" data-game-id="${escapeHtml(game.gameId)}" title="Delete this game">✕</button>`
       : '';
 

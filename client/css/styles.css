@@ -927,6 +927,12 @@ input[type="text"]:focus {
   font-weight: 800;
   vertical-align: middle;
 }
+.deleted-badge {
+  display: inline-block;
+  font-size: 0.7em;
+  vertical-align: middle;
+  opacity: 0.7;
+}
 .player-elo {
   font-size: 0.7rem;
   color: var(--text-muted);

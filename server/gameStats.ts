@@ -74,7 +74,7 @@ export async function getUserGames(
     .limit(limit)
     .project({
       gameId: 1,
-      players: { userId: 1, playerId: 1, username: 1, score: 1, isAI: 1 },
+      players: { userId: 1, playerId: 1, username: 1, score: 1, isAI: 1, isDeleted: 1 },
       winnerId: 1,
       winnerUsername: 1,
       reason: 1,
@@ -329,16 +329,48 @@ export async function getOpponentStats(userId: string): Promise<any[]> {
 }
 
 /**
- * Delete all games where the given user participated.
- * Returns the number of deleted game documents.
+ * Handle game data when a user deletes their account:
+ * - Games with NO other registered players: delete entirely
+ * - Games WITH other registered players: anonymize the deleted user
+ *   (clear userId, mark as deleted) so other players keep their history
  */
-export async function deleteUserGameData(userId: string): Promise<number> {
+export async function deleteUserGameData(userId: string): Promise<{ deleted: number; anonymized: number }> {
   const db = getDb();
-  if (!db) return 0;
+  if (!db) return { deleted: 0, anonymized: 0 };
 
-  const result = await db.collection('games').deleteMany({ 'players.userId': userId });
-  console.log(`🗑️ Deleted ${result.deletedCount} games for user ${userId}`);
-  return result.deletedCount;
+  const games = await db.collection('games').find({ 'players.userId': userId }).toArray();
+
+  let deleted = 0;
+  let anonymized = 0;
+
+  for (const game of games) {
+    const hasOtherRegistered = game.players.some(
+      (p: any) => p.userId && p.userId !== userId && !p.isAI
+    );
+
+    if (hasOtherRegistered) {
+      // Anonymize the deleted user in this game
+      await db.collection('games').updateOne(
+        { _id: game._id },
+        {
+          $set: {
+            'players.$[elem].userId': null,
+            'players.$[elem].username': 'Deleted User',
+            'players.$[elem].isDeleted': true,
+          },
+        },
+        { arrayFilters: [{ 'elem.userId': userId }] }
+      );
+      anonymized++;
+    } else {
+      // No other registered players — safe to delete
+      await db.collection('games').deleteOne({ _id: game._id });
+      deleted++;
+    }
+  }
+
+  console.log(`🗑️ User ${userId}: deleted ${deleted} games, anonymized in ${anonymized} games`);
+  return { deleted, anonymized };
 }
 
 /**
