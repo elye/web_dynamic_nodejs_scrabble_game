@@ -39,6 +39,7 @@ let multiSettings = {
   gameType: 'friendly',
   timeoutMode: 'sudden',
   allowHint: false,
+  publicRoom: false,
 };
 
 function initLobby() {
@@ -189,6 +190,10 @@ function initLobby() {
     multiSettings.allowHint = e.target.checked;
   });
 
+  document.getElementById('multi-public-room').addEventListener('change', (e) => {
+    multiSettings.publicRoom = e.target.checked;
+  });
+
   document.getElementById('confirm-create-btn').addEventListener('click', () => {
     const username = requireGuestUsername();
     if (!username) { createModal.classList.add('hidden'); return; }
@@ -206,6 +211,7 @@ function initLobby() {
         timeoutMode: multiSettings.timeoutMode,
         randomOrder,
         allowHint: multiSettings.allowHint,
+        publicRoom: multiSettings.publicRoom,
       }));
     }
   });
@@ -306,6 +312,7 @@ function initLobby() {
     updateAddAIAccess();
     updateAICountAccess();
     updateTimeoutAccess();
+    updatePublicRoomAccess();
   });
 }
 
@@ -427,6 +434,20 @@ function updateTimeoutAccess() {
   document.querySelectorAll('.timeout-btn-wrapper').forEach(wrapper => {
     wrapper.classList.toggle('guest-disabled', guest);
   });
+}
+
+// Enable/disable Public Room checkbox based on sign-in state
+function updatePublicRoomAccess() {
+  const guest = isGuest();
+  const cb = document.getElementById('multi-public-room');
+  if (!cb) return;
+  cb.disabled = guest;
+  if (guest) {
+    cb.checked = false;
+    multiSettings.publicRoom = false;
+  }
+  const wrapper = cb.closest('.public-room-wrapper');
+  if (wrapper) wrapper.classList.toggle('guest-disabled', guest);
 }
 
 function showScreen(screenId) {

@@ -150,6 +150,7 @@ export class GameManager {
       timeoutMode: 'sudden',
       randomOrder,
       allowHint: gameType === 'friendly' ? allowHint : false,
+      publicRoom: false,
     };
 
     const roomId = uuidv4().substring(0, 8).toUpperCase();
@@ -1140,7 +1141,7 @@ export class GameManager {
   getRoomList(): any[] {
     const rooms: any[] = [];
     for (const [id, room] of this.rooms) {
-      if (room.game.status === 'waiting' && !room.isSolo) {
+      if (room.game.status === 'waiting' && !room.isSolo && room.settings.publicRoom) {
         rooms.push({
           id,
           hostId: room.hostId,
