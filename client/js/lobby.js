@@ -546,9 +546,7 @@ function updateWaitingRoom(data) {
     tags.push(s.timeoutMode === 'penalty' ? 'Overtime' : 'Sudden Death');
     tags.push(s.gameType === 'formal' ? 'Formal' : 'Friendly');
     tags.push(s.randomOrder ? 'Random Start' : 'Fixed Start');
-    if (!isGuest()) {
-      tags.push(s.allowHint ? 'Hints On' : 'Hints Off');
-    }
+    tags.push(s.allowHint ? 'Hints On' : 'Hints Off');
     settingsContainer.innerHTML = tags.map(t => `<span class="setting-tag">${t}</span>`).join('');
   }
 
