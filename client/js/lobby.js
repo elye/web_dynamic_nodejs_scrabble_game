@@ -27,7 +27,7 @@ function requireGuestUsername() {
 
 let soloSettings = {
   aiDifficulty: 'medium',
-  timeLimit: 0,
+  timeLimit: 15,
   gameType: 'friendly',
   aiCount: 1,
   allowHint: false,
@@ -35,7 +35,7 @@ let soloSettings = {
 
 let multiSettings = {
   maxPlayers: 4,
-  timeLimit: 30,
+  timeLimit: 15,
   gameType: 'friendly',
   timeoutMode: 'sudden',
   allowHint: false,
