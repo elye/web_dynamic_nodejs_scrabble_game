@@ -1124,8 +1124,7 @@ export class GameManager {
       turnEvents,
       turnHistory: game.turnHistory,
       settings: game.settings,
-      gameTime: game.settings.timeLimit === 0 ? 'Unlimited' : `${game.settings.timeLimit} min`,
-      timeoutMode: game.settings.timeLimit === 0 ? 'N/A' : game.settings.timeoutMode,
+      timeoutMode: game.settings.timeLimit === 0 ? 'N/A' : (game.settings.timeoutMode === 'penalty' ? 'OT' : 'SD'),
       isSolo: game.players.filter(p => !p.isAI).length === 1 && game.players.some(p => p.isAI),
       endedAt: new Date(),
     });
