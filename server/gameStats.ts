@@ -341,6 +341,18 @@ export async function deleteUserGameData(userId: string): Promise<number> {
   return result.deletedCount;
 }
 
+/**
+ * Delete a single game by gameId, only if the user participated in it.
+ * Returns true if the game was deleted.
+ */
+export async function deleteSingleGame(gameId: string, userId: string): Promise<boolean> {
+  const db = getDb();
+  if (!db) return false;
+
+  const result = await db.collection('games').deleteOne({ gameId, 'players.userId': userId });
+  return result.deletedCount > 0;
+}
+
 // ─── User Profile ────────────────────────────────────────────
 
 export interface UserProfile {

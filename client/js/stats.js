@@ -224,17 +224,48 @@ function renderGames(games) {
     else if (reason === 'timeout') reason = 'Timeout';
     else if (reason === 'resignation') reason = 'Resigned';
 
+    // Show delete button if no opponent is a registered user
+    const hasRegisteredOpponent = opponents.some(p => p.userId && !p.isAI);
+    const deleteBtn = !hasRegisteredOpponent
+      ? `<button class="btn btn-sm btn-danger-outlined delete-game-btn" data-game-id="${escapeHtml(game.gameId)}" title="Delete this game">✕</button>`
+      : '';
+
     tr.innerHTML = `
       <td>${dateStr}</td>
       <td>${opponentNames}</td>
       <td>${myScore}</td>
       <td><span class="${resultClass}">${resultText}</span></td>
-      <td>${reason}</td>
+      <td class="stats-reason-cell">${reason}${deleteBtn}</td>
     `;
 
-    tr.addEventListener('click', () => loadGameDetail(game.gameId));
+    tr.addEventListener('click', (e) => {
+      // Don't open detail if clicking the delete button
+      if (e.target.closest('.delete-game-btn')) return;
+      loadGameDetail(game.gameId);
+    });
     body.appendChild(tr);
   }
+
+  // Attach delete handlers
+  body.querySelectorAll('.delete-game-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const gameId = btn.dataset.gameId;
+      if (!confirm('Delete this game from your history?')) return;
+      btn.disabled = true;
+      btn.textContent = '…';
+      try {
+        const res = await fetch(`/api/stats/games/${encodeURIComponent(gameId)}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Failed to delete');
+        // Reload games and summary
+        await Promise.all([loadGames(), loadSummary(), loadOpponents()]);
+      } catch {
+        alert('Could not delete game. Please try again.');
+        btn.disabled = false;
+        btn.textContent = '✕';
+      }
+    });
+  });
 }
 
 function updatePagination() {

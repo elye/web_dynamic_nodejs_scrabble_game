@@ -2095,6 +2095,21 @@ input[type="text"]:focus {
 .stats-game-row:hover {
   background: var(--bg-tertiary);
 }
+.stats-reason-cell {
+  position: relative;
+}
+.stats-reason-cell .delete-game-btn {
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.4rem;
+  font-size: 0.75rem;
+  line-height: 1;
+  vertical-align: middle;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.stats-game-row:hover .delete-game-btn {
+  opacity: 1;
+}
 
 .stats-table-empty {
   text-align: center;

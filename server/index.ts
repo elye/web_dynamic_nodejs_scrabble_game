@@ -8,7 +8,7 @@ import MemoryStore from 'memorystore';
 import { withLogto } from '@logto/express';
 import type { default as NodeClientType } from '@logto/node';
 import { connectToMongo } from './db';
-import { getUserGames, getGameDetail, getUserStatsSummary, getOpponentStats, deleteUserGameData, getUserProfile, setUserDisplayName, isDisplayNameAvailable, deleteUserProfile } from './gameStats';
+import { getUserGames, getGameDetail, getUserStatsSummary, getOpponentStats, deleteUserGameData, getUserProfile, setUserDisplayName, isDisplayNameAvailable, deleteUserProfile, deleteSingleGame } from './gameStats';
 
 const SessionStore = MemoryStore(expressSession);
 
@@ -255,6 +255,17 @@ app.get('/api/stats/games/:gameId', withLogto(logtoConfig), requireAuth, async (
     return;
   }
   res.json(game);
+});
+
+// Delete a single game by gameId
+app.delete('/api/stats/games/:gameId', withLogto(logtoConfig), requireAuth, async (req, res) => {
+  const userId = req.user.claims!.sub!;
+  const deleted = await deleteSingleGame(req.params.gameId as string, userId);
+  if (!deleted) {
+    res.status(404).json({ error: 'Game not found or not authorized' });
+    return;
+  }
+  res.json({ success: true });
 });
 
 // --- Account Danger Zone endpoints ---
