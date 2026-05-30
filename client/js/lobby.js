@@ -320,8 +320,8 @@ function updateHintAccess() {
       if (id === 'solo-allow-hint') soloSettings.allowHint = false;
       if (id === 'multi-allow-hint') multiSettings.allowHint = false;
     }
-    const note = cb.closest('label').querySelector('.hint-signin-note');
-    if (note) note.style.display = guest ? 'inline' : 'none';
+    const wrapper = cb.closest('.hint-checkbox-wrapper');
+    if (wrapper) wrapper.classList.toggle('guest-disabled', guest);
   });
 }
 
