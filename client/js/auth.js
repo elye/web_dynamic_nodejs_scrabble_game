@@ -19,12 +19,14 @@ function showSignedIn(displayName) {
   }
   if (typeof updateFormalButtonAccess === 'function') updateFormalButtonAccess();
   if (typeof updateHintAccess === 'function') updateHintAccess();
+  if (typeof updateTimeButtonAccess === 'function') updateTimeButtonAccess();
 }
 
 function showSignedOut() {
   document.getElementById('username-row').classList.remove('hidden');
   if (typeof updateFormalButtonAccess === 'function') updateFormalButtonAccess();
   if (typeof updateHintAccess === 'function') updateHintAccess();
+  if (typeof updateTimeButtonAccess === 'function') updateTimeButtonAccess();
 }
 
 // Derive a suggested display name from Logto user data

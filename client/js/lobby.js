@@ -71,6 +71,7 @@ function initLobby() {
 
   document.querySelectorAll('.time-btn-solo').forEach(btn => {
     btn.addEventListener('click', () => {
+      if (btn.disabled) return;
       document.querySelectorAll('.time-btn-solo').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       soloSettings.timeLimit = parseInt(btn.dataset.time);
@@ -148,6 +149,7 @@ function initLobby() {
 
   document.querySelectorAll('.time-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+      if (btn.disabled) return;
       document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       multiSettings.timeLimit = parseInt(btn.dataset.time);
@@ -295,6 +297,7 @@ function initLobby() {
   window._authReady.then(() => {
     updateFormalButtonAccess();
     updateHintAccess();
+    updateTimeButtonAccess();
   });
 }
 
@@ -322,6 +325,31 @@ function updateHintAccess() {
     }
     const wrapper = cb.closest('.hint-checkbox-wrapper');
     if (wrapper) wrapper.classList.toggle('guest-disabled', guest);
+  });
+}
+
+// Enable/disable extended time options based on sign-in state
+function updateTimeButtonAccess() {
+  const guest = isGuest();
+  document.querySelectorAll('.time-btn-solo, .time-btn').forEach(btn => {
+    if (parseInt(btn.dataset.time) > 15) {
+      btn.disabled = guest;
+      if (guest && btn.classList.contains('active')) {
+        btn.classList.remove('active');
+        // Reset to 15 min
+        const group = btn.closest('.btn-group');
+        const btn15 = group.querySelector('[data-time="15"]');
+        if (btn15) btn15.classList.add('active');
+        if (btn.classList.contains('time-btn-solo') || btn.matches('.time-btn-solo')) {
+          soloSettings.timeLimit = 15;
+        } else {
+          multiSettings.timeLimit = 15;
+        }
+      }
+    }
+  });
+  document.querySelectorAll('.time-btn-wrapper').forEach(wrapper => {
+    wrapper.classList.toggle('guest-disabled', guest);
   });
 }
 
