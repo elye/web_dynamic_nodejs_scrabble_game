@@ -84,14 +84,14 @@ export function getClient(): MongoClient | null {
 async function initLookups() {
   const db = getDb();
   if (!db) return;
-  const col = db.collection('lookups');
-  const existing = await col.findOne({ _id: 'abbreviations' });
+  const col = db.collection<{ _id: string }>('lookups');
+  const existing = await col.findOne({ _id: 'abbreviations' } as any);
   if (!existing) {
     await col.insertOne({
       _id: 'abbreviations',
       timeLimit: { '15': '15 minutes', '25': '25 minutes', '30': '30 minutes', 'U': 'Unlimited' },
       timeoutMode: { 'SD': 'Sudden Death', 'OT': 'Overtime (-10pts/min)' },
       gameType: { 'F': 'Formal (Recorded)', 'Fr': 'Friendly' },
-    });
+    } as any);
   }
 }
