@@ -56,29 +56,34 @@
           <h2>Solo Game vs AI</h2>
           <div class="form-group">
             <label>AI Difficulty</label>
-            <div class="btn-group">
-              <button class="btn btn-sm ai-diff-btn" data-diff="easy">Easy</button>
-              <button class="btn btn-sm ai-diff-btn active" data-diff="medium">Medium</button>
-              <button class="btn btn-sm ai-diff-btn" data-diff="hard">Hard</button>
-            </div>
+            <span class="ai-diff-wrapper" data-tooltip="Sign in to unlock Hard difficulty">
+              <div class="btn-group">
+                <button class="btn btn-sm ai-diff-btn" data-diff="easy">Easy</button>
+                <button class="btn btn-sm ai-diff-btn active" data-diff="medium">Medium</button>
+                <button class="btn btn-sm ai-diff-btn" data-diff="hard">Hard</button>
+              </div>
+            </span>
           </div>
           <div class="form-group">
             <label>Time Limit</label>
-            <div class="btn-group">
-              <button class="btn btn-sm time-btn-solo" data-time="15">15 min</button>
-              <button class="btn btn-sm time-btn-solo" data-time="20">20 min</button>
-              <button class="btn btn-sm time-btn-solo" data-time="30">30 min</button>
-              <button class="btn btn-sm time-btn-solo" data-time="45">45 min</button>
-              <button class="btn btn-sm time-btn-solo active" data-time="0">Unlimited</button>
-            </div>
+            <span class="time-btn-wrapper" data-tooltip="Sign in to unlock more time options">
+              <div class="btn-group">
+                <button class="btn btn-sm time-btn-solo active" data-time="15">15 min</button>
+                <button class="btn btn-sm time-btn-solo" data-time="20">20 min</button>
+                <button class="btn btn-sm time-btn-solo" data-time="30">30 min</button>
+                <button class="btn btn-sm time-btn-solo" data-time="45">45 min</button>
+              </div>
+            </span>
           </div>
           <div class="form-group">
             <label>Number of AI Opponents</label>
-            <div class="btn-group">
-              <button class="btn btn-sm ai-count-btn active" data-count="1">1</button>
-              <button class="btn btn-sm ai-count-btn" data-count="2">2</button>
-              <button class="btn btn-sm ai-count-btn" data-count="3">3</button>
-            </div>
+            <span class="ai-count-wrapper" data-tooltip="Sign in to choose fewer opponents">
+              <div class="btn-group">
+                <button class="btn btn-sm ai-count-btn" data-count="1">1</button>
+                <button class="btn btn-sm ai-count-btn" data-count="2">2</button>
+                <button class="btn btn-sm ai-count-btn active" data-count="3">3</button>
+              </div>
+            </span>
           </div>
           <div class="form-group">
             <label>Game Type</label>
@@ -93,7 +98,9 @@
             <label class="checkbox-label"><input type="checkbox" id="solo-random-order" checked> Randomize turn order</label>
           </div>
           <div class="form-group" id="solo-hint-group">
-            <label class="checkbox-label"><input type="checkbox" id="solo-allow-hint"> Allow AI Hint <span class="hint-signin-note" style="display:none; color:var(--text-secondary); font-size:0.85em;">(Sign in required)</span></label>
+            <span class="hint-checkbox-wrapper" data-tooltip="Sign in to enable AI Hints">
+              <label class="checkbox-label" id="solo-hint-label"><input type="checkbox" id="solo-allow-hint"> Allow AI Hint</label>
+            </span>
           </div>
           <div class="modal-actions">
             <button id="cancel-solo-btn" class="btn btn-outlined">Cancel</button>
@@ -108,20 +115,23 @@
           <h2>Create Multiplayer Room</h2>
           <div class="form-group">
             <label>Time Limit</label>
-            <div class="btn-group">
-              <button class="btn btn-sm time-btn" data-time="15">15 min</button>
-              <button class="btn btn-sm time-btn" data-time="20">20 min</button>
-              <button class="btn btn-sm time-btn active" data-time="30">30 min</button>
-              <button class="btn btn-sm time-btn" data-time="45">45 min</button>
-              <button class="btn btn-sm time-btn" data-time="0">Unlimited</button>
-            </div>
+            <span class="time-btn-wrapper" data-tooltip="Sign in to unlock more time options">
+              <div class="btn-group">
+                <button class="btn btn-sm time-btn active" data-time="15">15 min</button>
+                <button class="btn btn-sm time-btn" data-time="20">20 min</button>
+                <button class="btn btn-sm time-btn" data-time="30">30 min</button>
+                <button class="btn btn-sm time-btn" data-time="45">45 min</button>
+              </div>
+            </span>
           </div>
           <div class="form-group">
             <label>Timeout Rule</label>
-            <div class="btn-group">
-              <button class="btn btn-sm timeout-btn active" data-timeout="sudden">Sudden Death</button>
-              <button class="btn btn-sm timeout-btn" data-timeout="penalty">-10pts/min Overtime</button>
-            </div>
+            <span class="timeout-btn-wrapper" data-tooltip="Sign in to unlock Overtime mode">
+              <div class="btn-group">
+                <button class="btn btn-sm timeout-btn active" data-timeout="sudden">Sudden Death</button>
+                <button class="btn btn-sm timeout-btn" data-timeout="penalty">-10pts/min Overtime</button>
+              </div>
+            </span>
           </div>
           <div class="form-group">
             <label>Game Type</label>
@@ -136,7 +146,9 @@
             <label class="checkbox-label"><input type="checkbox" id="multi-random-order" checked> Randomize turn order</label>
           </div>
           <div class="form-group" id="multi-hint-group">
-            <label class="checkbox-label"><input type="checkbox" id="multi-allow-hint"> Allow AI Hint <span class="hint-signin-note" style="display:none; color:var(--text-secondary); font-size:0.85em;">(Sign in required)</span></label>
+            <span class="hint-checkbox-wrapper" data-tooltip="Sign in to enable AI Hints">
+              <label class="checkbox-label" id="multi-hint-label"><input type="checkbox" id="multi-allow-hint"> Allow AI Hint</label>
+            </span>
           </div>
           <div class="modal-actions">
             <button id="cancel-create-btn" class="btn btn-outlined">Cancel</button>
@@ -180,11 +192,13 @@
         <button id="leave-room-btn" class="btn btn-outlined">Leave</button>
         <button id="start-game-btn" class="btn btn-accent" disabled>Start Game</button>
       </div>
-      <div class="ai-bot-actions">
-        <button class="btn btn-sm add-ai-btn" data-difficulty="easy">🤖 Easy Bot</button>
-        <button class="btn btn-sm add-ai-btn" data-difficulty="medium">🤖 Medium Bot</button>
-        <button class="btn btn-sm add-ai-btn" data-difficulty="hard">🤖 Hard Bot</button>
-      </div>
+      <span class="add-ai-wrapper" data-tooltip="Sign in to add AI players">
+        <div class="ai-bot-actions">
+          <button class="btn btn-sm add-ai-btn" data-difficulty="easy">🤖 Easy Bot</button>
+          <button class="btn btn-sm add-ai-btn" data-difficulty="medium">🤖 Medium Bot</button>
+          <button class="btn btn-sm add-ai-btn" data-difficulty="hard">🤖 Hard Bot</button>
+        </div>
+      </span>
       </div>
     </div>
   </div>

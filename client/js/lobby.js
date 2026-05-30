@@ -27,15 +27,15 @@ function requireGuestUsername() {
 
 let soloSettings = {
   aiDifficulty: 'medium',
-  timeLimit: 0,
+  timeLimit: 15,
   gameType: 'friendly',
-  aiCount: 1,
+  aiCount: 3,
   allowHint: false,
 };
 
 let multiSettings = {
   maxPlayers: 4,
-  timeLimit: 30,
+  timeLimit: 15,
   gameType: 'friendly',
   timeoutMode: 'sudden',
   allowHint: false,
@@ -63,6 +63,7 @@ function initLobby() {
 
   document.querySelectorAll('.ai-diff-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+      if (btn.disabled) return;
       document.querySelectorAll('.ai-diff-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       soloSettings.aiDifficulty = btn.dataset.diff;
@@ -71,6 +72,7 @@ function initLobby() {
 
   document.querySelectorAll('.time-btn-solo').forEach(btn => {
     btn.addEventListener('click', () => {
+      if (btn.disabled) return;
       document.querySelectorAll('.time-btn-solo').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       soloSettings.timeLimit = parseInt(btn.dataset.time);
@@ -79,6 +81,7 @@ function initLobby() {
 
   document.querySelectorAll('.ai-count-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+      if (btn.disabled) return;
       document.querySelectorAll('.ai-count-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       soloSettings.aiCount = parseInt(btn.dataset.count);
@@ -148,6 +151,7 @@ function initLobby() {
 
   document.querySelectorAll('.time-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+      if (btn.disabled) return;
       document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       multiSettings.timeLimit = parseInt(btn.dataset.time);
@@ -156,6 +160,7 @@ function initLobby() {
 
   document.querySelectorAll('.timeout-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+      if (btn.disabled) return;
       document.querySelectorAll('.timeout-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       multiSettings.timeoutMode = btn.dataset.timeout;
@@ -279,6 +284,7 @@ function initLobby() {
 
   document.querySelectorAll('.add-ai-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+      if (btn.disabled) return;
       if (window.ws && window.ws.readyState === WebSocket.OPEN) {
         window.ws.send(JSON.stringify({ type: 'ADD_AI', aiDifficulty: btn.dataset.difficulty }));
       }
@@ -295,6 +301,11 @@ function initLobby() {
   window._authReady.then(() => {
     updateFormalButtonAccess();
     updateHintAccess();
+    updateTimeButtonAccess();
+    updateAIDifficultyAccess();
+    updateAddAIAccess();
+    updateAICountAccess();
+    updateTimeoutAccess();
   });
 }
 
@@ -320,8 +331,101 @@ function updateHintAccess() {
       if (id === 'solo-allow-hint') soloSettings.allowHint = false;
       if (id === 'multi-allow-hint') multiSettings.allowHint = false;
     }
-    const note = cb.closest('label').querySelector('.hint-signin-note');
-    if (note) note.style.display = guest ? 'inline' : 'none';
+    const wrapper = cb.closest('.hint-checkbox-wrapper');
+    if (wrapper) wrapper.classList.toggle('guest-disabled', guest);
+  });
+}
+
+// Enable/disable extended time options based on sign-in state
+function updateTimeButtonAccess() {
+  const guest = isGuest();
+  document.querySelectorAll('.time-btn-solo, .time-btn').forEach(btn => {
+    if (parseInt(btn.dataset.time) > 15) {
+      btn.disabled = guest;
+      if (guest && btn.classList.contains('active')) {
+        btn.classList.remove('active');
+        // Reset to 15 min
+        const group = btn.closest('.btn-group');
+        const btn15 = group.querySelector('[data-time="15"]');
+        if (btn15) btn15.classList.add('active');
+        if (btn.classList.contains('time-btn-solo') || btn.matches('.time-btn-solo')) {
+          soloSettings.timeLimit = 15;
+        } else {
+          multiSettings.timeLimit = 15;
+        }
+      }
+    }
+  });
+  document.querySelectorAll('.time-btn-wrapper').forEach(wrapper => {
+    wrapper.classList.toggle('guest-disabled', guest);
+  });
+}
+
+// Enable/disable Hard AI difficulty based on sign-in state
+function updateAIDifficultyAccess() {
+  const guest = isGuest();
+  document.querySelectorAll('.ai-diff-btn').forEach(btn => {
+    if (btn.dataset.diff === 'hard') {
+      btn.disabled = guest;
+      if (guest && btn.classList.contains('active')) {
+        btn.classList.remove('active');
+        const medBtn = document.querySelector('.ai-diff-btn[data-diff="medium"]');
+        if (medBtn) medBtn.classList.add('active');
+        soloSettings.aiDifficulty = 'medium';
+      }
+    }
+  });
+  document.querySelectorAll('.ai-diff-wrapper').forEach(wrapper => {
+    wrapper.classList.toggle('guest-disabled', guest);
+  });
+}
+
+// Enable/disable Add AI buttons based on sign-in state
+function updateAddAIAccess() {
+  const guest = isGuest();
+  document.querySelectorAll('.add-ai-btn').forEach(btn => {
+    btn.disabled = guest;
+  });
+  document.querySelectorAll('.add-ai-wrapper').forEach(wrapper => {
+    wrapper.classList.toggle('guest-disabled', guest);
+  });
+}
+
+// Enable/disable AI count options based on sign-in state (guests get 3 only)
+function updateAICountAccess() {
+  const guest = isGuest();
+  document.querySelectorAll('.ai-count-btn').forEach(btn => {
+    if (parseInt(btn.dataset.count) < 3) {
+      btn.disabled = guest;
+      if (guest && btn.classList.contains('active')) {
+        btn.classList.remove('active');
+        const btn3 = document.querySelector('.ai-count-btn[data-count="3"]');
+        if (btn3) btn3.classList.add('active');
+        soloSettings.aiCount = 3;
+      }
+    }
+  });
+  document.querySelectorAll('.ai-count-wrapper').forEach(wrapper => {
+    wrapper.classList.toggle('guest-disabled', guest);
+  });
+}
+
+// Enable/disable Overtime timeout mode based on sign-in state
+function updateTimeoutAccess() {
+  const guest = isGuest();
+  document.querySelectorAll('.timeout-btn').forEach(btn => {
+    if (btn.dataset.timeout === 'penalty') {
+      btn.disabled = guest;
+      if (guest && btn.classList.contains('active')) {
+        btn.classList.remove('active');
+        const suddenBtn = document.querySelector('.timeout-btn[data-timeout="sudden"]');
+        if (suddenBtn) suddenBtn.classList.add('active');
+        multiSettings.timeoutMode = 'sudden';
+      }
+    }
+  });
+  document.querySelectorAll('.timeout-btn-wrapper').forEach(wrapper => {
+    wrapper.classList.toggle('guest-disabled', guest);
   });
 }
 
