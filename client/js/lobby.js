@@ -85,6 +85,7 @@ function initLobby() {
 
   document.querySelectorAll('.type-btn-solo').forEach(btn => {
     btn.addEventListener('click', () => {
+      if (btn.disabled) return;
       document.querySelectorAll('.type-btn-solo').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       soloSettings.gameType = btn.dataset.type;
@@ -147,6 +148,7 @@ function initLobby() {
 
   document.querySelectorAll('.type-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+      if (btn.disabled) return;
       document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       multiSettings.gameType = btn.dataset.type;
@@ -239,6 +241,19 @@ function initLobby() {
     if (window.ws && window.ws.readyState === WebSocket.OPEN) {
       window.ws.send(JSON.stringify({ type: 'START_GAME' }));
     }
+  });
+
+  // Disable Formal mode for guests once auth state is known
+  window._authReady.then(() => updateFormalButtonAccess());
+}
+
+// Enable/disable Formal game-type buttons based on sign-in state
+function updateFormalButtonAccess() {
+  const guest = isGuest();
+  document.querySelectorAll('.type-btn-solo[data-type="formal"], .type-btn[data-type="formal"]').forEach(btn => {
+    btn.disabled = guest;
+    const wrapper = btn.closest('.formal-btn-wrapper');
+    if (wrapper) wrapper.classList.toggle('guest-disabled', guest);
   });
 }
 
