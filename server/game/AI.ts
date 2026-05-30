@@ -34,12 +34,9 @@ export class AI {
 
     switch (difficulty) {
       case 'easy':
-        // Pick a random move from the bottom 30%
-        const easyPool = moves.slice(Math.floor(moves.length * 0.7));
-        // Also filter for short words
-        const shortMoves = easyPool.filter(m => m.placements.length <= 3);
-        const easyMoves = shortMoves.length > 0 ? shortMoves : easyPool;
-        return easyMoves[Math.floor(Math.random() * easyMoves.length)];
+        // Pick a random move from the bottom 50% (lowest-scoring half)
+        const easyPool = moves.slice(Math.ceil(moves.length * 0.5));
+        return easyPool[Math.floor(Math.random() * easyPool.length)];
 
       case 'medium':
         // Pick from the top 50%

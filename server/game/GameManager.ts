@@ -22,6 +22,12 @@ interface SessionInfo {
   userId?: string; // Logto sub — present only for logged-in players
 }
 
+const AI_NAMES: Record<'easy' | 'medium' | 'hard', string[]> = {
+  hard: ['Smarty', 'Hardy', 'Victy'],
+  medium: ['Comrady', 'Fanmy', 'Gracy'],
+  easy: ['Groofy', 'Cooly', 'Loosy'],
+};
+
 export class GameManager {
   private rooms: Map<string, Room> = new Map();
   private playerRooms: Map<string, string> = new Map();
@@ -39,6 +45,16 @@ export class GameManager {
 
     // Periodically clean up stale sessions (every 10 minutes)
     setInterval(() => this.cleanupStaleSessions(), 10 * 60 * 1000);
+  }
+
+  private pickAIName(difficulty: 'easy' | 'medium' | 'hard', usedNames: Set<string>): string {
+    const pool = AI_NAMES[difficulty].filter(n => !usedNames.has(n));
+    if (pool.length === 0) {
+      // Fallback if all names are taken (shouldn't happen with max 3 AI)
+      const label = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
+      return `AI ${label} ${usedNames.size + 1}`;
+    }
+    return pool[Math.floor(Math.random() * pool.length)];
   }
 
   private cleanupStaleSessions(): void {
@@ -142,10 +158,11 @@ export class GameManager {
     );
 
     game.addPlayer(playerId, socket.toString(), username, avatar, false, undefined, this.getUserIdForPlayer(playerId));
-    const aiLabel = aiDifficulty.charAt(0).toUpperCase() + aiDifficulty.slice(1);
+    const usedNames = new Set<string>();
     for (let i = 0; i < clampedAiCount; i++) {
       const aiId = uuidv4();
-      const aiName = clampedAiCount === 1 ? `AI ${aiLabel}` : `AI Bot ${i + 1} (${aiLabel})`;
+      const aiName = this.pickAIName(aiDifficulty, usedNames);
+      usedNames.add(aiName);
       game.addPlayer(aiId, '', aiName, '🤖', true, aiDifficulty);
     }
 
@@ -227,8 +244,8 @@ export class GameManager {
     if (room.game.players.length >= room.settings.maxPlayers) return false;
 
     const aiId = uuidv4();
-    const diffLabel = aiDifficulty.charAt(0).toUpperCase() + aiDifficulty.slice(1);
-    const aiName = `AI ${diffLabel}`;
+    const existingNames = new Set(room.game.players.filter(p => p.isAI).map(p => p.username));
+    const aiName = this.pickAIName(aiDifficulty, existingNames);
     
     const player = room.game.addPlayer(aiId, '', aiName, '🤖', true, aiDifficulty);
     if (!player) return false;
