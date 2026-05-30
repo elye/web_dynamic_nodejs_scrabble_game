@@ -385,9 +385,9 @@ export async function deleteUserGameDataAcrossCluster(
   const mongoClient = getClient();
   if (!mongoClient) return { deleted: 0, anonymized: 0, databases: [] };
 
-  const gameDbs = process.env.GAME_DBS;
+  const gameDbs = process.env.SHARED_USER_GAME_DBS;
   if (!gameDbs) {
-    console.warn('⚠️  GAME_DBS not set — skipping cross-cluster deletion');
+    console.warn('⚠️  SHARED_USER_GAME_DBS not set — skipping cross-cluster deletion');
     return { deleted: 0, anonymized: 0, databases: [] };
   }
 
