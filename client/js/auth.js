@@ -23,18 +23,118 @@ function showSignedOut() {
   document.getElementById('username-row').classList.remove('hidden');
 }
 
+// Show username setup modal for first-time logged-in users
+function showUsernameSetup() {
+  const modal = document.getElementById('username-setup-modal');
+  const input = document.getElementById('username-setup-input');
+  const btn = document.getElementById('username-setup-btn');
+  const statusEl = document.getElementById('username-setup-status');
+  const errorEl = document.getElementById('username-setup-error');
+
+  modal.classList.remove('hidden');
+  input.value = '';
+  btn.disabled = true;
+  statusEl.classList.add('hidden');
+  errorEl.classList.add('hidden');
+
+  let checkTimeout = null;
+
+  input.addEventListener('input', () => {
+    const name = input.value.trim();
+    clearTimeout(checkTimeout);
+    btn.disabled = true;
+    errorEl.classList.add('hidden');
+
+    if (name.length < 2) {
+      statusEl.textContent = '';
+      statusEl.classList.add('hidden');
+      return;
+    }
+    if (!/^[a-zA-Z0-9 _-]+$/.test(name)) {
+      statusEl.textContent = 'Only letters, numbers, spaces, hyphens, underscores';
+      statusEl.style.color = 'var(--accent-danger)';
+      statusEl.classList.remove('hidden');
+      return;
+    }
+
+    statusEl.textContent = 'Checking...';
+    statusEl.style.color = 'var(--text-secondary)';
+    statusEl.classList.remove('hidden');
+
+    checkTimeout = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/profile/check-name?name=${encodeURIComponent(name)}`);
+        const data = await res.json();
+        if (data.available) {
+          statusEl.textContent = '✓ Available';
+          statusEl.style.color = 'var(--accent-success, #4caf50)';
+          btn.disabled = false;
+        } else {
+          statusEl.textContent = data.error || '✗ Already taken';
+          statusEl.style.color = 'var(--accent-danger)';
+          btn.disabled = true;
+        }
+      } catch {
+        statusEl.textContent = 'Could not check availability';
+        statusEl.style.color = 'var(--accent-danger)';
+      }
+      statusEl.classList.remove('hidden');
+    }, 400);
+  });
+
+  return new Promise((resolve) => {
+    btn.addEventListener('click', async () => {
+      const name = input.value.trim();
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
+      errorEl.classList.add('hidden');
+
+      try {
+        const res = await fetch('/api/profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ displayName: name }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          errorEl.textContent = data.error || 'Failed to set username';
+          errorEl.classList.remove('hidden');
+          btn.disabled = false;
+          btn.textContent = 'Set Username';
+          return;
+        }
+        modal.classList.add('hidden');
+        resolve(name);
+      } catch {
+        errorEl.textContent = 'Network error. Please try again.';
+        errorEl.classList.remove('hidden');
+        btn.disabled = false;
+        btn.textContent = 'Set Username';
+      }
+    });
+  });
+}
+
 (async function initAuth() {
   try {
     const res = await fetch('/auth/me');
     if (!res.ok) { showSignedOut(); _authResolve(); return; }
-    const { isAuthenticated, user } = await res.json();
+    const { isAuthenticated, user, profile } = await res.json();
 
     if (isAuthenticated && user) {
-      const displayName = user.name || user.email || user.sub || 'Player';
-      showSignedIn(displayName);
-
       window._logtoUserId = user.sub || null;
       localStorage.setItem('scrabble_was_signed_in', '1');
+
+      let displayName;
+      if (profile && profile.displayName) {
+        // User has a stored display name
+        displayName = profile.displayName;
+      } else {
+        // First-time login — prompt user to choose a username
+        displayName = await showUsernameSetup();
+      }
+
+      showSignedIn(displayName);
 
       // If WS already connected (e.g. reconnect), send userId update
       if (window.ws && window.ws.readyState === WebSocket.OPEN && window._logtoUserId) {

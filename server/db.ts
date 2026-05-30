@@ -32,6 +32,11 @@ export async function connectToMongo(): Promise<Db | null> {
       // Create indexes for efficient queries
       await db.collection('games').createIndex({ 'players.userId': 1, endedAt: -1 });
       await db.collection('games').createIndex({ gameId: 1 }, { unique: true });
+      await db.collection('users').createIndex({ logtoUserId: 1 }, { unique: true });
+      await db.collection('users').createIndex(
+        { displayName: 1 },
+        { unique: true, collation: { locale: 'en', strength: 2 } },
+      );
 
       return db;
     } catch (err) {

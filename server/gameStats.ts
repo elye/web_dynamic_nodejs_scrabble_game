@@ -294,6 +294,7 @@ export async function getOpponentStats(userId: string): Promise<any[]> {
         _id: {
           opponentName: '$players.username',
           isAI: '$players.isAI',
+          opponentUserId: { $ifNull: ['$players.userId', null] },
         },
         totalGames: { $sum: 1 },
         wins: {
@@ -314,6 +315,7 @@ export async function getOpponentStats(userId: string): Promise<any[]> {
         _id: 0,
         opponentName: '$_id.opponentName',
         isAI: '$_id.isAI',
+        isRegistered: { $cond: [{ $ne: ['$_id.opponentUserId', null] }, true, false] },
         totalGames: 1,
         wins: 1,
         losses: 1,
@@ -337,4 +339,64 @@ export async function deleteUserGameData(userId: string): Promise<number> {
   const result = await db.collection('games').deleteMany({ 'players.userId': userId });
   console.log(`🗑️ Deleted ${result.deletedCount} games for user ${userId}`);
   return result.deletedCount;
+}
+
+// ─── User Profile ────────────────────────────────────────────
+
+export interface UserProfile {
+  logtoUserId: string;
+  displayName: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/** Get a user profile by Logto user ID. */
+export async function getUserProfile(logtoUserId: string): Promise<UserProfile | null> {
+  const db = getDb();
+  if (!db) return null;
+  return db.collection<UserProfile>('users').findOne({ logtoUserId });
+}
+
+/** Set or update the display name for a user. Returns true if successful. */
+export async function setUserDisplayName(logtoUserId: string, displayName: string): Promise<{ success: boolean; error?: string }> {
+  const db = getDb();
+  if (!db) return { success: false, error: 'Database not available' };
+
+  // Check uniqueness (case-insensitive)
+  const existing = await db.collection<UserProfile>('users').findOne({
+    displayName: { $regex: new RegExp(`^${displayName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
+    logtoUserId: { $ne: logtoUserId },
+  });
+  if (existing) {
+    return { success: false, error: 'This username is already taken' };
+  }
+
+  const now = new Date();
+  await db.collection<UserProfile>('users').updateOne(
+    { logtoUserId },
+    { $set: { displayName, updatedAt: now }, $setOnInsert: { logtoUserId, createdAt: now } },
+    { upsert: true },
+  );
+  return { success: true };
+}
+
+/** Check if a display name is available (case-insensitive). */
+export async function isDisplayNameAvailable(displayName: string, excludeUserId?: string): Promise<boolean> {
+  const db = getDb();
+  if (!db) return true; // If no DB, allow any name
+
+  const filter: any = {
+    displayName: { $regex: new RegExp(`^${displayName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
+  };
+  if (excludeUserId) filter.logtoUserId = { $ne: excludeUserId };
+
+  const existing = await db.collection<UserProfile>('users').findOne(filter);
+  return !existing;
+}
+
+/** Delete a user profile. */
+export async function deleteUserProfile(logtoUserId: string): Promise<void> {
+  const db = getDb();
+  if (!db) return;
+  await db.collection('users').deleteOne({ logtoUserId });
 }

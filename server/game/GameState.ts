@@ -16,6 +16,7 @@ export interface Player {
   connected: boolean;
   isAI: boolean;
   aiDifficulty?: 'easy' | 'medium' | 'hard';
+  userId?: string; // Logto sub — present only for logged-in players
 }
 
 export interface TurnEntry {
@@ -90,7 +91,7 @@ export class GameState {
     this.onGameOver = onGameOver;
   }
 
-  addPlayer(id: string, socketId: string, username: string, avatar: string, isAI: boolean = false, aiDifficulty?: 'easy' | 'medium' | 'hard'): Player | null {
+  addPlayer(id: string, socketId: string, username: string, avatar: string, isAI: boolean = false, aiDifficulty?: 'easy' | 'medium' | 'hard', userId?: string): Player | null {
     if (this.players.length >= this.settings.maxPlayers) return null;
     if (this.status !== 'waiting') return null;
 
@@ -102,6 +103,7 @@ export class GameState {
       connected: true,
       isAI,
       aiDifficulty,
+      userId,
     };
     this.players.push(player);
     this.timer.addPlayer(id);
@@ -796,6 +798,7 @@ export class GameState {
         rackCount: p.rack.length,
         connected: p.connected,
         isAI: p.isAI,
+        isRegistered: !!p.userId,
       })),
       currentTurn: this.players[this.currentTurnIndex]?.id,
       tileBagCount: this.tileBag.remaining(),
@@ -830,6 +833,7 @@ export class GameState {
         connected: p.connected,
         isAI: p.isAI,
         aiDifficulty: p.aiDifficulty,
+        isRegistered: !!p.userId,
       })),
       status: this.status,
       settings: this.settings,

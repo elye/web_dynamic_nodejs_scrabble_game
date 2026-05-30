@@ -33,7 +33,7 @@ function updateScoreboard(players, currentTurnId, timers, tileBagCount) {
           player.avatar ? `<img src="${player.avatar}" alt="">` : initial
         }</div>
         <div class="player-info">
-          <div class="player-name">${escapeHtml(player.username)}${player.isAI ? ' 🤖' : ''}</div>
+          <div class="player-name">${escapeHtml(player.username)}${player.isAI ? ' 🤖' : ''}${player.isRegistered ? ' <span class="verified-badge" title="Registered player">✓</span>' : ''}</div>
         </div>
       </div>
       <div class="player-card-body">

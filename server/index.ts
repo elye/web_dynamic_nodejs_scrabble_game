@@ -8,7 +8,7 @@ import MemoryStore from 'memorystore';
 import { withLogto } from '@logto/express';
 import type { default as NodeClientType } from '@logto/node';
 import { connectToMongo } from './db';
-import { getUserGames, getGameDetail, getUserStatsSummary, getOpponentStats, deleteUserGameData } from './gameStats';
+import { getUserGames, getGameDetail, getUserStatsSummary, getOpponentStats, deleteUserGameData, getUserProfile, setUserDisplayName, isDisplayNameAvailable, deleteUserProfile } from './gameStats';
 
 const SessionStore = MemoryStore(expressSession);
 
@@ -161,13 +161,19 @@ app.get('/health', (_req, res) => {
 });
 
 // Auth status endpoint — returns the current user's info (or null if not signed in)
-app.get('/auth/me', withLogto(logtoConfig), (req, res) => {
+app.get('/auth/me', withLogto(logtoConfig), async (req, res) => {
   const { isAuthenticated, claims } = req.user;
   if (!isAuthenticated) {
     res.json({ isAuthenticated: false, user: null });
     return;
   }
-  res.json({ isAuthenticated: true, user: { sub: claims?.sub, name: claims?.name, email: claims?.email } });
+  // Look up the user's profile from MongoDB for their chosen display name
+  const profile = claims?.sub ? await getUserProfile(claims.sub) : null;
+  res.json({
+    isAuthenticated: true,
+    user: { sub: claims?.sub, name: claims?.name, email: claims?.email },
+    profile: profile ? { displayName: profile.displayName } : null,
+  });
 });
 
 // --- Stats API (protected — logged-in users only) ---
@@ -180,6 +186,41 @@ const requireAuth: express.RequestHandler = (req, res, next) => {
   }
   next();
 };
+
+// --- Profile API ---
+
+// Check if a display name is available
+app.get('/api/profile/check-name', withLogto(logtoConfig), requireAuth, async (req, res) => {
+  const name = (req.query.name as string || '').trim();
+  if (!name || name.length < 2 || name.length > 20) {
+    res.json({ available: false, error: 'Name must be 2–20 characters' });
+    return;
+  }
+  const userId = req.user.claims!.sub!;
+  const available = await isDisplayNameAvailable(name, userId);
+  res.json({ available });
+});
+
+// Set or update display name
+app.post('/api/profile', express.json(), withLogto(logtoConfig), requireAuth, async (req, res) => {
+  const displayName = (req.body.displayName || '').trim();
+  if (!displayName || displayName.length < 2 || displayName.length > 20) {
+    res.status(400).json({ error: 'Display name must be 2–20 characters' });
+    return;
+  }
+  // Only allow alphanumeric, spaces, hyphens, underscores
+  if (!/^[a-zA-Z0-9 _-]+$/.test(displayName)) {
+    res.status(400).json({ error: 'Display name can only contain letters, numbers, spaces, hyphens, and underscores' });
+    return;
+  }
+  const userId = req.user.claims!.sub!;
+  const result = await setUserDisplayName(userId, displayName);
+  if (!result.success) {
+    res.status(409).json({ error: result.error });
+    return;
+  }
+  res.json({ success: true, displayName });
+});
 
 app.get('/api/stats/games', withLogto(logtoConfig), requireAuth, async (req, res) => {
   const userId = req.user.claims!.sub!;
@@ -223,7 +264,8 @@ app.post('/api/account/delete-data', express.json(), withLogto(logtoConfig), req
   try {
     const claims = req.user.claims!;
     const userId = claims.sub!;
-    const expectedUsername = claims.name || claims.email || claims.sub || 'Player';
+    const profile = await getUserProfile(userId);
+    const expectedUsername = profile?.displayName || claims.name || claims.email || claims.sub || 'Player';
 
     const { confirmUsername } = req.body;
     if (!confirmUsername || confirmUsername !== expectedUsername) {
@@ -244,7 +286,8 @@ app.post('/api/account/delete-account', express.json(), withLogto(logtoConfig), 
   try {
     const claims = req.user.claims!;
     const userId = claims.sub!;
-    const expectedUsername = claims.name || claims.email || claims.sub || 'Player';
+    const profile = await getUserProfile(userId);
+    const expectedUsername = profile?.displayName || claims.name || claims.email || claims.sub || 'Player';
 
     const { confirmUsername } = req.body;
     if (!confirmUsername || confirmUsername !== expectedUsername) {
@@ -253,6 +296,7 @@ app.post('/api/account/delete-account', express.json(), withLogto(logtoConfig), 
     }
 
     const deletedCount = await deleteUserGameData(userId);
+    await deleteUserProfile(userId);
 
     // Delete the user from Logto via Management API
     let logtoWarning: string | undefined;

@@ -101,6 +101,22 @@ export class GameManager {
     if (session) {
       session.userId = userId;
     }
+
+    // Also update the player in any active game
+    const roomId = this.playerRooms.get(playerId);
+    if (roomId) {
+      const room = this.rooms.get(roomId);
+      const player = room?.game.players.find(p => p.id === playerId);
+      if (player) {
+        player.userId = userId;
+      }
+    }
+  }
+
+  private getUserIdForPlayer(playerId: string): string | undefined {
+    const sessionId = this.playerSessions.get(playerId);
+    if (!sessionId) return undefined;
+    return this.sessions.get(sessionId)?.userId;
   }
 
   // --- Solo game (atomic: create + add AI + start) ---
@@ -124,7 +140,7 @@ export class GameManager {
       (reason) => this.handleGameOver(roomId, reason)
     );
 
-    game.addPlayer(playerId, socket.toString(), username, avatar);
+    game.addPlayer(playerId, socket.toString(), username, avatar, false, undefined, this.getUserIdForPlayer(playerId));
     const aiId = uuidv4();
     const aiLabel = aiDifficulty.charAt(0).toUpperCase() + aiDifficulty.slice(1);
     game.addPlayer(aiId, '', `AI ${aiLabel}`, '🤖', true, aiDifficulty);
@@ -164,7 +180,7 @@ export class GameManager {
       (reason) => this.handleGameOver(roomId, reason)
     );
 
-    game.addPlayer(playerId, socket.toString(), username, avatar);
+    game.addPlayer(playerId, socket.toString(), username, avatar, false, undefined, this.getUserIdForPlayer(playerId));
 
     const room: Room = { id: roomId, hostId: playerId, game, settings, isSolo: false };
     this.rooms.set(roomId, room);
@@ -183,7 +199,7 @@ export class GameManager {
     // Clean up any existing room association
     this.cleanupPlayerRoom(playerId);
 
-    const player = room.game.addPlayer(playerId, socket.toString(), username, avatar);
+    const player = room.game.addPlayer(playerId, socket.toString(), username, avatar, false, undefined, this.getUserIdForPlayer(playerId));
     if (!player) return null;
 
     this.playerRooms.set(playerId, roomId);
@@ -438,6 +454,7 @@ export class GameManager {
       avatar: player.avatar,
       text,
       timestamp: new Date().toISOString(),
+      isRegistered: !!player.userId,
     });
   }
 
@@ -532,6 +549,7 @@ export class GameManager {
       isAI: p.isAI,
       aiDifficulty: p.aiDifficulty,
       connected: p.connected,
+      userId: p.userId,
     }));
 
     // Create a fresh game with same settings
@@ -545,7 +563,7 @@ export class GameManager {
 
     // Re-add all players
     for (const info of playerInfos) {
-      game.addPlayer(info.id, info.socketId, info.username, info.avatar, info.isAI, info.aiDifficulty);
+      game.addPlayer(info.id, info.socketId, info.username, info.avatar, info.isAI, info.aiDifficulty, info.userId);
       const player = game.players.find(p => p.id === info.id);
       if (player) {
         player.connected = info.connected;

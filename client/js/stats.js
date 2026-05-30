@@ -201,7 +201,10 @@ function renderGames(games) {
     // Find current user's player record and opponents
     const me = game.players.find(p => p.userId === window._logtoUserId);
     const opponents = game.players.filter(p => p.userId !== window._logtoUserId);
-    const opponentNames = opponents.map(p => escapeHtml(p.username) + (p.isAI ? ' 🤖' : '')).join(', ') || 'Solo';
+    const opponentNames = opponents.map(p => {
+      const badge = p.isAI ? ' 🤖' : p.userId ? ' <span class="verified-badge" title="Registered player">✓</span>' : '';
+      return escapeHtml(p.username) + badge;
+    }).join(', ') || 'Solo';
 
     const myScore = me ? me.score : '-';
     const isWin = me && game.winnerId === me.playerId;
@@ -266,8 +269,9 @@ function renderOpponents(opponents) {
     const lastPlayed = opp.lastPlayed
       ? new Date(opp.lastPlayed).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
       : '-';
+    const badge = opp.isAI ? ' 🤖' : opp.isRegistered ? ' <span class="verified-badge" title="Registered player">✓</span>' : ' <span style="color:var(--text-muted);font-size:0.75rem">(Guest)</span>';
     tr.innerHTML = `
-      <td>${escapeHtml(opp.opponentName)}${opp.isAI ? ' 🤖' : ''}</td>
+      <td>${escapeHtml(opp.opponentName)}${badge}</td>
       <td class="stats-val-win">${opp.wins || 0}</td>
       <td class="stats-val-loss">${opp.losses || 0}</td>
       <td>${draws}</td>
@@ -774,9 +778,10 @@ function renderGameDetail(game) {
   for (const player of sorted) {
     const initial = player.username.charAt(0).toUpperCase();
     const isWinner = player.playerId === game.winnerId;
+    const playerBadge = player.isAI ? ' 🤖' : player.userId ? ' <span class="verified-badge" title="Registered player">✓</span>' : '';
     headerRow += `<th class="stat-player-col${isWinner ? ' winner' : ''}">
       <div class="player-avatar" style="background:${getDetailColor(player.playerId)}">${initial}</div>
-      <div class="player-name">${escapeHtml(player.username)}${player.isAI ? ' 🤖' : ''}${isWinner ? ' 🏆' : ''}</div>
+      <div class="player-name">${escapeHtml(player.username)}${playerBadge}${isWinner ? ' 🏆' : ''}</div>
     </th>`;
   }
   headerRow += '</tr>';
