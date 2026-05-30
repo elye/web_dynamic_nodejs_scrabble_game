@@ -18,6 +18,7 @@ A full-stack, real-time multiplayer Scrabble board game for 1–4 players built 
 - **Dark-themed UI** — Clean, responsive design for desktop and mobile
 - **Authentication** — Login and logout via [Logto](https://logto.io) (OAuth 2.0 / OIDC), with session management through Express
 - **Game statistics** — Stats page with game history, per-opponent win/loss records, placement overview (1st/2nd/3rd/4th), and best scores by player count. Powered by MongoDB Atlas
+- **Account management** — Delete game data or fully delete your account (removes data from MongoDB and deletes the user from Logto via the Management API)
 
 ## Requirements
 
@@ -25,7 +26,7 @@ A full-stack, real-time multiplayer Scrabble board game for 1–4 players built 
 - **npm** v7 or higher
 - **TypeScript** v5.3+ (installed as a dev dependency)
 
-No database required for core gameplay. The dictionary file is bundled. A [Logto](https://logto.io) account and application are required for authentication. Optionally, a [MongoDB Atlas](https://www.mongodb.com/atlas) connection can be configured to persist game statistics — without it, the game works normally but stats won't be saved.
+No database required for core gameplay. The dictionary file is bundled. A [Logto](https://logto.io) account and application are required for authentication. A Logto Machine-to-Machine (M2M) application with Management API access is required for full account deletion. Optionally, a [MongoDB Atlas](https://www.mongodb.com/atlas) connection can be configured to persist game statistics — without it, the game works normally but stats won't be saved.
 
 ## Quick Start
 
@@ -61,6 +62,8 @@ Create a `.env` file at the project root (see `.env.example`):
 | `LOGTO_REDIRECT_URI` | OAuth callback URL, must match Logto Console (e.g. `https://your-app.onrender.com/callback`) |
 | `LOGTO_POST_LOGOUT_REDIRECT_URI` | Redirect after logout (e.g. `https://your-app.onrender.com`) |
 | `SESSION_SECRET` | Random secret for Express sessions — generate with `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"` |
+| `LOGTO_M2M_APP_ID` | App ID of a Logto Machine-to-Machine application with Management API access (required for account deletion) |
+| `LOGTO_M2M_APP_SECRET` | App secret for the M2M application |
 | `MONGODB_URI` | MongoDB Atlas connection string for game stats (optional — stats won't be saved without it) |
 
 Open **http://localhost:3000** in your browser. The port can be changed via the `PORT` environment variable:
@@ -237,6 +240,15 @@ All stats endpoints require authentication.
 | `GET /api/stats/games` | Paginated game history |
 | `GET /api/stats/games/:gameId` | Detailed game view with board state |
 | `GET /api/stats/opponents` | Per-opponent win/loss records |
+
+### Account Management Endpoints
+
+All account endpoints require authentication.
+
+| Route | Description |
+|-------|-------------|
+| `POST /api/account/delete-data` | Deletes all game history for the authenticated user (stays signed in) |
+| `POST /api/account/delete-account` | Deletes game history, removes the user from Logto via Management API, and signs out |
 
 ## WebSocket Protocol
 
