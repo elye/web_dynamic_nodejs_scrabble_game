@@ -82,6 +82,7 @@ export async function getUserGames(
       'gameSummary.totalTurns': 1,
       'gameSummary.totalWordsPlayed': 1,
       settings: 1,
+      timeoutMode: 1,
     })
     .toArray();
 
