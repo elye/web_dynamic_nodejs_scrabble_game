@@ -160,6 +160,7 @@ function initLobby() {
 
   document.querySelectorAll('.timeout-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+      if (btn.disabled) return;
       document.querySelectorAll('.timeout-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       multiSettings.timeoutMode = btn.dataset.timeout;
@@ -304,6 +305,7 @@ function initLobby() {
     updateAIDifficultyAccess();
     updateAddAIAccess();
     updateAICountAccess();
+    updateTimeoutAccess();
   });
 }
 
@@ -404,6 +406,25 @@ function updateAICountAccess() {
     }
   });
   document.querySelectorAll('.ai-count-wrapper').forEach(wrapper => {
+    wrapper.classList.toggle('guest-disabled', guest);
+  });
+}
+
+// Enable/disable Overtime timeout mode based on sign-in state
+function updateTimeoutAccess() {
+  const guest = isGuest();
+  document.querySelectorAll('.timeout-btn').forEach(btn => {
+    if (btn.dataset.timeout === 'penalty') {
+      btn.disabled = guest;
+      if (guest && btn.classList.contains('active')) {
+        btn.classList.remove('active');
+        const suddenBtn = document.querySelector('.timeout-btn[data-timeout="sudden"]');
+        if (suddenBtn) suddenBtn.classList.add('active');
+        multiSettings.timeoutMode = 'sudden';
+      }
+    }
+  });
+  document.querySelectorAll('.timeout-btn-wrapper').forEach(wrapper => {
     wrapper.classList.toggle('guest-disabled', guest);
   });
 }
