@@ -8,7 +8,7 @@ import MemoryStore from 'memorystore';
 import { withLogto } from '@logto/express';
 import type { default as NodeClientType } from '@logto/node';
 import { connectToMongo } from './db';
-import { getUserGames, getGameDetail, getUserStatsSummary, getOpponentStats, deleteUserGameData, getUserProfile, setUserDisplayName, isDisplayNameAvailable, deleteUserProfile, deleteSingleGame } from './gameStats';
+import { getUserGames, getGameDetail, getUserStatsSummary, getOpponentStats, deleteUserGameData, deleteUserGameDataAcrossCluster, getUserProfile, setUserDisplayName, isDisplayNameAvailable, deleteUserProfile, deleteSingleGame } from './gameStats';
 
 const SessionStore = MemoryStore(expressSession);
 
@@ -284,8 +284,11 @@ app.post('/api/account/delete-data', express.json(), withLogto(logtoConfig), req
       return;
     }
 
-    const deletedCount = await deleteUserGameData(userId);
-    res.json({ success: true, deletedGames: deletedCount });
+    const scrabbleResult = await deleteUserGameData(userId);
+    res.json({
+      success: true,
+      scrabble: scrabbleResult,
+    });
   } catch (err) {
     console.error('Error deleting user data:', err);
     res.status(500).json({ error: 'Internal server error' });
@@ -306,7 +309,8 @@ app.post('/api/account/delete-account', express.json(), withLogto(logtoConfig), 
       return;
     }
 
-    const deletedCount = await deleteUserGameData(userId);
+    const scrabbleResult = await deleteUserGameData(userId);
+    const clusterResult = await deleteUserGameDataAcrossCluster(userId);
     await deleteUserProfile(userId);
 
     // Delete the user from Logto via Management API
@@ -326,7 +330,7 @@ app.post('/api/account/delete-account', express.json(), withLogto(logtoConfig), 
     // Destroy the session so the user is fully logged out
     (req.session as any)?.destroy?.();
 
-    res.json({ success: true, deletedGames: deletedCount, ...(logtoWarning && { warning: logtoWarning }) });
+    res.json({ success: true, scrabble: scrabbleResult, otherGames: clusterResult, ...(logtoWarning && { warning: logtoWarning }) });
   } catch (err) {
     console.error('Error deleting account:', err);
     res.status(500).json({ error: 'Internal server error' });

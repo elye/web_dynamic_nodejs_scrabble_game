@@ -975,14 +975,18 @@ function openDangerModal(action) {
 
   const username = getDisplayUsername();
 
+  const warningEl = document.getElementById('danger-confirm-warning');
+
   if (action === 'delete-data') {
     title.textContent = '⚠️ Delete All Game Data';
     message.textContent = 'This will permanently delete all your game history, statistics, and records. This action cannot be undone. You will remain signed in.';
     proceedBtn.textContent = 'Delete All Data';
+    warningEl.classList.add('hidden');
   } else {
     title.textContent = '⚠️ Delete Account';
     message.textContent = 'This will permanently delete all your game data and sign you out. This action cannot be undone.';
     proceedBtn.textContent = 'Delete Account';
+    warningEl.classList.remove('hidden');
   }
 
   input.value = '';

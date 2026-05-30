@@ -1,17 +1,22 @@
 import { MongoClient, Db } from 'mongodb';
 
 const MONGODB_URI = process.env.MONGODB_URI;
-const DB_NAME = 'scrabble';
+const DB_NAME = process.env.DB_NAME;
+const SHARED_DB_NAME = process.env.SHARED_DB_NAME || 'shared';
 
 let client: MongoClient | null = null;
 let db: Db | null = null;
+let sharedDb: Db | null = null;
 let connectionFailed = false;
 
 export async function connectToMongo(): Promise<Db | null> {
   if (db) return db;
-  if (connectionFailed || !MONGODB_URI) {
+  if (connectionFailed || !MONGODB_URI || !DB_NAME) {
     if (!MONGODB_URI) {
       console.warn('⚠️  MONGODB_URI not set — game stats will not be saved');
+    }
+    if (!DB_NAME) {
+      console.warn('⚠️  DB_NAME not set — game stats will not be saved');
     }
     return null;
   }
@@ -27,13 +32,16 @@ export async function connectToMongo(): Promise<Db | null> {
       });
       await client.connect();
       db = client.db(DB_NAME);
-      console.log('📦 Connected to MongoDB');
+      sharedDb = client.db(SHARED_DB_NAME);
+      console.log(`📦 Connected to MongoDB (game: ${DB_NAME}, shared: ${SHARED_DB_NAME})`);
 
-      // Create indexes for efficient queries
+      // Game-specific indexes
       await db.collection('games').createIndex({ 'players.userId': 1, endedAt: -1 });
       await db.collection('games').createIndex({ gameId: 1 }, { unique: true });
-      await db.collection('users').createIndex({ logtoUserId: 1 }, { unique: true });
-      await db.collection('users').createIndex(
+
+      // Shared user indexes
+      await sharedDb.collection('users').createIndex({ logtoUserId: 1 }, { unique: true });
+      await sharedDb.collection('users').createIndex(
         { displayName: 1 },
         { unique: true, collation: { locale: 'en', strength: 2 } },
       );
@@ -58,4 +66,12 @@ export async function connectToMongo(): Promise<Db | null> {
 
 export function getDb(): Db | null {
   return db;
+}
+
+export function getSharedDb(): Db | null {
+  return sharedDb;
+}
+
+export function getClient(): MongoClient | null {
+  return client;
 }

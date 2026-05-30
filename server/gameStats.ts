@@ -1,5 +1,5 @@
 import { Db } from 'mongodb';
-import { getDb } from './db';
+import { getDb, getSharedDb, getClient } from './db';
 
 export interface GamePlayerRecord {
   playerId: string;
@@ -374,6 +374,74 @@ export async function deleteUserGameData(userId: string): Promise<{ deleted: num
 }
 
 /**
+ * Scan ALL databases in the MongoDB cluster for `games` collections
+ * that use the `players.userId` schema, and apply the same
+ * delete/anonymize logic. Skips the current scrabble database
+ * (handled by deleteUserGameData).
+ */
+export async function deleteUserGameDataAcrossCluster(
+  userId: string
+): Promise<{ deleted: number; anonymized: number; databases: string[] }> {
+  const mongoClient = getClient();
+  if (!mongoClient) return { deleted: 0, anonymized: 0, databases: [] };
+
+  const currentDbName = getDb()?.databaseName || 'scrabble';
+  const adminDb = mongoClient.db().admin();
+  const { databases: dbList } = await adminDb.listDatabases();
+
+  let totalDeleted = 0;
+  let totalAnonymized = 0;
+  const touchedDbs: string[] = [];
+
+  for (const dbInfo of dbList) {
+    const dbName = dbInfo.name;
+    // Skip system databases, the current game database, and the shared users database
+    const sharedDbName = getSharedDb()?.databaseName || 'shared';
+    if (['admin', 'local', 'config', currentDbName, sharedDbName].includes(dbName)) continue;
+
+    const otherDb = mongoClient.db(dbName);
+    const collections = await otherDb.listCollections({ name: 'games' }).toArray();
+    if (collections.length === 0) continue;
+
+    const gamesCol = otherDb.collection('games');
+    const games = await gamesCol.find({ 'players.userId': userId }).toArray();
+    if (games.length === 0) continue;
+
+    touchedDbs.push(dbName);
+
+    for (const game of games) {
+      const hasOtherRegistered = game.players.some(
+        (p: any) => p.userId && p.userId !== userId && !p.isAI
+      );
+
+      if (hasOtherRegistered) {
+        await gamesCol.updateOne(
+          { _id: game._id },
+          {
+            $set: {
+              'players.$[elem].userId': null,
+              'players.$[elem].username': 'Deleted User',
+              'players.$[elem].isDeleted': true,
+            },
+          },
+          { arrayFilters: [{ 'elem.userId': userId }] }
+        );
+        totalAnonymized++;
+      } else {
+        await gamesCol.deleteOne({ _id: game._id });
+        totalDeleted++;
+      }
+    }
+  }
+
+  if (touchedDbs.length > 0) {
+    console.log(`🗑️ Cross-cluster cleanup for ${userId}: deleted ${totalDeleted}, anonymized ${totalAnonymized} across [${touchedDbs.join(', ')}]`);
+  }
+
+  return { deleted: totalDeleted, anonymized: totalAnonymized, databases: touchedDbs };
+}
+
+/**
  * Delete a single game by gameId, only if the user participated in it.
  * Returns true if the game was deleted.
  */
@@ -396,14 +464,14 @@ export interface UserProfile {
 
 /** Get a user profile by Logto user ID. */
 export async function getUserProfile(logtoUserId: string): Promise<UserProfile | null> {
-  const db = getDb();
+  const db = getSharedDb();
   if (!db) return null;
   return db.collection<UserProfile>('users').findOne({ logtoUserId });
 }
 
 /** Set or update the display name for a user. Returns true if successful. */
 export async function setUserDisplayName(logtoUserId: string, displayName: string): Promise<{ success: boolean; error?: string }> {
-  const db = getDb();
+  const db = getSharedDb();
   if (!db) return { success: false, error: 'Database not available' };
 
   // Check uniqueness (case-insensitive)
@@ -426,7 +494,7 @@ export async function setUserDisplayName(logtoUserId: string, displayName: strin
 
 /** Check if a display name is available (case-insensitive). */
 export async function isDisplayNameAvailable(displayName: string, excludeUserId?: string): Promise<boolean> {
-  const db = getDb();
+  const db = getSharedDb();
   if (!db) return true; // If no DB, allow any name
 
   const filter: any = {
@@ -440,7 +508,7 @@ export async function isDisplayNameAvailable(displayName: string, excludeUserId?
 
 /** Delete a user profile. */
 export async function deleteUserProfile(logtoUserId: string): Promise<void> {
-  const db = getDb();
+  const db = getSharedDb();
   if (!db) return;
   await db.collection('users').deleteOne({ logtoUserId });
 }

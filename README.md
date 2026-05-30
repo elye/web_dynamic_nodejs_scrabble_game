@@ -65,6 +65,14 @@ Create a `.env` file at the project root (see `.env.example`):
 | `LOGTO_M2M_APP_ID` | App ID of a Logto Machine-to-Machine application with Management API access (required for account deletion) |
 | `LOGTO_M2M_APP_SECRET` | App secret for the M2M application |
 | `MONGODB_URI` | MongoDB Atlas connection string for game stats (optional — stats won't be saved without it) |
+| `DB_NAME` | MongoDB database name (e.g. `scrabble`, `scrabble_dev`) — required when `MONGODB_URI` is set |
+| `SHARED_DB_NAME` | Shared database name for user profiles across games (defaults to `shared`) |
+
+> **Database architecture:** User profiles are stored in a shared database (configured via `SHARED_DB_NAME`) separate from game-specific data (configured via `DB_NAME`). This separation allows user profile data to persist independently of any particular game database.
+>
+> **Cross-database account deletion:** When deleting an account, the system scans **all** databases in the MongoDB cluster (e.g. both `scrabble_dev` and `scrabble`) for game data associated with the user, not just the database specified by `DB_NAME`. This ensures no orphaned records remain if the app was previously run against a different database name.
+>
+> This is safe when dev and prod use **separate Logto tenants/accounts**, since each environment will have different user IDs and won't accidentally delete the other's data. If dev and prod share the **same Logto tenant** (same user IDs), consider using separate MongoDB clusters to avoid cross-environment data removal.
 
 Open **http://localhost:3000** in your browser. The port can be changed via the `PORT` environment variable:
 
