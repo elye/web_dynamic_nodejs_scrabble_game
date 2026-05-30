@@ -2,7 +2,7 @@ import { MongoClient, Db } from 'mongodb';
 
 const MONGODB_URI = process.env.MONGODB_URI;
 const DB_NAME = process.env.DB_NAME;
-const SHARED_DB_NAME = process.env.SHARED_DB_NAME || 'shared';
+const SHARED_DB_NAME = process.env.SHARED_DB_NAME;
 
 let client: MongoClient | null = null;
 let db: Db | null = null;
@@ -11,12 +11,15 @@ let connectionFailed = false;
 
 export async function connectToMongo(): Promise<Db | null> {
   if (db) return db;
-  if (connectionFailed || !MONGODB_URI || !DB_NAME) {
+  if (connectionFailed || !MONGODB_URI || !DB_NAME || !SHARED_DB_NAME) {
     if (!MONGODB_URI) {
       console.warn('⚠️  MONGODB_URI not set — game stats will not be saved');
     }
     if (!DB_NAME) {
       console.warn('⚠️  DB_NAME not set — game stats will not be saved');
+    }
+    if (!SHARED_DB_NAME) {
+      console.warn('⚠️  SHARED_DB_NAME not set — game stats will not be saved');
     }
     return null;
   }

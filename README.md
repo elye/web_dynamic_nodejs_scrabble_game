@@ -66,7 +66,7 @@ Create a `.env` file at the project root (see `.env.example`):
 | `LOGTO_M2M_APP_SECRET` | App secret for the M2M application |
 | `MONGODB_URI` | MongoDB Atlas connection string for game stats (optional — stats won't be saved without it) |
 | `DB_NAME` | MongoDB database name (e.g. `scrabble`, `scrabble_dev`) — required when `MONGODB_URI` is set |
-| `SHARED_DB_NAME` | Shared database name for user profiles across games (defaults to `shared`) |
+| `SHARED_DB_NAME` | **Required.** Shared database name for user profiles across games |
 
 > **Database architecture:** User profiles are stored in a shared database (configured via `SHARED_DB_NAME`) separate from game-specific data (configured via `DB_NAME`). This separation allows user profile data to persist independently of any particular game database.
 >
