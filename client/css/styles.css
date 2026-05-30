@@ -603,6 +603,24 @@ input[type="text"]:focus {
   font-size: 1.3rem;
   letter-spacing: 2px;
 }
+.waiting-room-settings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.setting-tag {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
 .waiting-players {
   display: flex;
   gap: 1rem;
@@ -685,34 +703,47 @@ input[type="text"]:focus {
 /* ============================================
    Room List
    ============================================ */
-.room-list {
+.room-combobox {
+  position: relative;
+}
+
+.room-dropdown {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.2s ease;
+  border-radius: 0 0 8px 8px;
+  background: var(--bg-secondary);
+}
+
+.room-combobox:focus-within .room-dropdown,
+.room-dropdown.has-rooms {
   max-height: 200px;
   overflow-y: auto;
-  margin: 1rem 0;
+  border: 1px solid var(--border);
+  border-top: none;
 }
-.room-item {
+
+.room-dropdown .room-item {
+  padding: 0.5rem 0.8rem;
+  cursor: pointer;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.7rem 1rem;
+  font-size: 0.8rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.room-dropdown .room-item:last-child {
+  border-bottom: none;
+}
+
+.room-dropdown .room-item:hover {
   background: var(--bg-tertiary);
-  border-radius: 8px;
-  margin-bottom: 0.5rem;
-  cursor: pointer;
-  transition: border-color 0.15s;
-  border: 1px solid transparent;
 }
-.room-item:hover {
-  border-color: var(--accent);
-}
-.room-item .room-info {
-  color: var(--text-primary);
-  font-weight: 600;
-  font-size: 0.9rem;
-}
-.room-item .room-players {
-  color: var(--text-muted);
-  font-size: 0.85rem;
+
+.room-dropdown .text-muted {
+  padding: 0.5rem 0.8rem;
+  font-size: 0.8rem;
 }
 
 /* ============================================

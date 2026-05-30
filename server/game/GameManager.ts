@@ -639,16 +639,18 @@ export class GameManager {
     this.playerRooms.delete(playerId);
     this.updateSessionRoom(playerId, undefined);
 
-    if (room.game.players.filter(p => !p.isAI).length === 0) {
-      this.rooms.delete(roomId);
-    } else {
-      // Reassign host if the host left
-      if (room.hostId === playerId) {
-        const newHost = room.game.players.find(p => !p.isAI);
-        if (newHost) {
-          room.hostId = newHost.id;
+    if (room.game.players.filter(p => !p.isAI).length === 0 || room.hostId === playerId) {
+      // Room closes if no humans left or if the host left
+      this.broadcastToRoom(roomId, 'ROOM_CLOSED', { reason: 'Host left the room' });
+      // Clean up all remaining players
+      for (const p of room.game.players) {
+        if (!p.isAI) {
+          this.playerRooms.delete(p.id);
+          this.updateSessionRoom(p.id, undefined);
         }
       }
+      this.rooms.delete(roomId);
+    } else {
       this.broadcastToRoom(roomId, 'ROOM_UPDATE', this.getRoomState(room));
     }
   }
