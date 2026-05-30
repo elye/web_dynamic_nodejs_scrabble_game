@@ -42,6 +42,8 @@ export async function connectToMongo(): Promise<Db | null> {
       await db.collection('games').createIndex({ 'players.userId': 1, endedAt: -1 });
       await db.collection('games').createIndex({ gameId: 1 }, { unique: true });
 
+      await initLookups();
+
       // Shared user indexes
       await sharedDb.collection('users').createIndex({ logtoUserId: 1 }, { unique: true });
       await sharedDb.collection('users').createIndex(
@@ -77,4 +79,19 @@ export function getSharedDb(): Db | null {
 
 export function getClient(): MongoClient | null {
   return client;
+}
+
+async function initLookups() {
+  const db = getDb();
+  if (!db) return;
+  const col = db.collection<{ _id: string }>('lookups');
+  const existing = await col.findOne({ _id: 'abbreviations' } as any);
+  if (!existing) {
+    await col.insertOne({
+      _id: 'abbreviations',
+      timeLimit: { '15': '15 minutes', '25': '25 minutes', '30': '30 minutes', 'U': 'Unlimited' },
+      timeoutMode: { 'SD': 'Sudden Death', 'OT': 'Overtime (-10pts/min)' },
+      gameType: { 'F': 'Formal (Recorded)', 'Fr': 'Friendly' },
+    } as any);
+  }
 }

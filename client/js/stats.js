@@ -169,7 +169,7 @@ function renderSummary(data) {
 // --- Games list ---
 async function loadGames() {
   const container = document.getElementById('stats-games-body');
-  container.innerHTML = '<tr><td colspan="5" class="stats-table-empty">Loading...</td></tr>';
+  container.innerHTML = '<tr><td colspan="6" class="stats-table-empty">Loading...</td></tr>';
 
   try {
     const res = await fetch(`/api/stats/games?page=${statsCurrentPage}&limit=10`);
@@ -179,14 +179,14 @@ async function loadGames() {
     renderGames(data.games || []);
     updatePagination();
   } catch (err) {
-    container.innerHTML = '<tr><td colspan="5" class="stats-table-empty">Could not load games.</td></tr>';
+    container.innerHTML = '<tr><td colspan="6" class="stats-table-empty">Could not load games.</td></tr>';
   }
 }
 
 function renderGames(games) {
   const body = document.getElementById('stats-games-body');
   if (games.length === 0) {
-    body.innerHTML = '<tr><td colspan="5" class="stats-table-empty">No games played yet.</td></tr>';
+    body.innerHTML = '<tr><td colspan="6" class="stats-table-empty">No games played yet.</td></tr>';
     return;
   }
 
@@ -196,7 +196,7 @@ function renderGames(games) {
     tr.className = 'stats-game-row';
 
     const date = new Date(game.endedAt);
-    const dateStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    const dateStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' });
 
     // Find current user's player record and opponents
     const me = game.players.find(p => p.userId === window._logtoUserId);
@@ -230,11 +230,17 @@ function renderGames(games) {
       ? `<button class="btn btn-sm btn-danger-outlined delete-game-btn" data-game-id="${escapeHtml(game.gameId)}" title="Delete this game">✕</button>`
       : '';
 
+    const tl = game.settings?.timeLimit;
+    const timeVal = tl === 0 || tl === undefined ? 'U' : `${tl}`;
+    const toVal = game.timeoutMode === 'OT' || game.timeoutMode === 'penalty' ? 'OT' : game.timeoutMode === 'SD' || game.timeoutMode === 'sudden' ? 'SD' : '-';
+    const timeType = `${timeVal}/${toVal}`;
+
     tr.innerHTML = `
       <td>${dateStr}</td>
       <td>${opponentNames}</td>
       <td>${myScore}</td>
       <td><span class="${resultClass}">${resultText}</span></td>
+      <td>${timeType}</td>
       <td class="stats-reason-cell">${reason}${deleteBtn}</td>
     `;
 

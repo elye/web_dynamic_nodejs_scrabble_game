@@ -24,8 +24,7 @@ export interface GameRecord {
   turnEvents: any;
   turnHistory: any;
   settings: any;
-  gameTime?: string;    // e.g. "15 min", "Unlimited"
-  timeoutMode?: string; // e.g. "sudden", "penalty", "N/A"
+  timeoutMode?: string; // e.g. "SD", "OT", "N/A"
   isSolo: boolean;
   endedAt: Date;
 }
@@ -83,6 +82,7 @@ export async function getUserGames(
       'gameSummary.totalTurns': 1,
       'gameSummary.totalWordsPlayed': 1,
       settings: 1,
+      timeoutMode: 1,
     })
     .toArray();
 

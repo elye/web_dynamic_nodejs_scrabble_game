@@ -139,6 +139,10 @@ function getAvatarColor(id) {
 function updateGameInfo(settings) {
   const timeLimitText = settings.timeLimit === 0 ? 'Unlimited' : `${settings.timeLimit} Minutes`;
   document.getElementById('time-limit-text').textContent = timeLimitText;
+  const timeoutEl = document.getElementById('timeout-mode-text');
+  if (timeoutEl) {
+    timeoutEl.textContent = settings.timeoutMode === 'penalty' ? 'Overtime' : 'Sudden Death';
+  }
   document.getElementById('game-type-text').textContent = 
     settings.gameType === 'formal' ? 'Formal' : 'Friendly';
 }

@@ -39,6 +39,7 @@ let multiSettings = {
   gameType: 'friendly',
   timeoutMode: 'sudden',
   allowHint: false,
+  publicRoom: false,
 };
 
 function initLobby() {
@@ -94,14 +95,19 @@ function initLobby() {
       document.querySelectorAll('.type-btn-solo').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       soloSettings.gameType = btn.dataset.type;
+      const soloRandomCb = document.getElementById('solo-random-order');
       // Show/hide hint option (only for Friendly)
       const hintGroup = document.getElementById('solo-hint-group');
       if (btn.dataset.type === 'formal') {
         hintGroup.classList.add('hidden');
         document.getElementById('solo-allow-hint').checked = false;
         soloSettings.allowHint = false;
+        // Formal games always use random turn order
+        soloRandomCb.checked = true;
+        soloRandomCb.disabled = true;
       } else {
         hintGroup.classList.remove('hidden');
+        soloRandomCb.disabled = false;
       }
     });
   });
@@ -173,20 +179,29 @@ function initLobby() {
       document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       multiSettings.gameType = btn.dataset.type;
+      const multiRandomCb = document.getElementById('multi-random-order');
       // Show/hide hint option (only for Friendly)
       const hintGroup = document.getElementById('multi-hint-group');
       if (btn.dataset.type === 'formal') {
         hintGroup.classList.add('hidden');
         document.getElementById('multi-allow-hint').checked = false;
         multiSettings.allowHint = false;
+        // Formal games always use random turn order
+        multiRandomCb.checked = true;
+        multiRandomCb.disabled = true;
       } else {
         hintGroup.classList.remove('hidden');
+        multiRandomCb.disabled = false;
       }
     });
   });
 
   document.getElementById('multi-allow-hint').addEventListener('change', (e) => {
     multiSettings.allowHint = e.target.checked;
+  });
+
+  document.getElementById('multi-public-room').addEventListener('change', (e) => {
+    multiSettings.publicRoom = e.target.checked;
   });
 
   document.getElementById('confirm-create-btn').addEventListener('click', () => {
@@ -206,6 +221,7 @@ function initLobby() {
         timeoutMode: multiSettings.timeoutMode,
         randomOrder,
         allowHint: multiSettings.allowHint,
+        publicRoom: multiSettings.publicRoom,
       }));
     }
   });
@@ -219,15 +235,27 @@ function initLobby() {
     // Pre-fill join username from main username input
     const mainUsername = document.getElementById('username-input').value.trim();
     const joinUsernameInput = document.getElementById('join-username-input');
-    if (mainUsername && !joinUsernameInput.value.trim()) {
+    if (mainUsername) {
       joinUsernameInput.value = mainUsername;
     }
+    // Disable join username if signed in or main username already provided
+    if (!isGuest() || mainUsername) {
+      joinUsernameInput.disabled = true;
+    } else {
+      joinUsernameInput.disabled = false;
+    }
     joinModal.classList.remove('hidden');
-    if (window.ws && window.ws.readyState === WebSocket.OPEN) {
+    if (isGuest()) {
+      updateRoomList([]);
+    } else if (window.ws && window.ws.readyState === WebSocket.OPEN) {
       window.ws.send(JSON.stringify({ type: 'GET_ROOMS' }));
     }
   });
   document.getElementById('cancel-join-btn').addEventListener('click', () => joinModal.classList.add('hidden'));
+
+  document.getElementById('room-code-input').addEventListener('input', (e) => {
+    filterRoomList(e.target.value);
+  });
 
   document.getElementById('confirm-join-btn').addEventListener('click', () => {
     const roomCode = document.getElementById('room-code-input').value.trim().toUpperCase();
@@ -306,6 +334,7 @@ function initLobby() {
     updateAddAIAccess();
     updateAICountAccess();
     updateTimeoutAccess();
+    updatePublicRoomAccess();
   });
 }
 
@@ -429,29 +458,81 @@ function updateTimeoutAccess() {
   });
 }
 
+// Enable/disable Public Room checkbox based on sign-in state
+function updatePublicRoomAccess() {
+  const guest = isGuest();
+  const cb = document.getElementById('multi-public-room');
+  if (!cb) return;
+  cb.disabled = guest;
+  if (guest) {
+    cb.checked = false;
+    multiSettings.publicRoom = false;
+  }
+  const wrapper = cb.closest('.public-room-wrapper');
+  if (wrapper) wrapper.classList.toggle('guest-disabled', guest);
+}
+
 function showScreen(screenId) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(screenId).classList.add('active');
 }
 
+// Store rooms data for filtering
+let _publicRooms = [];
+
 function updateRoomList(rooms) {
+  _publicRooms = rooms || [];
+  filterRoomList('');
+}
+
+function filterRoomList(query) {
   const container = document.getElementById('room-list');
   container.innerHTML = '';
 
-  if (rooms.length === 0) {
-    container.innerHTML = '<p class="text-muted">No open rooms available</p>';
+  if (isGuest()) {
+    container.innerHTML = '<p class="text-muted">Sign in to see public rooms</p>';
+    container.classList.remove('has-rooms');
     return;
   }
 
-  for (const room of rooms) {
+  const q = query.trim().toUpperCase();
+  let filtered = _publicRooms;
+  if (q) {
+    filtered = _publicRooms.filter(r => r.id.toUpperCase().includes(q));
+  }
+
+  // Limit to 3
+  const display = filtered.slice(0, 3);
+
+  if (display.length === 0) {
+    if (q) {
+      container.innerHTML = '<p class="text-muted">No matching rooms</p>';
+    } else {
+      container.innerHTML = '<p class="text-muted">No public rooms available</p>';
+    }
+    container.classList.remove('has-rooms');
+    return;
+  }
+
+  container.classList.add('has-rooms');
+  for (const room of display) {
     const item = document.createElement('div');
     item.className = 'room-item';
+    const s = room.settings || {};
+    const info = [
+      `${s.timeLimit || '?'}m`,
+      s.timeoutMode === 'penalty' ? 'OT' : 'SD',
+      s.gameType === 'formal' ? 'F' : 'Fr',
+      s.randomOrder ? 'R' : '',
+      s.allowHint ? 'H' : '',
+    ].filter(Boolean).join('·');
     item.innerHTML = `
-      <span class="room-info">${room.id} - ${room.host}</span>
-      <span class="room-players">(${room.playerCount}H${room.aiCount ? '+' + room.aiCount + 'A' : ''})/${room.maxPlayers}</span>
+      <span class="room-info">${room.id} — ${room.host}</span>
+      <span class="room-meta">${room.playerCount}/${room.maxPlayers} <span class="room-tags">${info}</span></span>
     `;
     item.addEventListener('click', () => {
       document.getElementById('room-code-input').value = room.id;
+      container.classList.remove('has-rooms');
     });
     container.appendChild(item);
   }
@@ -464,6 +545,20 @@ function updateWaitingRoom(data) {
   const url = new URL(window.location);
   url.searchParams.set('room', data.roomId);
   window.history.replaceState({}, '', url);
+
+  // Display room settings
+  const settingsContainer = document.getElementById('waiting-room-settings');
+  if (settingsContainer && data.settings) {
+    const s = data.settings;
+    const tags = [];
+    tags.push(s.publicRoom ? 'Public' : 'Private');
+    tags.push(`${s.timeLimit} min`);
+    tags.push(s.timeoutMode === 'penalty' ? 'Overtime' : 'Sudden Death');
+    tags.push(s.gameType === 'formal' ? 'Formal' : 'Friendly');
+    tags.push(s.randomOrder ? 'Random Start' : 'Fixed Start');
+    tags.push(s.allowHint ? 'Hints On' : 'Hints Off');
+    settingsContainer.innerHTML = tags.map(t => `<span class="setting-tag">${t}</span>`).join('');
+  }
 
   const container = document.getElementById('waiting-players');
   container.innerHTML = '';
@@ -541,20 +636,30 @@ function checkUrlRoomCode() {
   const params = new URLSearchParams(window.location.search);
   const roomCode = params.get('room');
   if (roomCode) {
-    // Pre-fill room code and show join dialog
-    document.getElementById('room-code-input').value = roomCode.toUpperCase();
-    const mainUsername = document.getElementById('username-input').value.trim();
-    if (mainUsername) {
-      document.getElementById('join-username-input').value = mainUsername;
-    }
-    document.getElementById('join-modal').classList.remove('hidden');
-    // Focus on username if guest and empty
-    if (isGuest() && !mainUsername) {
-      document.getElementById('join-username-input').focus();
-    }
-    // Clean up URL
-    const url = new URL(window.location);
-    url.searchParams.delete('room');
-    window.history.replaceState({}, '', url);
+    // Wait for auth to be ready before showing join modal
+    const ready = window._authReady || Promise.resolve();
+    ready.then(() => {
+      document.getElementById('room-code-input').value = roomCode.toUpperCase();
+      const mainUsername = document.getElementById('username-input').value.trim();
+      const joinUsernameInput = document.getElementById('join-username-input');
+      if (mainUsername) {
+        joinUsernameInput.value = mainUsername;
+      }
+      // Disable join username if signed in or main username already provided
+      if (!isGuest() || mainUsername) {
+        joinUsernameInput.disabled = true;
+      } else {
+        joinUsernameInput.disabled = false;
+      }
+      document.getElementById('join-modal').classList.remove('hidden');
+      // Focus on username if guest and empty
+      if (isGuest() && !mainUsername) {
+        joinUsernameInput.focus();
+      }
+      // Clean up URL
+      const url = new URL(window.location);
+      url.searchParams.delete('room');
+      window.history.replaceState({}, '', url);
+    });
   }
 }

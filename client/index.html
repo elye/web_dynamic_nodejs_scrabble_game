@@ -69,9 +69,8 @@
             <span class="time-btn-wrapper" data-tooltip="Sign in to unlock more time options">
               <div class="btn-group">
                 <button class="btn btn-sm time-btn-solo active" data-time="15">15 min</button>
-                <button class="btn btn-sm time-btn-solo" data-time="20">20 min</button>
+                <button class="btn btn-sm time-btn-solo" data-time="25">25 min</button>
                 <button class="btn btn-sm time-btn-solo" data-time="30">30 min</button>
-                <button class="btn btn-sm time-btn-solo" data-time="45">45 min</button>
               </div>
             </span>
           </div>
@@ -118,9 +117,8 @@
             <span class="time-btn-wrapper" data-tooltip="Sign in to unlock more time options">
               <div class="btn-group">
                 <button class="btn btn-sm time-btn active" data-time="15">15 min</button>
-                <button class="btn btn-sm time-btn" data-time="20">20 min</button>
+                <button class="btn btn-sm time-btn" data-time="25">25 min</button>
                 <button class="btn btn-sm time-btn" data-time="30">30 min</button>
-                <button class="btn btn-sm time-btn" data-time="45">45 min</button>
               </div>
             </span>
           </div>
@@ -145,6 +143,11 @@
           <div class="form-group">
             <label class="checkbox-label"><input type="checkbox" id="multi-random-order" checked> Randomize turn order</label>
           </div>
+          <div class="form-group">
+            <span class="public-room-wrapper" data-tooltip="Sign in to create public rooms">
+              <label class="checkbox-label"><input type="checkbox" id="multi-public-room"> Public Room</label>
+            </span>
+          </div>
           <div class="form-group" id="multi-hint-group">
             <span class="hint-checkbox-wrapper" data-tooltip="Sign in to enable AI Hints">
               <label class="checkbox-label" id="multi-hint-label"><input type="checkbox" id="multi-allow-hint"> Allow AI Hint</label>
@@ -166,12 +169,12 @@
             <input type="text" id="join-username-input" placeholder="Enter your username" maxlength="20">
             <span id="join-username-error" class="input-error-text hidden">Please enter a player name</span>
           </div>
-          <div class="form-group">
+          <div class="form-group room-combobox">
             <label for="room-code-input">Room Code</label>
-            <input type="text" id="room-code-input" placeholder="Enter room code" maxlength="8">
-          </div>
-          <div id="room-list" class="room-list">
-            <p class="text-muted">No open rooms available</p>
+            <input type="text" id="room-code-input" placeholder="Enter room code or browse public rooms" maxlength="8" autocomplete="off">
+            <div id="room-list" class="room-dropdown">
+              <p class="text-muted">No open rooms available</p>
+            </div>
           </div>
           <div class="modal-actions">
             <button id="cancel-join-btn" class="btn btn-outlined">Cancel</button>
@@ -187,6 +190,7 @@
     <div class="waiting-container">
       <h2>Waiting Room</h2>
       <p class="room-code-display">Room Code: <span id="room-code-text">-------</span> <button id="copy-link-btn" class="btn btn-sm" title="Copy invite link">📋 Copy Link</button></p>
+      <div id="waiting-room-settings" class="waiting-room-settings"></div>
       <div id="waiting-players" class="waiting-players"></div>
       <div class="waiting-actions">
         <button id="leave-room-btn" class="btn btn-outlined">Leave</button>
@@ -297,7 +301,7 @@
         <!-- Game Info Header -->
         <div class="game-info-card">
           <p class="info-text">Word Validation • English US</p>
-          <p class="info-text"><span id="time-limit-text">45 Minutes</span> Game • <span id="game-type-text">Friendly</span></p>
+          <p class="info-text"><span id="time-limit-text">15 Minutes</span> • <span id="timeout-mode-text">Sudden Death</span> • <span id="game-type-text">Friendly</span></p>
         </div>
 
         <!-- Player Scoreboard -->
@@ -414,6 +418,7 @@
                   <th>Opponent</th>
                   <th>Score</th>
                   <th>Result</th>
+                  <th>Timer</th>
                   <th>End Reason</th>
                 </tr>
               </thead>

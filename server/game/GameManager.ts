@@ -150,6 +150,7 @@ export class GameManager {
       timeoutMode: 'sudden',
       randomOrder,
       allowHint: gameType === 'friendly' ? allowHint : false,
+      publicRoom: false,
     };
 
     const roomId = uuidv4().substring(0, 8).toUpperCase();
@@ -638,16 +639,18 @@ export class GameManager {
     this.playerRooms.delete(playerId);
     this.updateSessionRoom(playerId, undefined);
 
-    if (room.game.players.filter(p => !p.isAI).length === 0) {
-      this.rooms.delete(roomId);
-    } else {
-      // Reassign host if the host left
-      if (room.hostId === playerId) {
-        const newHost = room.game.players.find(p => !p.isAI);
-        if (newHost) {
-          room.hostId = newHost.id;
+    if (room.game.players.filter(p => !p.isAI).length === 0 || room.hostId === playerId) {
+      // Room closes if no humans left or if the host left
+      this.broadcastToRoom(roomId, 'ROOM_CLOSED', { reason: 'Host left the room' });
+      // Clean up all remaining players
+      for (const p of room.game.players) {
+        if (!p.isAI) {
+          this.playerRooms.delete(p.id);
+          this.updateSessionRoom(p.id, undefined);
         }
       }
+      this.rooms.delete(roomId);
+    } else {
       this.broadcastToRoom(roomId, 'ROOM_UPDATE', this.getRoomState(room));
     }
   }
@@ -1121,8 +1124,7 @@ export class GameManager {
       turnEvents,
       turnHistory: game.turnHistory,
       settings: game.settings,
-      gameTime: game.settings.timeLimit === 0 ? 'Unlimited' : `${game.settings.timeLimit} min`,
-      timeoutMode: game.settings.timeLimit === 0 ? 'N/A' : game.settings.timeoutMode,
+      timeoutMode: game.settings.timeLimit === 0 ? 'N/A' : (game.settings.timeoutMode === 'penalty' ? 'OT' : 'SD'),
       isSolo: game.players.filter(p => !p.isAI).length === 1 && game.players.some(p => p.isAI),
       endedAt: new Date(),
     });
@@ -1140,7 +1142,7 @@ export class GameManager {
   getRoomList(): any[] {
     const rooms: any[] = [];
     for (const [id, room] of this.rooms) {
-      if (room.game.status === 'waiting' && !room.isSolo) {
+      if (room.game.status === 'waiting' && !room.isSolo && room.settings.publicRoom) {
         rooms.push({
           id,
           hostId: room.hostId,

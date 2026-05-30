@@ -24,6 +24,7 @@ function showSignedIn(displayName) {
   if (typeof updateAddAIAccess === 'function') updateAddAIAccess();
   if (typeof updateAICountAccess === 'function') updateAICountAccess();
   if (typeof updateTimeoutAccess === 'function') updateTimeoutAccess();
+  if (typeof updatePublicRoomAccess === 'function') updatePublicRoomAccess();
 }
 
 function showSignedOut() {
@@ -35,6 +36,7 @@ function showSignedOut() {
   if (typeof updateAddAIAccess === 'function') updateAddAIAccess();
   if (typeof updateAICountAccess === 'function') updateAICountAccess();
   if (typeof updateTimeoutAccess === 'function') updateTimeoutAccess();
+  if (typeof updatePublicRoomAccess === 'function') updatePublicRoomAccess();
 }
 
 // Derive a suggested display name from Logto user data

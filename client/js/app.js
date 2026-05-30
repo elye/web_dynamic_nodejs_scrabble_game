@@ -117,6 +117,12 @@ function handleMessage(msg) {
       checkUrlRoomCode();
       break;
     }
+
+    case 'ROOM_CLOSED': {
+      alert(msg.reason || 'The room has been closed.');
+      showScreen('lobby-screen');
+      break;
+    }
       
     case 'GAME_START':
       startHttpKeepAlive();
