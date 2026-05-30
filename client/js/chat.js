@@ -63,7 +63,7 @@ function addChatMessage(data) {
     <div class="chat-avatar" style="background: ${getAvatarColor(data.playerId)}">${initial}</div>
     <div class="chat-body">
       <div class="chat-header">
-        <span class="chat-username">${escapeHtml(data.username)}</span>
+        <span class="chat-username">${escapeHtml(data.username)}${data.isRegistered ? ' <span class="verified-badge" title="Registered player">✓</span>' : ''}</span>
         <span class="chat-time">${time}</span>
       </div>
       <div class="chat-text">${escapeHtml(data.text)}</div>
@@ -117,7 +117,7 @@ function createHistoryEntry(entry) {
     <div class="history-header">
       <div class="history-avatar" style="background: ${getAvatarColor(entry.playerId)}">${initial}</div>
       <div class="history-info">
-        <div class="history-player">${escapeHtml(entry.username || 'Unknown')}</div>
+        <div class="history-player">${escapeHtml(entry.username || 'Unknown')}${(typeof currentPlayers !== 'undefined' && currentPlayers.find(p => p.id === entry.playerId)?.isRegistered) ? ' <span class="verified-badge" title="Registered player">✓</span>' : ''}</div>
         <div class="history-detail">${detail}</div>
       </div>
     </div>

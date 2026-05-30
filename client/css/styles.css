@@ -920,6 +920,13 @@ input[type="text"]:focus {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.verified-badge {
+  display: inline-block;
+  color: #4caf50;
+  font-size: 0.75em;
+  font-weight: 800;
+  vertical-align: middle;
+}
 .player-elo {
   font-size: 0.7rem;
   color: var(--text-muted);

@@ -245,7 +245,7 @@ function updateWaitingRoom(data) {
     }
     card.innerHTML = `
       <div class="avatar" style="background: ${getAvatarColor(player.id)}">${initial}</div>
-      <div class="player-name">${escapeHtml(player.username)}${aiBadge}${disconnectedBadge}</div>
+      <div class="player-name">${escapeHtml(player.username)}${player.isRegistered && !player.isAI ? ' <span class="verified-badge" title="Registered player">✓</span>' : ''}${aiBadge}${disconnectedBadge}</div>
       ${removeBtn}
     `;
     container.appendChild(card);

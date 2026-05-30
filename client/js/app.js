@@ -718,7 +718,7 @@ function showRoundSummary() {
     const isWinner = player.score === maxScore && maxScore > 0;
     headerRow += `<th class="stat-player-col${isWinner ? ' winner' : ''}">
       <div class="player-avatar" style="background: ${getAvatarColor(player.id)}">${initial}</div>
-      <div class="player-name">${escapeHtml(player.username)}${isWinner ? ' 🏆' : ''}</div>
+      <div class="player-name">${escapeHtml(player.username)}${isWinner ? ' 🏆' : ''}${player.isRegistered ? ' <span class="verified-badge" title="Registered player">✓</span>' : ''}</div>
     </th>`;
   }
   headerRow += '</tr>';
@@ -799,7 +799,7 @@ function showRoundSummary() {
     legendDiv.className = 'score-graph-legend';
     for (const player of sorted) {
       const color = getAvatarColor(player.id);
-      legendDiv.innerHTML += `<span class="legend-item"><span class="legend-dot" style="background:${color}"></span>${escapeHtml(player.username)}</span>`;
+      legendDiv.innerHTML += `<span class="legend-item"><span class="legend-dot" style="background:${color}"></span>${escapeHtml(player.username)}${player.isRegistered ? ' <span class="verified-badge">✓</span>' : ''}</span>`;
     }
     legendDiv.innerHTML += `<span class="legend-item"><span class="legend-dot" style="background:#FFD700"></span>Bingo</span>`;
     legendDiv.innerHTML += `<span class="legend-item"><span style="font-size:0.8rem;color:#e74c3c">✕</span> Pass/Exchange</span>`;
