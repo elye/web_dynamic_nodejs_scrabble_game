@@ -38,6 +38,7 @@ export interface GameSettings {
   gameType: 'friendly' | 'formal';
   timeoutMode: 'sudden' | 'penalty'; // sudden = score 0 & game over, penalty = -10pts/min overtime
   randomOrder?: boolean; // shuffle player order at game start
+  allowHint?: boolean; // allow AI hint in friendly games
 }
 
 export type GameStatus = 'waiting' | 'playing' | 'finished';

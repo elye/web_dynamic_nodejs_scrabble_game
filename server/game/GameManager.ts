@@ -140,7 +140,7 @@ export class GameManager {
 
   // --- Solo game (atomic: create + add AI + start) ---
 
-  createSoloGame(playerId: string, socket: WebSocket, username: string, avatar: string, aiDifficulty: 'easy' | 'medium' | 'hard', timeLimit: number, gameType: 'friendly' | 'formal' = 'friendly', randomOrder: boolean = false, aiCount: number = 1): Room {
+  createSoloGame(playerId: string, socket: WebSocket, username: string, avatar: string, aiDifficulty: 'easy' | 'medium' | 'hard', timeLimit: number, gameType: 'friendly' | 'formal' = 'friendly', randomOrder: boolean = false, aiCount: number = 1, allowHint: boolean = false): Room {
     const clampedAiCount = Math.min(3, Math.max(1, aiCount));
     const settings: GameSettings = {
       maxPlayers: 1 + clampedAiCount,
@@ -149,6 +149,7 @@ export class GameManager {
       gameType,
       timeoutMode: 'sudden',
       randomOrder,
+      allowHint: gameType === 'friendly' ? allowHint : false,
     };
 
     const roomId = uuidv4().substring(0, 8).toUpperCase();
@@ -764,6 +765,56 @@ export class GameManager {
     }
 
     return true;
+  }
+
+  // --- AI Hint ---
+
+  async handleHintRequest(playerId: string): Promise<void> {
+    const roomId = this.playerRooms.get(playerId);
+    if (!roomId) return;
+
+    const room = this.rooms.get(roomId);
+    if (!room || room.game.status !== 'playing') return;
+
+    // Only allow hints in friendly games with allowHint enabled
+    if (!room.game.settings.allowHint) {
+      this.sendToPlayer(playerId, 'HINT_RESULT', { error: 'Hints are not enabled for this game' });
+      return;
+    }
+
+    // Only allow hints on the player's own turn
+    const currentPlayer = room.game.getCurrentPlayer();
+    if (!currentPlayer || currentPlayer.id !== playerId) {
+      this.sendToPlayer(playerId, 'HINT_RESULT', { error: 'Not your turn' });
+      return;
+    }
+
+    // Use medium difficulty for hints
+    const move = await this.ai.findMove(
+      room.game.board,
+      currentPlayer.rack,
+      'medium'
+    );
+
+    if (!move) {
+      this.sendToPlayer(playerId, 'HINT_RESULT', { error: 'No valid moves found' });
+      return;
+    }
+
+    // Send the suggested placements back to the client
+    this.sendToPlayer(playerId, 'HINT_RESULT', {
+      placements: move.placements.map(p => ({
+        tileId: p.tile.id,
+        letter: p.tile.letter,
+        points: p.tile.points,
+        isBlank: p.tile.isBlank,
+        chosenLetter: p.tile.chosenLetter,
+        row: p.row,
+        col: p.col,
+      })),
+      score: move.score,
+      words: move.words,
+    });
   }
 
   // --- AI ---

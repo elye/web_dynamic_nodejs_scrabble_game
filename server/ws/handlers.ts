@@ -55,7 +55,8 @@ export function setupWebSocketHandlers(wss: WebSocket.Server, gameManager: GameM
               message.timeLimit ?? 0,
               message.gameType || 'friendly',
               message.randomOrder || false,
-              Math.min(3, Math.max(1, parseInt(message.aiCount) || 1))
+              Math.min(3, Math.max(1, parseInt(message.aiCount) || 1)),
+              message.allowHint || false
             );
             // GAME_START is already sent inside createSoloGame
             break;
@@ -70,6 +71,7 @@ export function setupWebSocketHandlers(wss: WebSocket.Server, gameManager: GameM
               gameType: message.gameType || 'friendly',
               timeoutMode: message.timeoutMode || 'sudden',
               randomOrder: message.randomOrder || false,
+              allowHint: message.allowHint || false,
             };
             
             const room = gameManager.createRoom(
@@ -171,6 +173,12 @@ export function setupWebSocketHandlers(wss: WebSocket.Server, gameManager: GameM
           case 'PREVIEW_SCORE': {
             if (!playerId) return;
             gameManager.handlePreviewScore(playerId, message.placements);
+            break;
+          }
+
+          case 'REQUEST_HINT': {
+            if (!playerId) return;
+            gameManager.handleHintRequest(playerId);
             break;
           }
 

@@ -30,6 +30,7 @@ let soloSettings = {
   timeLimit: 0,
   gameType: 'friendly',
   aiCount: 1,
+  allowHint: false,
 };
 
 let multiSettings = {
@@ -37,6 +38,7 @@ let multiSettings = {
   timeLimit: 30,
   gameType: 'friendly',
   timeoutMode: 'sudden',
+  allowHint: false,
 };
 
 function initLobby() {
@@ -89,7 +91,20 @@ function initLobby() {
       document.querySelectorAll('.type-btn-solo').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       soloSettings.gameType = btn.dataset.type;
+      // Show/hide hint option (only for Friendly)
+      const hintGroup = document.getElementById('solo-hint-group');
+      if (btn.dataset.type === 'formal') {
+        hintGroup.classList.add('hidden');
+        document.getElementById('solo-allow-hint').checked = false;
+        soloSettings.allowHint = false;
+      } else {
+        hintGroup.classList.remove('hidden');
+      }
     });
+  });
+
+  document.getElementById('solo-allow-hint').addEventListener('change', (e) => {
+    soloSettings.allowHint = e.target.checked;
   });
 
   document.getElementById('confirm-solo-btn').addEventListener('click', () => {
@@ -108,6 +123,7 @@ function initLobby() {
         timeLimit: soloSettings.timeLimit,
         gameType: soloSettings.gameType,
         randomOrder,
+        allowHint: soloSettings.allowHint,
       }));
     }
   });
@@ -152,7 +168,20 @@ function initLobby() {
       document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       multiSettings.gameType = btn.dataset.type;
+      // Show/hide hint option (only for Friendly)
+      const hintGroup = document.getElementById('multi-hint-group');
+      if (btn.dataset.type === 'formal') {
+        hintGroup.classList.add('hidden');
+        document.getElementById('multi-allow-hint').checked = false;
+        multiSettings.allowHint = false;
+      } else {
+        hintGroup.classList.remove('hidden');
+      }
     });
+  });
+
+  document.getElementById('multi-allow-hint').addEventListener('change', (e) => {
+    multiSettings.allowHint = e.target.checked;
   });
 
   document.getElementById('confirm-create-btn').addEventListener('click', () => {
@@ -171,6 +200,7 @@ function initLobby() {
         gameType: multiSettings.gameType,
         timeoutMode: multiSettings.timeoutMode,
         randomOrder,
+        allowHint: multiSettings.allowHint,
       }));
     }
   });
@@ -196,14 +226,24 @@ function initLobby() {
 
   document.getElementById('confirm-join-btn').addEventListener('click', () => {
     const roomCode = document.getElementById('room-code-input').value.trim().toUpperCase();
-    const joinUsername = document.getElementById('join-username-input').value.trim();
-    const username = joinUsername || requireGuestUsername();
-    if (!roomCode || !username) return;
+    const joinUsernameInput = document.getElementById('join-username-input');
+    const joinUsernameError = document.getElementById('join-username-error');
+    const joinUsername = joinUsernameInput.value.trim();
+
+    if (!joinUsername) {
+      joinUsernameInput.classList.add('input-error');
+      joinUsernameError.classList.remove('hidden');
+      joinUsernameInput.focus();
+      return;
+    }
+    joinUsernameInput.classList.remove('input-error');
+    joinUsernameError.classList.add('hidden');
+
+    if (!roomCode) return;
+    const username = joinUsername;
 
     // Sync back to main username input
-    if (joinUsername) {
-      document.getElementById('username-input').value = joinUsername;
-    }
+    document.getElementById('username-input').value = joinUsername;
 
     joinModal.classList.add('hidden');
 
@@ -214,6 +254,14 @@ function initLobby() {
         username,
         avatar: '',
       }));
+    }
+  });
+
+  document.getElementById('join-username-input').addEventListener('input', () => {
+    const input = document.getElementById('join-username-input');
+    if (input.value.trim()) {
+      input.classList.remove('input-error');
+      document.getElementById('join-username-error').classList.add('hidden');
     }
   });
 
@@ -243,8 +291,11 @@ function initLobby() {
     }
   });
 
-  // Disable Formal mode for guests once auth state is known
-  window._authReady.then(() => updateFormalButtonAccess());
+  // Disable Formal mode and AI Hint for guests once auth state is known
+  window._authReady.then(() => {
+    updateFormalButtonAccess();
+    updateHintAccess();
+  });
 }
 
 // Enable/disable Formal game-type buttons based on sign-in state
@@ -254,6 +305,23 @@ function updateFormalButtonAccess() {
     btn.disabled = guest;
     const wrapper = btn.closest('.formal-btn-wrapper');
     if (wrapper) wrapper.classList.toggle('guest-disabled', guest);
+  });
+}
+
+// Enable/disable AI Hint checkboxes based on sign-in state
+function updateHintAccess() {
+  const guest = isGuest();
+  ['solo-allow-hint', 'multi-allow-hint'].forEach(id => {
+    const cb = document.getElementById(id);
+    if (!cb) return;
+    cb.disabled = guest;
+    if (guest) {
+      cb.checked = false;
+      if (id === 'solo-allow-hint') soloSettings.allowHint = false;
+      if (id === 'multi-allow-hint') multiSettings.allowHint = false;
+    }
+    const note = cb.closest('label').querySelector('.hint-signin-note');
+    if (note) note.style.display = guest ? 'inline' : 'none';
   });
 }
 
@@ -369,13 +437,17 @@ function checkUrlRoomCode() {
   const params = new URLSearchParams(window.location.search);
   const roomCode = params.get('room');
   if (roomCode) {
-    // Pre-fill room code and show join dialog for confirmation
+    // Pre-fill room code and show join dialog
     document.getElementById('room-code-input').value = roomCode.toUpperCase();
     const mainUsername = document.getElementById('username-input').value.trim();
     if (mainUsername) {
       document.getElementById('join-username-input').value = mainUsername;
     }
     document.getElementById('join-modal').classList.remove('hidden');
+    // Focus on username if guest and empty
+    if (isGuest() && !mainUsername) {
+      document.getElementById('join-username-input').focus();
+    }
     // Clean up URL
     const url = new URL(window.location);
     url.searchParams.delete('room');

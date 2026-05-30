@@ -154,6 +154,10 @@ function handleMessage(msg) {
     case 'SCORE_PREVIEW':
       updateScoreHint(msg);
       break;
+
+    case 'HINT_RESULT':
+      handleHintResult(msg);
+      break;
       
     case 'TILES_RECALLED':
       if (msg.rack) {
@@ -289,6 +293,11 @@ function handleGameState(msg) {
   // Update game info
   if (msg.settings) {
     updateGameInfo(msg.settings);
+    // Show/hide hint button based on game settings
+    const hintBtn = document.getElementById('hint-btn');
+    if (hintBtn) {
+      hintBtn.classList.toggle('hidden', !msg.settings.allowHint);
+    }
   }
   
   // Update turn history
@@ -434,10 +443,65 @@ function showNotification(text, type = 'info') {
 
 function updateSubmitButtonState(currentTurnId) {
   const submitBtn = document.getElementById('submit-btn');
+  const hintBtn = document.getElementById('hint-btn');
   if (!submitBtn) return;
   const isMyTurn = currentTurnId === window.playerId;
   submitBtn.disabled = !isMyTurn;
   submitBtn.classList.toggle('btn-disabled', !isMyTurn);
+  if (hintBtn && !hintBtn.classList.contains('hidden')) {
+    hintBtn.disabled = !isMyTurn;
+    hintBtn.classList.toggle('btn-disabled', !isMyTurn);
+  }
+}
+
+function handleHintResult(msg) {
+  const hintBtn = document.getElementById('hint-btn');
+  hintBtn.disabled = false;
+  hintBtn.innerHTML = '<span class="hint-icon">💡</span> <span class="hint-label">Hint</span>';
+
+  if (msg.error) {
+    showNotification(msg.error, 'error');
+    return;
+  }
+
+  // Recall any existing tiles first
+  recallAllTiles();
+
+  // Place hint tiles from rack to board
+  for (const p of msg.placements) {
+    // Remove tile from rack
+    removeTileFromRack(p.tileId);
+
+    // If blank, set the chosen letter
+    const tileObj = { id: p.tileId, letter: p.letter, points: p.points, isBlank: p.isBlank, chosenLetter: p.chosenLetter };
+
+    // Add to pending tiles
+    pendingTiles.push({
+      tileId: p.tileId,
+      letter: p.letter,
+      points: p.points,
+      isBlank: p.isBlank,
+      chosenLetter: p.chosenLetter,
+      row: p.row,
+      col: p.col,
+    });
+
+    // Send placement to server (so it's tracked server-side too)
+    if (window.ws && window.ws.readyState === WebSocket.OPEN) {
+      window.ws.send(JSON.stringify({
+        type: 'PLACE_TILE',
+        tileId: p.tileId,
+        row: p.row,
+        col: p.col,
+        chosenLetter: p.chosenLetter,
+      }));
+    }
+  }
+
+  renderBoard();
+  renderRack();
+  setTimeout(requestScorePreview, 150);
+  showNotification(`💡 Hint: "${msg.words.join(', ')}" for ${msg.score} pts — Submit or modify!`, 'success');
 }
 
 // ============================================
@@ -467,6 +531,18 @@ function initGameActions() {
     }
     if (window.ws && window.ws.readyState === WebSocket.OPEN) {
       window.ws.send(JSON.stringify({ type: 'SUBMIT_WORD' }));
+    }
+  });
+
+  // AI Hint
+  document.getElementById('hint-btn').addEventListener('click', () => {
+    // Recall any placed tiles first
+    recallAllTiles();
+    const hintBtn = document.getElementById('hint-btn');
+    hintBtn.disabled = true;
+    hintBtn.innerHTML = '<span class="hint-spinner"></span> <span class="hint-label">Thinking...</span>';
+    if (window.ws && window.ws.readyState === WebSocket.OPEN) {
+      window.ws.send(JSON.stringify({ type: 'REQUEST_HINT' }));
     }
   });
   

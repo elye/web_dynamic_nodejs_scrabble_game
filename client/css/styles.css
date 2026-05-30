@@ -226,6 +226,11 @@ input[type="text"]:focus {
 .btn:hover { opacity: 0.9; transform: translateY(-1px); }
 .btn:active { transform: translateY(0); }
 .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.formal-btn-wrapper.guest-disabled .btn:disabled {
+  opacity: 0.75;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
 
 .btn-accent {
   background: var(--accent);
@@ -1065,6 +1070,26 @@ input[type="text"]:focus {
   opacity: 0.4;
   cursor: not-allowed;
   pointer-events: none;
+}
+#hint-btn {
+  padding: 0.4rem 0.6rem;
+  line-height: 1;
+}
+@media (max-width: 600px) and (orientation: portrait) {
+  #hint-btn .hint-label { display: none; }
+  #hint-btn { min-width: 2.5rem; font-size: 1.1rem; }
+}
+.hint-spinner {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  border: 2px solid var(--text-muted);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: hint-spin 0.6s linear infinite;
+}
+@keyframes hint-spin {
+  to { transform: rotate(360deg); }
 }
 
 /* ============================================
