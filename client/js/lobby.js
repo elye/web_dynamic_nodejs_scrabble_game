@@ -30,6 +30,7 @@ let soloSettings = {
   timeLimit: 0,
   gameType: 'friendly',
   aiCount: 1,
+  allowHint: false,
 };
 
 let multiSettings = {
@@ -37,6 +38,7 @@ let multiSettings = {
   timeLimit: 30,
   gameType: 'friendly',
   timeoutMode: 'sudden',
+  allowHint: false,
 };
 
 function initLobby() {
@@ -89,7 +91,20 @@ function initLobby() {
       document.querySelectorAll('.type-btn-solo').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       soloSettings.gameType = btn.dataset.type;
+      // Show/hide hint option (only for Friendly)
+      const hintGroup = document.getElementById('solo-hint-group');
+      if (btn.dataset.type === 'formal') {
+        hintGroup.classList.add('hidden');
+        document.getElementById('solo-allow-hint').checked = false;
+        soloSettings.allowHint = false;
+      } else {
+        hintGroup.classList.remove('hidden');
+      }
     });
+  });
+
+  document.getElementById('solo-allow-hint').addEventListener('change', (e) => {
+    soloSettings.allowHint = e.target.checked;
   });
 
   document.getElementById('confirm-solo-btn').addEventListener('click', () => {
@@ -108,6 +123,7 @@ function initLobby() {
         timeLimit: soloSettings.timeLimit,
         gameType: soloSettings.gameType,
         randomOrder,
+        allowHint: soloSettings.allowHint,
       }));
     }
   });
@@ -152,7 +168,20 @@ function initLobby() {
       document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       multiSettings.gameType = btn.dataset.type;
+      // Show/hide hint option (only for Friendly)
+      const hintGroup = document.getElementById('multi-hint-group');
+      if (btn.dataset.type === 'formal') {
+        hintGroup.classList.add('hidden');
+        document.getElementById('multi-allow-hint').checked = false;
+        multiSettings.allowHint = false;
+      } else {
+        hintGroup.classList.remove('hidden');
+      }
     });
+  });
+
+  document.getElementById('multi-allow-hint').addEventListener('change', (e) => {
+    multiSettings.allowHint = e.target.checked;
   });
 
   document.getElementById('confirm-create-btn').addEventListener('click', () => {
@@ -171,6 +200,7 @@ function initLobby() {
         gameType: multiSettings.gameType,
         timeoutMode: multiSettings.timeoutMode,
         randomOrder,
+        allowHint: multiSettings.allowHint,
       }));
     }
   });
