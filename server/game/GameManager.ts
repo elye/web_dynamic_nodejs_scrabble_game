@@ -48,9 +48,12 @@ export class GameManager {
   }
 
   private pickAIName(difficulty: 'easy' | 'medium' | 'hard', usedNames: Set<string>): string {
-    const pool = AI_NAMES[difficulty].filter(n => !usedNames.has(n));
+    const suffixes: Record<string, string> = { easy: ' (E)', medium: ' (M)', hard: ' (H)' };
+    const suffix = suffixes[difficulty];
+    const pool = AI_NAMES[difficulty]
+      .map(n => n + suffix)
+      .filter(n => !usedNames.has(n));
     if (pool.length === 0) {
-      // Fallback if all names are taken (shouldn't happen with max 3 AI)
       const label = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
       return `AI ${label} ${usedNames.size + 1}`;
     }
