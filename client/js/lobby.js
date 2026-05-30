@@ -29,7 +29,7 @@ let soloSettings = {
   aiDifficulty: 'medium',
   timeLimit: 15,
   gameType: 'friendly',
-  aiCount: 1,
+  aiCount: 3,
   allowHint: false,
 };
 
@@ -63,6 +63,7 @@ function initLobby() {
 
   document.querySelectorAll('.ai-diff-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+      if (btn.disabled) return;
       document.querySelectorAll('.ai-diff-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       soloSettings.aiDifficulty = btn.dataset.diff;
@@ -80,6 +81,7 @@ function initLobby() {
 
   document.querySelectorAll('.ai-count-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+      if (btn.disabled) return;
       document.querySelectorAll('.ai-count-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       soloSettings.aiCount = parseInt(btn.dataset.count);
@@ -281,6 +283,7 @@ function initLobby() {
 
   document.querySelectorAll('.add-ai-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+      if (btn.disabled) return;
       if (window.ws && window.ws.readyState === WebSocket.OPEN) {
         window.ws.send(JSON.stringify({ type: 'ADD_AI', aiDifficulty: btn.dataset.difficulty }));
       }
@@ -298,6 +301,9 @@ function initLobby() {
     updateFormalButtonAccess();
     updateHintAccess();
     updateTimeButtonAccess();
+    updateAIDifficultyAccess();
+    updateAddAIAccess();
+    updateAICountAccess();
   });
 }
 
@@ -349,6 +355,55 @@ function updateTimeButtonAccess() {
     }
   });
   document.querySelectorAll('.time-btn-wrapper').forEach(wrapper => {
+    wrapper.classList.toggle('guest-disabled', guest);
+  });
+}
+
+// Enable/disable Hard AI difficulty based on sign-in state
+function updateAIDifficultyAccess() {
+  const guest = isGuest();
+  document.querySelectorAll('.ai-diff-btn').forEach(btn => {
+    if (btn.dataset.diff === 'hard') {
+      btn.disabled = guest;
+      if (guest && btn.classList.contains('active')) {
+        btn.classList.remove('active');
+        const medBtn = document.querySelector('.ai-diff-btn[data-diff="medium"]');
+        if (medBtn) medBtn.classList.add('active');
+        soloSettings.aiDifficulty = 'medium';
+      }
+    }
+  });
+  document.querySelectorAll('.ai-diff-wrapper').forEach(wrapper => {
+    wrapper.classList.toggle('guest-disabled', guest);
+  });
+}
+
+// Enable/disable Add AI buttons based on sign-in state
+function updateAddAIAccess() {
+  const guest = isGuest();
+  document.querySelectorAll('.add-ai-btn').forEach(btn => {
+    btn.disabled = guest;
+  });
+  document.querySelectorAll('.add-ai-wrapper').forEach(wrapper => {
+    wrapper.classList.toggle('guest-disabled', guest);
+  });
+}
+
+// Enable/disable AI count options based on sign-in state (guests get 3 only)
+function updateAICountAccess() {
+  const guest = isGuest();
+  document.querySelectorAll('.ai-count-btn').forEach(btn => {
+    if (parseInt(btn.dataset.count) < 3) {
+      btn.disabled = guest;
+      if (guest && btn.classList.contains('active')) {
+        btn.classList.remove('active');
+        const btn3 = document.querySelector('.ai-count-btn[data-count="3"]');
+        if (btn3) btn3.classList.add('active');
+        soloSettings.aiCount = 3;
+      }
+    }
+  });
+  document.querySelectorAll('.ai-count-wrapper').forEach(wrapper => {
     wrapper.classList.toggle('guest-disabled', guest);
   });
 }

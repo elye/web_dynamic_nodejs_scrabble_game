@@ -377,6 +377,108 @@ input[type="text"]:focus {
   opacity: 1;
 }
 
+/* AI Difficulty tooltip */
+.ai-diff-wrapper {
+  position: relative;
+  display: block;
+}
+
+.ai-diff-wrapper[data-tooltip].guest-disabled::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-tertiary, #333);
+  color: var(--text-primary, #fff);
+  padding: 0.35rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 10;
+}
+
+.ai-diff-wrapper.guest-disabled:hover::after {
+  opacity: 1;
+}
+
+.ai-diff-wrapper.guest-disabled .btn:disabled {
+  opacity: 0.75;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+/* Add AI bot tooltip */
+.add-ai-wrapper {
+  position: relative;
+  display: block;
+}
+
+.add-ai-wrapper[data-tooltip].guest-disabled::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-tertiary, #333);
+  color: var(--text-primary, #fff);
+  padding: 0.35rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 10;
+}
+
+.add-ai-wrapper.guest-disabled:hover::after {
+  opacity: 1;
+}
+
+.add-ai-wrapper.guest-disabled .btn:disabled {
+  opacity: 0.75;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+/* AI Count tooltip */
+.ai-count-wrapper {
+  position: relative;
+  display: block;
+}
+
+.ai-count-wrapper[data-tooltip].guest-disabled::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-tertiary, #333);
+  color: var(--text-primary, #fff);
+  padding: 0.35rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 10;
+}
+
+.ai-count-wrapper.guest-disabled:hover::after {
+  opacity: 1;
+}
+
+.ai-count-wrapper.guest-disabled .btn:disabled {
+  opacity: 0.75;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
 /* ============================================
    Modals
    ============================================ */

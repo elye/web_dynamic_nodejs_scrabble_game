@@ -56,11 +56,13 @@
           <h2>Solo Game vs AI</h2>
           <div class="form-group">
             <label>AI Difficulty</label>
-            <div class="btn-group">
-              <button class="btn btn-sm ai-diff-btn" data-diff="easy">Easy</button>
-              <button class="btn btn-sm ai-diff-btn active" data-diff="medium">Medium</button>
-              <button class="btn btn-sm ai-diff-btn" data-diff="hard">Hard</button>
-            </div>
+            <span class="ai-diff-wrapper" data-tooltip="Sign in to unlock Hard difficulty">
+              <div class="btn-group">
+                <button class="btn btn-sm ai-diff-btn" data-diff="easy">Easy</button>
+                <button class="btn btn-sm ai-diff-btn active" data-diff="medium">Medium</button>
+                <button class="btn btn-sm ai-diff-btn" data-diff="hard">Hard</button>
+              </div>
+            </span>
           </div>
           <div class="form-group">
             <label>Time Limit</label>
@@ -75,11 +77,13 @@
           </div>
           <div class="form-group">
             <label>Number of AI Opponents</label>
-            <div class="btn-group">
-              <button class="btn btn-sm ai-count-btn active" data-count="1">1</button>
-              <button class="btn btn-sm ai-count-btn" data-count="2">2</button>
-              <button class="btn btn-sm ai-count-btn" data-count="3">3</button>
-            </div>
+            <span class="ai-count-wrapper" data-tooltip="Sign in to choose fewer opponents">
+              <div class="btn-group">
+                <button class="btn btn-sm ai-count-btn" data-count="1">1</button>
+                <button class="btn btn-sm ai-count-btn" data-count="2">2</button>
+                <button class="btn btn-sm ai-count-btn active" data-count="3">3</button>
+              </div>
+            </span>
           </div>
           <div class="form-group">
             <label>Game Type</label>
@@ -186,11 +190,13 @@
         <button id="leave-room-btn" class="btn btn-outlined">Leave</button>
         <button id="start-game-btn" class="btn btn-accent" disabled>Start Game</button>
       </div>
-      <div class="ai-bot-actions">
-        <button class="btn btn-sm add-ai-btn" data-difficulty="easy">🤖 Easy Bot</button>
-        <button class="btn btn-sm add-ai-btn" data-difficulty="medium">🤖 Medium Bot</button>
-        <button class="btn btn-sm add-ai-btn" data-difficulty="hard">🤖 Hard Bot</button>
-      </div>
+      <span class="add-ai-wrapper" data-tooltip="Sign in to add AI players">
+        <div class="ai-bot-actions">
+          <button class="btn btn-sm add-ai-btn" data-difficulty="easy">🤖 Easy Bot</button>
+          <button class="btn btn-sm add-ai-btn" data-difficulty="medium">🤖 Medium Bot</button>
+          <button class="btn btn-sm add-ai-btn" data-difficulty="hard">🤖 Hard Bot</button>
+        </div>
+      </span>
       </div>
     </div>
   </div>
