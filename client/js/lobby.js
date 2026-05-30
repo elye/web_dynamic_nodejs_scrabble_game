@@ -226,14 +226,24 @@ function initLobby() {
 
   document.getElementById('confirm-join-btn').addEventListener('click', () => {
     const roomCode = document.getElementById('room-code-input').value.trim().toUpperCase();
-    const joinUsername = document.getElementById('join-username-input').value.trim();
-    const username = joinUsername || requireGuestUsername();
-    if (!roomCode || !username) return;
+    const joinUsernameInput = document.getElementById('join-username-input');
+    const joinUsernameError = document.getElementById('join-username-error');
+    const joinUsername = joinUsernameInput.value.trim();
+
+    if (!joinUsername) {
+      joinUsernameInput.classList.add('input-error');
+      joinUsernameError.classList.remove('hidden');
+      joinUsernameInput.focus();
+      return;
+    }
+    joinUsernameInput.classList.remove('input-error');
+    joinUsernameError.classList.add('hidden');
+
+    if (!roomCode) return;
+    const username = joinUsername;
 
     // Sync back to main username input
-    if (joinUsername) {
-      document.getElementById('username-input').value = joinUsername;
-    }
+    document.getElementById('username-input').value = joinUsername;
 
     joinModal.classList.add('hidden');
 
@@ -244,6 +254,14 @@ function initLobby() {
         username,
         avatar: '',
       }));
+    }
+  });
+
+  document.getElementById('join-username-input').addEventListener('input', () => {
+    const input = document.getElementById('join-username-input');
+    if (input.value.trim()) {
+      input.classList.remove('input-error');
+      document.getElementById('join-username-error').classList.add('hidden');
     }
   });
 
@@ -419,13 +437,17 @@ function checkUrlRoomCode() {
   const params = new URLSearchParams(window.location.search);
   const roomCode = params.get('room');
   if (roomCode) {
-    // Pre-fill room code and show join dialog for confirmation
+    // Pre-fill room code and show join dialog
     document.getElementById('room-code-input').value = roomCode.toUpperCase();
     const mainUsername = document.getElementById('username-input').value.trim();
     if (mainUsername) {
       document.getElementById('join-username-input').value = mainUsername;
     }
     document.getElementById('join-modal').classList.remove('hidden');
+    // Focus on username if guest and empty
+    if (isGuest() && !mainUsername) {
+      document.getElementById('join-username-input').focus();
+    }
     // Clean up URL
     const url = new URL(window.location);
     url.searchParams.delete('room');
