@@ -226,6 +226,11 @@ input[type="text"]:focus {
 .btn:hover { opacity: 0.9; transform: translateY(-1px); }
 .btn:active { transform: translateY(0); }
 .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.formal-btn-wrapper.guest-disabled .btn:disabled {
+  opacity: 0.75;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
 
 .btn-accent {
   background: var(--accent);

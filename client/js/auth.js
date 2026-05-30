@@ -18,11 +18,13 @@ function showSignedIn(displayName) {
     usernameInput.value = displayName.slice(0, 20);
   }
   if (typeof updateFormalButtonAccess === 'function') updateFormalButtonAccess();
+  if (typeof updateHintAccess === 'function') updateHintAccess();
 }
 
 function showSignedOut() {
   document.getElementById('username-row').classList.remove('hidden');
   if (typeof updateFormalButtonAccess === 'function') updateFormalButtonAccess();
+  if (typeof updateHintAccess === 'function') updateHintAccess();
 }
 
 // Derive a suggested display name from Logto user data

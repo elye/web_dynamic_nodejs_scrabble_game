@@ -273,8 +273,11 @@ function initLobby() {
     }
   });
 
-  // Disable Formal mode for guests once auth state is known
-  window._authReady.then(() => updateFormalButtonAccess());
+  // Disable Formal mode and AI Hint for guests once auth state is known
+  window._authReady.then(() => {
+    updateFormalButtonAccess();
+    updateHintAccess();
+  });
 }
 
 // Enable/disable Formal game-type buttons based on sign-in state
@@ -284,6 +287,23 @@ function updateFormalButtonAccess() {
     btn.disabled = guest;
     const wrapper = btn.closest('.formal-btn-wrapper');
     if (wrapper) wrapper.classList.toggle('guest-disabled', guest);
+  });
+}
+
+// Enable/disable AI Hint checkboxes based on sign-in state
+function updateHintAccess() {
+  const guest = isGuest();
+  ['solo-allow-hint', 'multi-allow-hint'].forEach(id => {
+    const cb = document.getElementById(id);
+    if (!cb) return;
+    cb.disabled = guest;
+    if (guest) {
+      cb.checked = false;
+      if (id === 'solo-allow-hint') soloSettings.allowHint = false;
+      if (id === 'multi-allow-hint') multiSettings.allowHint = false;
+    }
+    const note = cb.closest('label').querySelector('.hint-signin-note');
+    if (note) note.style.display = guest ? 'inline' : 'none';
   });
 }
 
