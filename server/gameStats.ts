@@ -294,6 +294,7 @@ export async function getOpponentStats(userId: string): Promise<any[]> {
         _id: {
           opponentName: '$players.username',
           isAI: '$players.isAI',
+          opponentUserId: { $ifNull: ['$players.userId', null] },
         },
         totalGames: { $sum: 1 },
         wins: {
@@ -314,6 +315,7 @@ export async function getOpponentStats(userId: string): Promise<any[]> {
         _id: 0,
         opponentName: '$_id.opponentName',
         isAI: '$_id.isAI',
+        isRegistered: { $cond: [{ $ne: ['$_id.opponentUserId', null] }, true, false] },
         totalGames: 1,
         wins: 1,
         losses: 1,

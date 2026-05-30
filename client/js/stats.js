@@ -266,8 +266,9 @@ function renderOpponents(opponents) {
     const lastPlayed = opp.lastPlayed
       ? new Date(opp.lastPlayed).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
       : '-';
+    const badge = opp.isAI ? ' 🤖' : opp.isRegistered ? ' <span class="verified-badge" title="Registered player">✓</span>' : ' <span style="color:var(--text-muted);font-size:0.75rem">(Guest)</span>';
     tr.innerHTML = `
-      <td>${escapeHtml(opp.opponentName)}${opp.isAI ? ' 🤖' : ''}</td>
+      <td>${escapeHtml(opp.opponentName)}${badge}</td>
       <td class="stats-val-win">${opp.wins || 0}</td>
       <td class="stats-val-loss">${opp.losses || 0}</td>
       <td>${draws}</td>

@@ -101,6 +101,16 @@ export class GameManager {
     if (session) {
       session.userId = userId;
     }
+
+    // Also update the player in any active game
+    const roomId = this.playerRooms.get(playerId);
+    if (roomId) {
+      const room = this.rooms.get(roomId);
+      const player = room?.game.players.find(p => p.id === playerId);
+      if (player) {
+        player.userId = userId;
+      }
+    }
   }
 
   private getUserIdForPlayer(playerId: string): string | undefined {
