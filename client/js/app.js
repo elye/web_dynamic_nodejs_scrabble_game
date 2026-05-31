@@ -654,7 +654,7 @@ function showExchangeModal() {
   modal.classList.remove('hidden');
 }
 
-function drawScoreGraph(canvas, players, progression, turnEvents) {
+function drawScoreGraph(canvas, players, progression, turnEvents, colorMap) {
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
   const w = canvas.width;
@@ -715,7 +715,7 @@ function drawScoreGraph(canvas, players, progression, turnEvents) {
     const data = progression[player.id] || [];
     if (data.length < 2) continue;
 
-    const color = getAvatarColor(player.id);
+    const color = (colorMap && colorMap[player.id]) || getAvatarColor(player.id);
     ctx.strokeStyle = color;
     ctx.lineWidth = 2.5;
     ctx.lineJoin = 'round';
@@ -745,7 +745,7 @@ function drawScoreGraph(canvas, players, progression, turnEvents) {
       
       const x = xScale(pt.turn);
       const y = yScale(pt.score);
-      const color = getAvatarColor(evt.playerId);
+      const color = (colorMap && colorMap[evt.playerId]) || getAvatarColor(evt.playerId);
 
       if (evt.type === 'bingo') {
         // Star marker for bingo
@@ -809,6 +809,12 @@ function showRoundSummary() {
   const maxScore = sorted[0]?.score || 0;
   const playerCount = sorted.length;
 
+  // Build index-based color map for consistent, distinct colors
+  const PLAYER_COLORS = ['#E53935', '#1E88E5', '#43A047', '#FB8C00', '#8E24AA', '#00ACC1'];
+  const _roundColorMap = {};
+  sorted.forEach((p, i) => { _roundColorMap[p.id] = PLAYER_COLORS[i % PLAYER_COLORS.length]; });
+  const getRoundColor = (id) => _roundColorMap[id] || '#999';
+
   // Build table: players as columns, stats as rows
   const table = document.createElement('table');
   table.className = 'summary-table';
@@ -820,7 +826,7 @@ function showRoundSummary() {
     const initial = player.username.charAt(0).toUpperCase();
     const isWinner = player.score === maxScore && maxScore > 0;
     headerRow += `<th class="stat-player-col${isWinner ? ' winner' : ''}">
-      <div class="player-avatar" style="background: ${getAvatarColor(player.id)}">${initial}</div>
+      <div class="player-avatar" style="background: ${getRoundColor(player.id)}">${initial}</div>
       <div class="player-name">${escapeHtml(player.username)}${isWinner ? ' 🏆' : ''}${player.isRegistered ? ' <span class="verified-badge" title="Registered player">✓</span>' : ''}</div>
     </th>`;
   }
@@ -901,7 +907,7 @@ function showRoundSummary() {
     const legendDiv = document.createElement('div');
     legendDiv.className = 'score-graph-legend';
     for (const player of sorted) {
-      const color = getAvatarColor(player.id);
+      const color = getRoundColor(player.id);
       legendDiv.innerHTML += `<span class="legend-item"><span class="legend-dot" style="background:${color}"></span>${escapeHtml(player.username)}${player.isRegistered ? ' <span class="verified-badge">✓</span>' : ''}</span>`;
     }
     legendDiv.innerHTML += `<span class="legend-item"><span class="legend-dot" style="background:#FFD700"></span>Bingo</span>`;
@@ -911,7 +917,7 @@ function showRoundSummary() {
     content.appendChild(graphDiv);
 
     // Draw line graph
-    requestAnimationFrame(() => drawScoreGraph(canvas, sorted, gameOverProgression, gameOverTurnEvents));
+    requestAnimationFrame(() => drawScoreGraph(canvas, sorted, gameOverProgression, gameOverTurnEvents, _roundColorMap));
   }
   
   modal.classList.remove('hidden');
