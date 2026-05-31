@@ -4,6 +4,7 @@ import { TileBag, Tile } from './TileBag';
 import { calculateTurnScore, calculateEndGameDeductions, WordScore } from './Scoring';
 import { Validator } from './Validator';
 import { Timer } from './Timer';
+import { AICharacter } from './AI';
 
 export interface Player {
   id: string;
@@ -15,7 +16,7 @@ export interface Player {
   timerRemaining: number;
   connected: boolean;
   isAI: boolean;
-  aiDifficulty?: 'easy' | 'medium' | 'hard' | 'genius';
+  aiCharacter?: AICharacter;
   userId?: string; // Logto sub — present only for logged-in players
 }
 
@@ -93,7 +94,7 @@ export class GameState {
     this.onGameOver = onGameOver;
   }
 
-  addPlayer(id: string, socketId: string, username: string, avatar: string, isAI: boolean = false, aiDifficulty?: 'easy' | 'medium' | 'hard' | 'genius', userId?: string): Player | null {
+  addPlayer(id: string, socketId: string, username: string, avatar: string, isAI: boolean = false, aiCharacter?: AICharacter, userId?: string): Player | null {
     if (this.players.length >= this.settings.maxPlayers) return null;
     if (this.status !== 'waiting') return null;
 
@@ -104,7 +105,7 @@ export class GameState {
       timerRemaining: this.settings.timeLimit * 60,
       connected: true,
       isAI,
-      aiDifficulty,
+      aiCharacter,
       userId,
     };
     this.players.push(player);
@@ -834,7 +835,7 @@ export class GameState {
         rackCount: p.rack.length,
         connected: p.connected,
         isAI: p.isAI,
-        aiDifficulty: p.aiDifficulty,
+        aiCharacter: p.aiCharacter,
         isRegistered: !!p.userId,
       })),
       status: this.status,

@@ -47,18 +47,18 @@ export function setupWebSocketHandlers(wss: WebSocket.Server, gameManager: GameM
 
           case 'CREATE_SOLO': {
             if (!playerId) return;
+            const aiCharacters = Array.isArray(message.aiCharacters) ? message.aiCharacters : ['okie'];
             const room = gameManager.createSoloGame(
               playerId, ws,
               message.username || 'Player',
               message.avatar || '',
-              message.aiDifficulty || 'medium',
+              aiCharacters,
               message.timeLimit ?? 0,
               message.gameType || 'friendly',
               message.randomOrder || false,
-              Math.min(3, Math.max(1, parseInt(message.aiCount) || 1)),
-              message.allowHint || false
+              message.allowHint || false,
+              !message.userId
             );
-            // GAME_START is already sent inside createSoloGame
             break;
           }
 
@@ -125,11 +125,11 @@ export function setupWebSocketHandlers(wss: WebSocket.Server, gameManager: GameM
 
           case 'ADD_AI': {
             if (!playerId) return;
-            const aiAdded = gameManager.addAIToRoom(playerId, message.aiDifficulty || 'medium');
+            const aiAdded = gameManager.addAIToRoom(playerId, message.aiCharacter || 'okie', !message.userId);
             if (!aiAdded) {
               ws.send(JSON.stringify({
                 type: 'ERROR',
-                message: 'Could not add AI. Room may be full or you are not the host.',
+                message: 'Could not add AI. Room may be full, you are not the host, or guests cannot add AI in multiplayer.',
               }));
             }
             break;

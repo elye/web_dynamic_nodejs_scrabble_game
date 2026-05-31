@@ -26,10 +26,9 @@ function requireGuestUsername() {
 }
 
 let soloSettings = {
-  aiDifficulty: 'medium',
+  aiCharacters: ['okie'],
   timeLimit: 15,
   gameType: 'friendly',
-  aiCount: 3,
   allowHint: false,
 };
 
@@ -63,12 +62,24 @@ function initLobby() {
   });
   document.getElementById('cancel-solo-btn').addEventListener('click', () => soloModal.classList.add('hidden'));
 
-  document.querySelectorAll('.ai-diff-btn').forEach(btn => {
+  document.querySelectorAll('.ai-char-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       if (btn.disabled) return;
-      document.querySelectorAll('.ai-diff-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      soloSettings.aiDifficulty = btn.dataset.diff;
+      const char = btn.dataset.char;
+      if (btn.classList.contains('active')) {
+        // Deselect (but keep at least 1)
+        if (soloSettings.aiCharacters.length <= 1) return;
+        soloSettings.aiCharacters = soloSettings.aiCharacters.filter(c => c !== char);
+        btn.classList.remove('active');
+      } else {
+        // Select (max 3)
+        if (soloSettings.aiCharacters.length >= 3) {
+          showMaxAITooltip(btn);
+          return;
+        }
+        soloSettings.aiCharacters.push(char);
+        btn.classList.add('active');
+      }
     });
   });
 
@@ -78,15 +89,6 @@ function initLobby() {
       document.querySelectorAll('.time-btn-solo').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       soloSettings.timeLimit = parseInt(btn.dataset.time);
-    });
-  });
-
-  document.querySelectorAll('.ai-count-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (btn.disabled) return;
-      document.querySelectorAll('.ai-count-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      soloSettings.aiCount = parseInt(btn.dataset.count);
     });
   });
 
@@ -128,12 +130,12 @@ function initLobby() {
         type: 'CREATE_SOLO',
         username,
         avatar: '',
-        aiDifficulty: soloSettings.aiDifficulty,
-        aiCount: soloSettings.aiCount,
+        aiCharacters: soloSettings.aiCharacters,
         timeLimit: soloSettings.timeLimit,
         gameType: soloSettings.gameType,
         randomOrder,
         allowHint: soloSettings.allowHint,
+        userId: window._logtoUserId || undefined,
       }));
     }
   });
@@ -316,7 +318,7 @@ function initLobby() {
     btn.addEventListener('click', () => {
       if (btn.disabled) return;
       if (window.ws && window.ws.readyState === WebSocket.OPEN) {
-        window.ws.send(JSON.stringify({ type: 'ADD_AI', aiDifficulty: btn.dataset.difficulty }));
+        window.ws.send(JSON.stringify({ type: 'ADD_AI', aiCharacter: btn.dataset.character, userId: window._logtoUserId || undefined }));
       }
     });
   });
@@ -332,9 +334,8 @@ function initLobby() {
     updateFormalButtonAccess();
     updateHintAccess();
     updateTimeButtonAccess();
-    updateAIDifficultyAccess();
+    updateAICharacterAccess();
     updateAddAIAccess();
-    updateAICountAccess();
     updateTimeoutAccess();
     updatePublicRoomAccess();
   });
@@ -392,21 +393,25 @@ function updateTimeButtonAccess() {
   });
 }
 
-// Enable/disable Hard & Genius AI difficulty based on sign-in state
-function updateAIDifficultyAccess() {
+// Enable/disable premium AI characters (4-7) based on sign-in state
+function updateAICharacterAccess() {
   const guest = isGuest();
-  document.querySelectorAll('.ai-diff-btn').forEach(btn => {
-    if (btn.dataset.diff === 'hard' || btn.dataset.diff === 'genius') {
+  const premiumChars = ['greedy', 'lucky', 'smarty', 'wisey'];
+  document.querySelectorAll('.ai-char-btn').forEach(btn => {
+    if (premiumChars.includes(btn.dataset.char)) {
       btn.disabled = guest;
       if (guest && btn.classList.contains('active')) {
         btn.classList.remove('active');
-        const medBtn = document.querySelector('.ai-diff-btn[data-diff="medium"]');
-        if (medBtn) medBtn.classList.add('active');
-        soloSettings.aiDifficulty = 'medium';
+        soloSettings.aiCharacters = soloSettings.aiCharacters.filter(c => !premiumChars.includes(c));
+        if (soloSettings.aiCharacters.length === 0) {
+          soloSettings.aiCharacters = ['okie'];
+          const okieBtn = document.querySelector('.ai-char-btn[data-char="okie"]');
+          if (okieBtn) okieBtn.classList.add('active');
+        }
       }
     }
   });
-  document.querySelectorAll('.ai-diff-wrapper').forEach(wrapper => {
+  document.querySelectorAll('.ai-char-wrapper').forEach(wrapper => {
     wrapper.classList.toggle('guest-disabled', guest);
   });
 }
@@ -418,25 +423,6 @@ function updateAddAIAccess() {
     btn.disabled = guest;
   });
   document.querySelectorAll('.add-ai-wrapper').forEach(wrapper => {
-    wrapper.classList.toggle('guest-disabled', guest);
-  });
-}
-
-// Enable/disable AI count options based on sign-in state (guests get 3 only)
-function updateAICountAccess() {
-  const guest = isGuest();
-  document.querySelectorAll('.ai-count-btn').forEach(btn => {
-    if (parseInt(btn.dataset.count) < 3) {
-      btn.disabled = guest;
-      if (guest && btn.classList.contains('active')) {
-        btn.classList.remove('active');
-        const btn3 = document.querySelector('.ai-count-btn[data-count="3"]');
-        if (btn3) btn3.classList.add('active');
-        soloSettings.aiCount = 3;
-      }
-    }
-  });
-  document.querySelectorAll('.ai-count-wrapper').forEach(wrapper => {
     wrapper.classList.toggle('guest-disabled', guest);
   });
 }
@@ -474,6 +460,28 @@ function updatePublicRoomAccess() {
   if (wrapper) wrapper.classList.toggle('guest-disabled', guest);
 }
 
+// Show a brief "max 3" tooltip near a button
+function showMaxAITooltip(btn) {
+  // Remove any existing tooltip
+  const existing = document.querySelector('.ai-max-tooltip');
+  if (existing) existing.remove();
+
+  const tooltip = document.createElement('div');
+  tooltip.className = 'ai-max-tooltip';
+  tooltip.textContent = 'Can only pick up to 3';
+  btn.style.position = 'relative';
+  btn.appendChild(tooltip);
+
+  // Animate in
+  requestAnimationFrame(() => tooltip.classList.add('visible'));
+
+  // Remove after delay
+  setTimeout(() => {
+    tooltip.classList.remove('visible');
+    setTimeout(() => tooltip.remove(), 200);
+  }, 1800);
+}
+
 function showScreen(screenId) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(screenId).classList.add('active');
@@ -489,8 +497,12 @@ function resetLobbyGameType() {
 
 function resetSoloGameType() {
   soloSettings.gameType = 'friendly';
+  soloSettings.aiCharacters = ['okie'];
   document.querySelectorAll('.type-btn-solo').forEach(b => {
     b.classList.toggle('active', b.dataset.type === 'friendly');
+  });
+  document.querySelectorAll('.ai-char-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.char === 'okie');
   });
   const soloHintGroup = document.getElementById('solo-hint-group');
   if (soloHintGroup) soloHintGroup.classList.remove('hidden');
@@ -603,7 +615,7 @@ function updateWaitingRoom(data) {
     card.className = 'waiting-player-card';
     const initial = player.username.charAt(0).toUpperCase();
     const disconnectedBadge = player.connected === false ? ' <span style="color:var(--danger);font-size:0.7rem">(disconnected)</span>' : '';
-    const aiBadge = player.isAI ? ` 🤖 <span class="ai-diff-badge">${(player.aiDifficulty || 'medium').charAt(0).toUpperCase() + (player.aiDifficulty || 'medium').slice(1)}</span>` : '';
+    const aiBadge = player.isAI ? ` <span class="ai-diff-badge">${player.aiCharacter ? player.aiCharacter.charAt(0).toUpperCase() + player.aiCharacter.slice(1) : 'AI'}</span>` : '';
     let removeBtn = '';
     if (player.isAI && isHost) {
       removeBtn = `<button class="btn btn-sm remove-ai-btn" data-player-id="${player.id}" title="Remove AI">✕</button>`;
@@ -634,6 +646,17 @@ function updateWaitingRoom(data) {
     startBtn.textContent = data.players.length < 2 ? 'Play Solo' : 'Start Game';
     // Show bot buttons only if room has space (max 4)
     if (botActions) botActions.style.display = data.players.length >= 4 ? 'none' : '';
+
+    // Disable buttons for AI characters already in the room
+    const aiCharsInRoom = data.players
+      .filter(p => p.isAI && p.aiCharacter)
+      .map(p => p.aiCharacter);
+    const guest = isGuest();
+    document.querySelectorAll('.add-ai-btn').forEach(btn => {
+      const alreadyAdded = aiCharsInRoom.includes(btn.dataset.character);
+      btn.disabled = guest || alreadyAdded;
+      btn.classList.toggle('ai-already-added', alreadyAdded);
+    });
   } else {
     startBtn.disabled = true;
     startBtn.textContent = 'Waiting for host to start...';

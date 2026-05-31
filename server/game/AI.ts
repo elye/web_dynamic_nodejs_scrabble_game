@@ -9,6 +9,21 @@ interface AIMove {
   words: string[];
 }
 
+export type AICharacter = 'sloppy' | 'okie' | 'goody' | 'greedy' | 'lucky' | 'smarty' | 'wisey';
+
+export const AI_CHARACTER_INFO: Record<AICharacter, { name: string; emoji: string }> = {
+  sloppy: { name: 'Sloppy', emoji: '😅' },
+  okie: { name: 'Okie', emoji: '👌' },
+  goody: { name: 'Goody', emoji: '😊' },
+  greedy: { name: 'Greedy', emoji: '🤑' },
+  lucky: { name: 'Lucky', emoji: '🍀' },
+  smarty: { name: 'Smarty', emoji: '🧠' },
+  wisey: { name: 'Wisey', emoji: '🦉' },
+};
+
+export const GUEST_AI_CHARACTERS: AICharacter[] = ['sloppy', 'okie', 'goody'];
+export const ALL_AI_CHARACTERS: AICharacter[] = ['sloppy', 'okie', 'goody', 'greedy', 'lucky', 'smarty', 'wisey'];
+
 export class AI {
   private validator: Validator;
   private trie: TrieNode | null = null;
@@ -20,10 +35,9 @@ export class AI {
   async findMove(
     board: Board,
     rack: Tile[],
-    difficulty: 'easy' | 'medium' | 'hard' | 'genius',
+    character: AICharacter,
     skipDelay: boolean = false
   ): Promise<AIMove | null> {
-    // Simulate thinking delay (skip in tests/simulations)
     if (!skipDelay) {
       await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
     }
@@ -32,41 +46,43 @@ export class AI {
     
     if (moves.length === 0) return null;
 
-    // Sort by score
     moves.sort((a, b) => b.score - a.score);
 
-    switch (difficulty) {
-      case 'genius': {
-        // Pick randomly from the top 10% of moves (indices 0 to ceil(length*0.1))
-        const end = Math.max(1, Math.ceil(moves.length * 0.1));
-        const pool = moves.slice(0, end);
-        return pool[Math.floor(Math.random() * pool.length)];
-      }
+    switch (character) {
+      case 'greedy':
+        return moves[0];
 
-      case 'hard': {
-        // Pick randomly from moves ranked 10%-25% (skip top 10%, pick from next 15%)
-        const start = Math.ceil(moves.length * 0.1);
-        const end = Math.ceil(moves.length * 0.25);
-        let pool = moves.slice(start, end);
-        if (pool.length === 0) pool = [moves[Math.min(start, moves.length - 1)]];
-        return pool[Math.floor(Math.random() * pool.length)];
-      }
+      case 'lucky':
+        return moves[Math.floor(Math.random() * moves.length)];
 
-      case 'medium': {
-        // Pick randomly from moves ranked 25%-50% (skip top 25%, pick from next 25%)
-        const start = Math.ceil(moves.length * 0.25);
-        const end = Math.ceil(moves.length * 0.5);
-        let pool = moves.slice(start, end);
-        if (pool.length === 0) pool = [moves[Math.min(start, moves.length - 1)]];
-        return pool[Math.floor(Math.random() * pool.length)];
-      }
-
-      case 'easy': {
-        // Pick randomly from the bottom 50% of moves (worst half)
-        const start = Math.ceil(moves.length * 0.5);
+      case 'sloppy': {
+        const start = Math.floor(moves.length * 0.5);
         let pool = moves.slice(start);
         if (pool.length === 0) pool = [moves[moves.length - 1]];
         return pool[Math.floor(Math.random() * pool.length)];
+      }
+
+      case 'okie': {
+        const start = Math.floor(moves.length * 0.25);
+        const end = Math.max(start + 1, Math.ceil(moves.length * 0.75));
+        let pool = moves.slice(start, end);
+        if (pool.length === 0) pool = [moves[Math.min(start, moves.length - 1)]];
+        return pool[Math.floor(Math.random() * pool.length)];
+      }
+
+      case 'goody': {
+        const end = Math.max(1, Math.ceil(moves.length * 0.5));
+        return moves.slice(0, end)[Math.floor(Math.random() * end)];
+      }
+
+      case 'smarty': {
+        const end = Math.max(1, Math.ceil(moves.length * 0.25));
+        return moves.slice(0, end)[Math.floor(Math.random() * end)];
+      }
+
+      case 'wisey': {
+        const end = Math.max(1, Math.ceil(moves.length * 0.1));
+        return moves.slice(0, end)[Math.floor(Math.random() * end)];
       }
 
       default:

@@ -8,7 +8,7 @@ export interface GamePlayerRecord {
   avatar: string;
   score: number;
   isAI: boolean;
-  aiDifficulty?: string;
+  aiCharacter?: string;
   stats: any;            // per-player stats from GAME_OVER payload
 }
 
