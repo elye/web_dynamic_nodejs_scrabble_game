@@ -15,7 +15,7 @@ export interface Player {
   timerRemaining: number;
   connected: boolean;
   isAI: boolean;
-  aiDifficulty?: 'easy' | 'medium' | 'hard';
+  aiDifficulty?: 'easy' | 'medium' | 'hard' | 'genius';
   userId?: string; // Logto sub — present only for logged-in players
 }
 
@@ -93,7 +93,7 @@ export class GameState {
     this.onGameOver = onGameOver;
   }
 
-  addPlayer(id: string, socketId: string, username: string, avatar: string, isAI: boolean = false, aiDifficulty?: 'easy' | 'medium' | 'hard', userId?: string): Player | null {
+  addPlayer(id: string, socketId: string, username: string, avatar: string, isAI: boolean = false, aiDifficulty?: 'easy' | 'medium' | 'hard' | 'genius', userId?: string): Player | null {
     if (this.players.length >= this.settings.maxPlayers) return null;
     if (this.status !== 'waiting') return null;
 

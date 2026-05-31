@@ -392,11 +392,11 @@ function updateTimeButtonAccess() {
   });
 }
 
-// Enable/disable Hard AI difficulty based on sign-in state
+// Enable/disable Hard & Genius AI difficulty based on sign-in state
 function updateAIDifficultyAccess() {
   const guest = isGuest();
   document.querySelectorAll('.ai-diff-btn').forEach(btn => {
-    if (btn.dataset.diff === 'hard') {
+    if (btn.dataset.diff === 'hard' || btn.dataset.diff === 'genius') {
       btn.disabled = guest;
       if (guest && btn.classList.contains('active')) {
         btn.classList.remove('active');

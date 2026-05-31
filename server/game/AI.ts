@@ -20,10 +20,13 @@ export class AI {
   async findMove(
     board: Board,
     rack: Tile[],
-    difficulty: 'easy' | 'medium' | 'hard'
+    difficulty: 'easy' | 'medium' | 'hard' | 'genius',
+    skipDelay: boolean = false
   ): Promise<AIMove | null> {
-    // Simulate thinking delay
-    await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
+    // Simulate thinking delay (skip in tests/simulations)
+    if (!skipDelay) {
+      await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
+    }
 
     const moves = this.generateAllMoves(board, rack);
     
@@ -33,19 +36,38 @@ export class AI {
     moves.sort((a, b) => b.score - a.score);
 
     switch (difficulty) {
-      case 'easy':
-        // Pick a random move from the bottom 50% (lowest-scoring half)
-        const easyPool = moves.slice(Math.ceil(moves.length * 0.5));
-        return easyPool[Math.floor(Math.random() * easyPool.length)];
+      case 'genius': {
+        // Pick randomly from the top 10% of moves (indices 0 to ceil(length*0.1))
+        const end = Math.max(1, Math.ceil(moves.length * 0.1));
+        const pool = moves.slice(0, end);
+        return pool[Math.floor(Math.random() * pool.length)];
+      }
 
-      case 'medium':
-        // Pick from the top 50%
-        const mediumPool = moves.slice(0, Math.ceil(moves.length * 0.5));
-        return mediumPool[Math.floor(Math.random() * Math.min(5, mediumPool.length))];
+      case 'hard': {
+        // Pick randomly from moves ranked 10%-25% (skip top 10%, pick from next 15%)
+        const start = Math.ceil(moves.length * 0.1);
+        const end = Math.ceil(moves.length * 0.25);
+        let pool = moves.slice(start, end);
+        if (pool.length === 0) pool = [moves[Math.min(start, moves.length - 1)]];
+        return pool[Math.floor(Math.random() * pool.length)];
+      }
 
-      case 'hard':
-        // Pick the best move
-        return moves[0];
+      case 'medium': {
+        // Pick randomly from moves ranked 25%-50% (skip top 25%, pick from next 25%)
+        const start = Math.ceil(moves.length * 0.25);
+        const end = Math.ceil(moves.length * 0.5);
+        let pool = moves.slice(start, end);
+        if (pool.length === 0) pool = [moves[Math.min(start, moves.length - 1)]];
+        return pool[Math.floor(Math.random() * pool.length)];
+      }
+
+      case 'easy': {
+        // Pick randomly from the bottom 50% of moves (worst half)
+        const start = Math.ceil(moves.length * 0.5);
+        let pool = moves.slice(start);
+        if (pool.length === 0) pool = [moves[moves.length - 1]];
+        return pool[Math.floor(Math.random() * pool.length)];
+      }
 
       default:
         return moves[0];

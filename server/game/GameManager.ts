@@ -22,7 +22,8 @@ interface SessionInfo {
   userId?: string; // Logto sub — present only for logged-in players
 }
 
-const AI_NAMES: Record<'easy' | 'medium' | 'hard', string[]> = {
+const AI_NAMES: Record<'easy' | 'medium' | 'hard' | 'genius', string[]> = {
+  genius: ['Genie', 'Botty', 'Aity'],
   hard: ['Smarty', 'Hardy', 'Victy'],
   medium: ['Comrady', 'Fanmy', 'Gracy'],
   easy: ['Groofy', 'Cooly', 'Loosy'],
@@ -47,8 +48,8 @@ export class GameManager {
     setInterval(() => this.cleanupStaleSessions(), 10 * 60 * 1000);
   }
 
-  private pickAIName(difficulty: 'easy' | 'medium' | 'hard', usedNames: Set<string>): string {
-    const suffixes: Record<string, string> = { easy: ' (E)', medium: ' (M)', hard: ' (H)' };
+  private pickAIName(difficulty: 'easy' | 'medium' | 'hard' | 'genius', usedNames: Set<string>): string {
+    const suffixes: Record<string, string> = { easy: ' (E)', medium: ' (M)', hard: ' (H)', genius: ' (G)' };
     const suffix = suffixes[difficulty];
     const pool = AI_NAMES[difficulty]
       .map(n => n + suffix)
@@ -140,7 +141,7 @@ export class GameManager {
 
   // --- Solo game (atomic: create + add AI + start) ---
 
-  createSoloGame(playerId: string, socket: WebSocket, username: string, avatar: string, aiDifficulty: 'easy' | 'medium' | 'hard', timeLimit: number, gameType: 'friendly' | 'formal' = 'friendly', randomOrder: boolean = false, aiCount: number = 1, allowHint: boolean = false): Room {
+  createSoloGame(playerId: string, socket: WebSocket, username: string, avatar: string, aiDifficulty: 'easy' | 'medium' | 'hard' | 'genius', timeLimit: number, gameType: 'friendly' | 'formal' = 'friendly', randomOrder: boolean = false, aiCount: number = 1, allowHint: boolean = false): Room {
     const clampedAiCount = Math.min(3, Math.max(1, aiCount));
     const settings: GameSettings = {
       maxPlayers: 1 + clampedAiCount,
@@ -239,7 +240,7 @@ export class GameManager {
     return room;
   }
 
-  addAIToRoom(playerId: string, aiDifficulty: 'easy' | 'medium' | 'hard'): boolean {
+  addAIToRoom(playerId: string, aiDifficulty: 'easy' | 'medium' | 'hard' | 'genius'): boolean {
     const roomId = this.playerRooms.get(playerId);
     if (!roomId) return false;
 
