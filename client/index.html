@@ -55,13 +55,16 @@
         <div class="modal-content">
           <h2>Solo Game vs AI</h2>
           <div class="form-group">
-            <label>AI Difficulty</label>
-            <span class="ai-diff-wrapper" data-tooltip="Sign in to unlock Hard & Genius difficulty">
-              <div class="btn-group">
-                <button class="btn btn-sm ai-diff-btn" data-diff="easy">Easy</button>
-                <button class="btn btn-sm ai-diff-btn active" data-diff="medium">Medium</button>
-                <button class="btn btn-sm ai-diff-btn" data-diff="hard">Hard</button>
-                <button class="btn btn-sm ai-diff-btn" data-diff="genius">Genius</button>
+            <label>Pick AI Characters <span class="char-count-hint">(select 1–3)</span></label>
+            <span class="ai-char-wrapper" data-tooltip="Sign in to unlock more characters">
+              <div class="btn-group ai-char-grid">
+                <button class="btn btn-sm ai-char-btn" data-char="sloppy"><span class="char-emoji">😅</span> Sloppy</button>
+                <button class="btn btn-sm ai-char-btn active" data-char="okie"><span class="char-emoji">👌</span> Okie</button>
+                <button class="btn btn-sm ai-char-btn" data-char="goody"><span class="char-emoji">😊</span> Goody</button>
+                <button class="btn btn-sm ai-char-btn" data-char="greedy"><span class="char-emoji">🤑</span> Greedy</button>
+                <button class="btn btn-sm ai-char-btn" data-char="lucky"><span class="char-emoji">🍀</span> Lucky</button>
+                <button class="btn btn-sm ai-char-btn" data-char="smarty"><span class="char-emoji">🧠</span> Smarty</button>
+                <button class="btn btn-sm ai-char-btn" data-char="wisey"><span class="char-emoji">🦉</span> Wisey</button>
               </div>
             </span>
           </div>
@@ -72,16 +75,6 @@
                 <button class="btn btn-sm time-btn-solo active" data-time="15">15 min</button>
                 <button class="btn btn-sm time-btn-solo" data-time="25">25 min</button>
                 <button class="btn btn-sm time-btn-solo" data-time="30">30 min</button>
-              </div>
-            </span>
-          </div>
-          <div class="form-group">
-            <label>Number of AI Opponents</label>
-            <span class="ai-count-wrapper" data-tooltip="Sign in to choose fewer opponents">
-              <div class="btn-group">
-                <button class="btn btn-sm ai-count-btn" data-count="1">1</button>
-                <button class="btn btn-sm ai-count-btn" data-count="2">2</button>
-                <button class="btn btn-sm ai-count-btn active" data-count="3">3</button>
               </div>
             </span>
           </div>
@@ -199,10 +192,13 @@
       </div>
       <span class="add-ai-wrapper" data-tooltip="Sign in to add AI players">
         <div class="ai-bot-actions">
-          <button class="btn btn-sm add-ai-btn" data-difficulty="easy">🤖 Easy Bot</button>
-          <button class="btn btn-sm add-ai-btn" data-difficulty="medium">🤖 Medium Bot</button>
-          <button class="btn btn-sm add-ai-btn" data-difficulty="hard">🤖 Hard Bot</button>
-          <button class="btn btn-sm add-ai-btn" data-difficulty="genius">🤖 Genius Bot</button>
+          <button class="btn btn-sm add-ai-btn" data-character="sloppy">😅 Sloppy</button>
+          <button class="btn btn-sm add-ai-btn" data-character="okie">👌 Okie</button>
+          <button class="btn btn-sm add-ai-btn" data-character="goody">😊 Goody</button>
+          <button class="btn btn-sm add-ai-btn" data-character="greedy">🤑 Greedy</button>
+          <button class="btn btn-sm add-ai-btn" data-character="lucky">🍀 Lucky</button>
+          <button class="btn btn-sm add-ai-btn" data-character="smarty">🧠 Smarty</button>
+          <button class="btn btn-sm add-ai-btn" data-character="wisey">🦉 Wisey</button>
         </div>
       </span>
       </div>

@@ -373,17 +373,19 @@ input[type="text"]:focus {
   z-index: 10;
 }
 
-.time-btn-wrapper.guest-disabled:hover::after {
+.time-btn-wrapper.guest-disabled:has(.btn:disabled:hover)::after {
   opacity: 1;
 }
 
 /* AI Difficulty tooltip */
-.ai-diff-wrapper {
+.ai-diff-wrapper,
+.ai-char-wrapper {
   position: relative;
   display: block;
 }
 
-.ai-diff-wrapper[data-tooltip].guest-disabled::after {
+.ai-diff-wrapper[data-tooltip].guest-disabled::after,
+.ai-char-wrapper[data-tooltip].guest-disabled::after {
   content: attr(data-tooltip);
   position: absolute;
   bottom: calc(100% + 6px);
@@ -401,14 +403,39 @@ input[type="text"]:focus {
   z-index: 10;
 }
 
-.ai-diff-wrapper.guest-disabled:hover::after {
+.ai-diff-wrapper.guest-disabled:has(.btn:disabled:hover)::after,
+.ai-char-wrapper.guest-disabled:has(.btn:disabled:hover)::after {
   opacity: 1;
 }
 
-.ai-diff-wrapper.guest-disabled .btn:disabled {
+.ai-diff-wrapper.guest-disabled .btn:disabled,
+.ai-char-wrapper.guest-disabled .btn:disabled {
   opacity: 0.75;
   background: var(--bg-tertiary);
   color: var(--text-secondary);
+}
+
+/* AI Character grid */
+.ai-char-grid {
+  flex-wrap: wrap;
+}
+
+.ai-char-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: center;
+}
+
+.char-emoji {
+  font-size: 1rem;
+}
+
+.char-count-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 400;
 }
 
 /* Add AI bot tooltip */
@@ -435,14 +462,45 @@ input[type="text"]:focus {
   z-index: 10;
 }
 
-.add-ai-wrapper.guest-disabled:hover::after {
+.add-ai-wrapper.guest-disabled:has(.btn:disabled:hover)::after {
   opacity: 1;
 }
 
-.add-ai-wrapper.guest-disabled .btn:disabled {
+.add-ai-wrapper.guest-disabled .btn:disabled,
+.add-ai-btn:disabled {
   opacity: 0.75;
   background: var(--bg-tertiary);
   color: var(--text-secondary);
+  cursor: not-allowed;
+}
+
+/* Add AI button disabled because character already in room */
+.add-ai-btn.ai-already-added {
+  opacity: 0.5;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+
+/* Solo max AI tooltip */
+.ai-max-tooltip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-tertiary, #333);
+  color: var(--text-primary, #fff);
+  padding: 0.35rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 10;
+}
+
+.ai-max-tooltip.visible {
+  opacity: 1;
 }
 
 /* AI Count tooltip */
@@ -661,7 +719,8 @@ input[type="text"]:focus {
 }
 .ai-bot-actions {
   display: flex;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 6px;
   justify-content: center;
   margin-top: 12px;
 }

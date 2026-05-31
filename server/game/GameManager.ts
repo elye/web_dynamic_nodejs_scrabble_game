@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { GameState, GameSettings, Player } from './GameState';
 import { Validator } from './Validator';
-import { AI } from './AI';
+import { AI, AICharacter, AI_CHARACTER_INFO, GUEST_AI_CHARACTERS, ALL_AI_CHARACTERS } from './AI';
 import WebSocket from 'ws';
 import { saveGameRecord, GamePlayerRecord } from '../gameStats';
 
@@ -19,15 +19,8 @@ interface SessionInfo {
   username: string;
   avatar: string;
   roomId?: string;
-  userId?: string; // Logto sub — present only for logged-in players
+  userId?: string;
 }
-
-const AI_NAMES: Record<'easy' | 'medium' | 'hard' | 'genius', string[]> = {
-  genius: ['Genie', 'Botty', 'Aity'],
-  hard: ['Smarty', 'Hardy', 'Victy'],
-  medium: ['Comrady', 'Fanmy', 'Gracy'],
-  easy: ['Groofy', 'Cooly', 'Loosy'],
-};
 
 export class GameManager {
   private rooms: Map<string, Room> = new Map();
@@ -48,17 +41,13 @@ export class GameManager {
     setInterval(() => this.cleanupStaleSessions(), 10 * 60 * 1000);
   }
 
-  private pickAIName(difficulty: 'easy' | 'medium' | 'hard' | 'genius', usedNames: Set<string>): string {
-    const suffixes: Record<string, string> = { easy: ' (E)', medium: ' (M)', hard: ' (H)', genius: ' (G)' };
-    const suffix = suffixes[difficulty];
-    const pool = AI_NAMES[difficulty]
-      .map(n => n + suffix)
-      .filter(n => !usedNames.has(n));
-    if (pool.length === 0) {
-      const label = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
-      return `AI ${label} ${usedNames.size + 1}`;
-    }
-    return pool[Math.floor(Math.random() * pool.length)];
+  private pickAIName(character: AICharacter, usedNames: Set<string>): string {
+    const info = AI_CHARACTER_INFO[character];
+    const name = `${info.emoji} ${info.name}`;
+    if (!usedNames.has(name)) return name;
+    let i = 2;
+    while (usedNames.has(`${name} ${i}`)) i++;
+    return `${name} ${i}`;
   }
 
   private cleanupStaleSessions(): void {
@@ -141,13 +130,15 @@ export class GameManager {
 
   // --- Solo game (atomic: create + add AI + start) ---
 
-  createSoloGame(playerId: string, socket: WebSocket, username: string, avatar: string, aiDifficulty: 'easy' | 'medium' | 'hard' | 'genius', timeLimit: number, gameType: 'friendly' | 'formal' = 'friendly', randomOrder: boolean = false, aiCount: number = 1, allowHint: boolean = false): Room {
-    // Clean up any existing room association (e.g. unfinished previous game)
+  createSoloGame(playerId: string, socket: WebSocket, username: string, avatar: string, aiCharacters: AICharacter[], timeLimit: number, gameType: 'friendly' | 'formal' = 'friendly', randomOrder: boolean = false, allowHint: boolean = false, isGuest: boolean = false): Room {
     this.cleanupPlayerRoom(playerId);
 
-    const clampedAiCount = Math.min(3, Math.max(1, aiCount));
+    const allowedChars = isGuest ? GUEST_AI_CHARACTERS : ALL_AI_CHARACTERS;
+    const validChars = aiCharacters.filter(c => allowedChars.includes(c)).slice(0, 3);
+    if (validChars.length === 0) validChars.push('okie');
+
     const settings: GameSettings = {
-      maxPlayers: 1 + clampedAiCount,
+      maxPlayers: 1 + validChars.length,
       timeLimit,
       dictionary: 'en_us',
       gameType,
@@ -168,11 +159,11 @@ export class GameManager {
 
     game.addPlayer(playerId, socket.toString(), username, avatar, false, undefined, this.getUserIdForPlayer(playerId));
     const usedNames = new Set<string>();
-    for (let i = 0; i < clampedAiCount; i++) {
+    for (const character of validChars) {
       const aiId = uuidv4();
-      const aiName = this.pickAIName(aiDifficulty, usedNames);
+      const aiName = this.pickAIName(character, usedNames);
       usedNames.add(aiName);
-      game.addPlayer(aiId, '', aiName, '🤖', true, aiDifficulty);
+      game.addPlayer(aiId, '', aiName, '🤖', true, character);
     }
 
     const room: Room = { id: roomId, hostId: playerId, game, settings, isSolo: true };
@@ -243,7 +234,9 @@ export class GameManager {
     return room;
   }
 
-  addAIToRoom(playerId: string, aiDifficulty: 'easy' | 'medium' | 'hard' | 'genius'): boolean {
+  addAIToRoom(playerId: string, aiCharacter: AICharacter, isGuest: boolean = false): boolean {
+    if (isGuest) return false;
+
     const roomId = this.playerRooms.get(playerId);
     if (!roomId) return false;
 
@@ -252,11 +245,20 @@ export class GameManager {
     if (room.game.status !== 'waiting') return false;
     if (room.game.players.length >= room.settings.maxPlayers) return false;
 
+    const totalAI = room.game.players.filter(p => p.isAI).length;
+    if (totalAI >= 3) return false;
+
+    if (!ALL_AI_CHARACTERS.includes(aiCharacter)) return false;
+
+    // No duplicate AI characters in the same room
+    const existingCharacters = room.game.players.filter(p => p.isAI).map(p => p.aiCharacter);
+    if (existingCharacters.includes(aiCharacter)) return false;
+
     const aiId = uuidv4();
     const existingNames = new Set(room.game.players.filter(p => p.isAI).map(p => p.username));
-    const aiName = this.pickAIName(aiDifficulty, existingNames);
+    const aiName = this.pickAIName(aiCharacter, existingNames);
     
-    const player = room.game.addPlayer(aiId, '', aiName, '🤖', true, aiDifficulty);
+    const player = room.game.addPlayer(aiId, '', aiName, '🤖', true, aiCharacter);
     if (!player) return false;
 
     this.broadcastToRoom(roomId, 'ROOM_UPDATE', this.getRoomState(room));
@@ -577,7 +579,7 @@ export class GameManager {
       username: p.username,
       avatar: p.avatar,
       isAI: p.isAI,
-      aiDifficulty: p.aiDifficulty,
+      aiCharacter: p.aiCharacter,
       connected: p.connected,
       userId: p.userId,
     }));
@@ -593,7 +595,7 @@ export class GameManager {
 
     // Re-add all players
     for (const info of playerInfos) {
-      game.addPlayer(info.id, info.socketId, info.username, info.avatar, info.isAI, info.aiDifficulty, info.userId);
+      game.addPlayer(info.id, info.socketId, info.username, info.avatar, info.isAI, info.aiCharacter, info.userId);
       const player = game.players.find(p => p.id === info.id);
       if (player) {
         player.connected = info.connected;
@@ -810,11 +812,11 @@ export class GameManager {
       return;
     }
 
-    // Use medium difficulty for hints
+    // Use goody character for hints
     const move = await this.ai.findMove(
       room.game.board,
       currentPlayer.rack,
-      'medium'
+      'goody'
     );
 
     if (!move) {
@@ -850,7 +852,7 @@ export class GameManager {
     const move = await this.ai.findMove(
       room.game.board,
       currentPlayer.rack,
-      currentPlayer.aiDifficulty || 'medium'
+      currentPlayer.aiCharacter || 'okie'
     );
 
     if (!move) {
@@ -990,8 +992,8 @@ export class GameManager {
         avatar: p.avatar,
         score: p.score,
         isAI: p.isAI,
-        aiDifficulty: p.aiDifficulty,
-        stats: {}, // filled below from the GAME_OVER payload data
+        aiCharacter: p.aiCharacter,
+        stats: {},
       };
     });
 
