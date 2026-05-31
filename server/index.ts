@@ -219,6 +219,9 @@ app.post('/api/profile', express.json(), withLogto(logtoConfig), requireAuth, as
     res.status(409).json({ error: result.error });
     return;
   }
+  if (result.isNewUser && process.env.NODE_ENV !== 'production') {
+    console.log(`✅ New user signed up: ${displayName} (${userId})`);
+  }
   res.json({ success: true, displayName });
 });
 
@@ -330,6 +333,9 @@ app.post('/api/account/delete-account', express.json(), withLogto(logtoConfig), 
     // Destroy the session so the user is fully logged out
     (req.session as any)?.destroy?.();
 
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`❌ Account deleted: ${expectedUsername} (${userId})`);
+    }
     res.json({ success: true, scrabble: scrabbleResult, otherGames: clusterResult, ...(logtoWarning && { warning: logtoWarning }) });
   } catch (err) {
     console.error('Error deleting account:', err);

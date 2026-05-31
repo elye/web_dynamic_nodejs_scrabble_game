@@ -528,7 +528,7 @@ export async function getUserProfile(logtoUserId: string): Promise<UserProfile |
 }
 
 /** Set or update the display name for a user. Returns true if successful. */
-export async function setUserDisplayName(logtoUserId: string, displayName: string): Promise<{ success: boolean; error?: string }> {
+export async function setUserDisplayName(logtoUserId: string, displayName: string): Promise<{ success: boolean; error?: string; isNewUser?: boolean }> {
   const db = getSharedDb();
   if (!db) return { success: false, error: 'Database not available' };
 
@@ -542,12 +542,12 @@ export async function setUserDisplayName(logtoUserId: string, displayName: strin
   }
 
   const now = new Date();
-  await db.collection<UserProfile>('users').updateOne(
+  const result = await db.collection<UserProfile>('users').updateOne(
     { logtoUserId },
     { $set: { displayName, updatedAt: now }, $setOnInsert: { logtoUserId, createdAt: now } },
     { upsert: true },
   );
-  return { success: true };
+  return { success: true, isNewUser: result.upsertedCount === 1 };
 }
 
 /** Check if a display name is available (case-insensitive). */

@@ -19,24 +19,12 @@ function showSignedIn(displayName) {
   }
   if (typeof updateFormalButtonAccess === 'function') updateFormalButtonAccess();
   if (typeof updateHintAccess === 'function') updateHintAccess();
-  if (typeof updateTimeButtonAccess === 'function') updateTimeButtonAccess();
-  if (typeof updateAIDifficultyAccess === 'function') updateAIDifficultyAccess();
-  if (typeof updateAddAIAccess === 'function') updateAddAIAccess();
-  if (typeof updateAICountAccess === 'function') updateAICountAccess();
-  if (typeof updateTimeoutAccess === 'function') updateTimeoutAccess();
-  if (typeof updatePublicRoomAccess === 'function') updatePublicRoomAccess();
 }
 
 function showSignedOut() {
   document.getElementById('username-row').classList.remove('hidden');
   if (typeof updateFormalButtonAccess === 'function') updateFormalButtonAccess();
   if (typeof updateHintAccess === 'function') updateHintAccess();
-  if (typeof updateTimeButtonAccess === 'function') updateTimeButtonAccess();
-  if (typeof updateAIDifficultyAccess === 'function') updateAIDifficultyAccess();
-  if (typeof updateAddAIAccess === 'function') updateAddAIAccess();
-  if (typeof updateAICountAccess === 'function') updateAICountAccess();
-  if (typeof updateTimeoutAccess === 'function') updateTimeoutAccess();
-  if (typeof updatePublicRoomAccess === 'function') updatePublicRoomAccess();
 }
 
 // Derive a suggested display name from Logto user data
@@ -62,6 +50,25 @@ async function showUsernameSetup(userData) {
   btn.disabled = true;
   statusEl.classList.add('hidden');
   errorEl.classList.add('hidden');
+
+  // Pre-populate with a suggested name from user data
+  const suggested = deriveSuggestedName(userData);
+  if (suggested && suggested.length >= 2) {
+    try {
+      const res = await fetch(`/api/profile/check-name?name=${encodeURIComponent(suggested)}`);
+      const data = await res.json();
+      if (data.available) {
+        input.value = suggested;
+      } else {
+        const suffix = Math.floor(100 + Math.random() * 9000);
+        input.value = (suggested + suffix).slice(0, 20);
+      }
+    } catch {
+      input.value = suggested;
+    }
+    // Trigger the input event so availability check runs on the pre-filled value
+    input.dispatchEvent(new Event('input'));
+  }
 
   let checkTimeout = null;
 
@@ -107,25 +114,6 @@ async function showUsernameSetup(userData) {
       statusEl.classList.remove('hidden');
     }, 400);
   });
-
-  // Pre-populate with a suggested name from user data
-  const suggested = deriveSuggestedName(userData);
-  if (suggested && suggested.length >= 2) {
-    try {
-      const res = await fetch(`/api/profile/check-name?name=${encodeURIComponent(suggested)}`);
-      const data = await res.json();
-      if (data.available) {
-        input.value = suggested;
-      } else {
-        const suffix = Math.floor(100 + Math.random() * 9000);
-        input.value = (suggested + suffix).slice(0, 20);
-      }
-    } catch {
-      input.value = suggested;
-    }
-    // Trigger the input event so availability check runs on the pre-filled value
-    input.dispatchEvent(new Event('input'));
-  }
 
   return new Promise((resolve) => {
     btn.addEventListener('click', async () => {

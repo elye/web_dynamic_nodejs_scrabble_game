@@ -72,7 +72,6 @@ export function setupWebSocketHandlers(wss: WebSocket.Server, gameManager: GameM
               timeoutMode: message.timeoutMode || 'sudden',
               randomOrder: message.randomOrder || false,
               allowHint: message.allowHint || false,
-              publicRoom: message.publicRoom || false,
             };
             
             const room = gameManager.createRoom(
