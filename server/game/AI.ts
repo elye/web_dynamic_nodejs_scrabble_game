@@ -9,20 +9,20 @@ interface AIMove {
   words: string[];
 }
 
-export type AICharacter = 'sloppy' | 'okie' | 'goody' | 'greedy' | 'lucky' | 'smarty' | 'wisey';
+export type AICharacter = 'sloppy' | 'okie' | 'goody' | 'lucky' | 'smarty' | 'wisey' | 'greaty';
 
 export const AI_CHARACTER_INFO: Record<AICharacter, { name: string; emoji: string }> = {
   sloppy: { name: 'Sloppy', emoji: '😅' },
   okie: { name: 'Okie', emoji: '👌' },
   goody: { name: 'Goody', emoji: '😊' },
-  greedy: { name: 'Greedy', emoji: '🤑' },
   lucky: { name: 'Lucky', emoji: '🍀' },
   smarty: { name: 'Smarty', emoji: '🧠' },
   wisey: { name: 'Wisey', emoji: '🦉' },
+  greaty: { name: 'Greaty', emoji: '⭐' },
 };
 
 export const GUEST_AI_CHARACTERS: AICharacter[] = ['sloppy', 'okie', 'goody'];
-export const ALL_AI_CHARACTERS: AICharacter[] = ['sloppy', 'okie', 'goody', 'greedy', 'lucky', 'smarty', 'wisey'];
+export const ALL_AI_CHARACTERS: AICharacter[] = ['sloppy', 'okie', 'goody', 'lucky', 'smarty', 'wisey', 'greaty'];
 
 export class AI {
   private validator: Validator;
@@ -49,7 +49,7 @@ export class AI {
     moves.sort((a, b) => b.score - a.score);
 
     switch (character) {
-      case 'greedy':
+      case 'greaty':
         return moves[0];
 
       case 'lucky':

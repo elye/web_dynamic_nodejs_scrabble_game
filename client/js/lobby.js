@@ -396,7 +396,7 @@ function updateTimeButtonAccess() {
 // Enable/disable premium AI characters (4-7) based on sign-in state
 function updateAICharacterAccess() {
   const guest = isGuest();
-  const premiumChars = ['greedy', 'lucky', 'smarty', 'wisey'];
+  const premiumChars = ['lucky', 'smarty', 'wisey', 'greaty'];
   document.querySelectorAll('.ai-char-btn').forEach(btn => {
     if (premiumChars.includes(btn.dataset.char)) {
       btn.disabled = guest;
