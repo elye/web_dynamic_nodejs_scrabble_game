@@ -58,6 +58,7 @@ function initLobby() {
 
   soloBtn.addEventListener('click', () => {
     if (isGuest() && !requireGuestUsername()) return;
+    resetSoloGameType();
     soloModal.classList.remove('hidden');
   });
   document.getElementById('cancel-solo-btn').addEventListener('click', () => soloModal.classList.add('hidden'));
@@ -143,6 +144,7 @@ function initLobby() {
 
   multiBtn.addEventListener('click', () => {
     if (isGuest() && !requireGuestUsername()) return;
+    resetMultiGameType();
     createModal.classList.remove('hidden');
   });
   document.getElementById('cancel-create-btn').addEventListener('click', () => createModal.classList.add('hidden'));
@@ -475,6 +477,36 @@ function updatePublicRoomAccess() {
 function showScreen(screenId) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(screenId).classList.add('active');
+  if (screenId === 'lobby-screen') {
+    resetLobbyGameType();
+  }
+}
+
+function resetLobbyGameType() {
+  resetSoloGameType();
+  resetMultiGameType();
+}
+
+function resetSoloGameType() {
+  soloSettings.gameType = 'friendly';
+  document.querySelectorAll('.type-btn-solo').forEach(b => {
+    b.classList.toggle('active', b.dataset.type === 'friendly');
+  });
+  const soloHintGroup = document.getElementById('solo-hint-group');
+  if (soloHintGroup) soloHintGroup.classList.remove('hidden');
+  const soloRandomCb = document.getElementById('solo-random-order');
+  if (soloRandomCb) soloRandomCb.disabled = false;
+}
+
+function resetMultiGameType() {
+  multiSettings.gameType = 'friendly';
+  document.querySelectorAll('.type-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.type === 'friendly');
+  });
+  const multiHintGroup = document.getElementById('multi-hint-group');
+  if (multiHintGroup) multiHintGroup.classList.remove('hidden');
+  const multiRandomCb = document.getElementById('multi-random-order');
+  if (multiRandomCb) multiRandomCb.disabled = false;
 }
 
 // Store rooms data for filtering
