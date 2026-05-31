@@ -356,7 +356,7 @@ async function loadGameDetail(gameId) {
 }
 
 // ---- Detail colour helper ----
-const DETAIL_COLOR_PALETTE = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22', '#e91e63'];
+const DETAIL_COLOR_PALETTE = ['#E53935', '#1E88E5', '#43A047', '#FB8C00', '#8E24AA', '#00ACC1', '#F4511E', '#D81B60'];
 let _gameColorMap = {};
 
 function buildGameColorMap(players) {
