@@ -15,18 +15,73 @@ export interface GamePlayerRecord {
 export interface GameRecord {
   gameId: string;        // roomId
   players: GamePlayerRecord[];
-  winnerId: string;
-  winnerUsername: string;
+  winnerIdx: number;     // index into players array
   reason: string;
-  timedOutPlayer?: string;
+  timedOutPlayerIdx?: number; // index into players array
   gameSummary: any;
-  scoreProgression: any;
-  turnEvents: any;
-  turnHistory: any;
-  settings: any;
-  timeoutMode?: string; // e.g. "SD", "OT", "N/A"
+  scoreProgression: any; // keyed by player index
+  turnEvents: any;       // { turn, pIdx, type }[]
+  turnHistory: any;      // entries use pIdx instead of playerId
+  settings: any;         // includes timeoutMode as 'SD'|'OT'|'N/A'
   isSolo: boolean;
   endedAt: Date;
+}
+
+/**
+ * Hydrate a stored game record: expand compact player indices back to
+ * full playerIds so client code can reference them uniformly.
+ */
+export function hydrateGameRecord(game: any): any {
+  if (!game || !game.players) return game;
+
+  const players = game.players;
+
+  // Expand winnerIdx → winnerId + winnerUsername
+  game.winnerId = players[game.winnerIdx]?.playerId;
+  game.winnerUsername = players[game.winnerIdx]?.username;
+  if (game.timedOutPlayerIdx !== undefined) {
+    game.timedOutPlayer = players[game.timedOutPlayerIdx]?.playerId;
+  }
+
+  // Expand scoreProgression keys: numeric index → playerId
+  if (game.scoreProgression) {
+    const expanded: any = {};
+    for (const [key, val] of Object.entries(game.scoreProgression)) {
+      const idx = parseInt(key);
+      if (!isNaN(idx) && players[idx]) {
+        expanded[players[idx].playerId] = val;
+      }
+    }
+    game.scoreProgression = expanded;
+  }
+
+  // Expand turnEvents pIdx → playerId
+  if (game.turnEvents) {
+    game.turnEvents = game.turnEvents.map((e: any) => ({
+      ...e, playerId: players[e.pIdx]?.playerId,
+    }));
+  }
+
+  // Expand turnHistory pIdx → playerId + username, restore abbreviated actions
+  const actionExpand: Record<string, string> = { p: 'play', s: 'pass', x: 'exchange' };
+  if (game.turnHistory) {
+    game.turnHistory = game.turnHistory.map((t: any) => {
+      const p = players[t.pIdx];
+      return { ...t, action: actionExpand[t.action] || t.action, playerId: p?.playerId, username: p?.username };
+    });
+  }
+
+  // Expand gameSummary pIdx → player (username)
+  if (game.gameSummary) {
+    for (const field of ['bestWord', 'bestTurn', 'longestWord']) {
+      const item = game.gameSummary[field];
+      if (item && item.pIdx !== undefined) {
+        item.player = players[item.pIdx]?.username || '';
+      }
+    }
+  }
+
+  return game;
 }
 
 /**
@@ -74,19 +129,17 @@ export async function getUserGames(
     .project({
       gameId: 1,
       players: { userId: 1, playerId: 1, username: 1, score: 1, isAI: 1, isDeleted: 1 },
-      winnerId: 1,
-      winnerUsername: 1,
+      winnerIdx: 1,
       reason: 1,
       isSolo: 1,
       endedAt: 1,
       'gameSummary.totalTurns': 1,
       'gameSummary.totalWordsPlayed': 1,
       settings: 1,
-      timeoutMode: 1,
     })
     .toArray();
 
-  return { games, total, page, totalPages };
+  return { games: games.map(g => hydrateGameRecord(g)), total, page, totalPages };
 }
 
 /**
@@ -96,10 +149,11 @@ export async function getGameDetail(gameId: string, userId: string): Promise<any
   const db = getDb();
   if (!db) return null;
 
-  return db.collection('games').findOne({
+  const game = await db.collection('games').findOne({
     gameId,
     'players.userId': userId,
   });
+  return hydrateGameRecord(game);
 }
 
 /**
@@ -227,7 +281,7 @@ export async function getUserStatsSummary(userId: string): Promise<any> {
           {
             $project: {
               gameId: 1,
-              winnerId: 1,
+              winnerIdx: 1,
               endedAt: 1,
               players: { playerId: 1, userId: 1, username: 1, score: 1, isAI: 1 },
             },
@@ -257,7 +311,7 @@ export async function getUserStatsSummary(userId: string): Promise<any> {
     bestScore4p: data.bestScore4p?.[0]?.score ?? null,
     bestWord: data.bestWord?.[0]?.bestWord || null,
     bestTurn: data.bestTurn?.[0]?.bestTurn || null,
-    recentGames: data.recentGames || [],
+    recentGames: (data.recentGames || []).map((g: any) => hydrateGameRecord(g)),
   };
 }
 

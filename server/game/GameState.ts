@@ -23,7 +23,7 @@ export interface TurnEntry {
   playerId: string;
   username: string;
   turnNumber: number;
-  timestamp: string;
+  timestamp: Date;
   action: 'play' | 'pass' | 'exchange';
   wordsFormed: WordScore[];
   totalScore: number;
@@ -427,7 +427,7 @@ export class GameState {
       playerId,
       username: player.username,
       turnNumber: this.turnNumber,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date(),
       action: 'play',
       wordsFormed: words,
       totalScore,
@@ -467,7 +467,7 @@ export class GameState {
       playerId,
       username: player.username,
       turnNumber: this.turnNumber,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date(),
       action: 'pass',
       wordsFormed: [],
       totalScore: 0,
@@ -519,7 +519,7 @@ export class GameState {
       playerId,
       username: player.username,
       turnNumber: this.turnNumber,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date(),
       action: 'exchange',
       wordsFormed: [],
       totalScore: 0,

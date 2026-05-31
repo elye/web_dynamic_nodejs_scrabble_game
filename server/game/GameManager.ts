@@ -1059,38 +1059,51 @@ export class GameManager {
       ? allPlayTurns.find(t => (t.wordsFormed || []).some(w => w.word === overallLongestWord.word && w.word.length === overallLongestWord.word.length))
       : null;
 
-    // Compute score progression (cumulative score after each turn)
+    // Build player ID → index map for compact storage
+    const pidToIdx: { [id: string]: number } = {};
+    game.players.forEach((p, i) => { pidToIdx[p.id] = i; });
+
+    // Compute score progression (cumulative score after each turn) — keyed by player index
     const cumulativeScores: { [id: string]: number } = {};
     for (const p of game.players) cumulativeScores[p.id] = 0;
-    const scoreProgression: { [id: string]: { turn: number; score: number }[] } = {};
-    const turnEvents: { turn: number; playerId: string; type: string }[] = [];
-    for (const p of game.players) scoreProgression[p.id] = [{ turn: 0, score: 0 }];
+    const scoreProgression: { [idx: number]: { turn: number; score: number }[] } = {};
+    const turnEvents: { turn: number; pIdx: number; type: string }[] = [];
+    for (const p of game.players) scoreProgression[pidToIdx[p.id]] = [{ turn: 0, score: 0 }];
     for (const entry of game.turnHistory) {
+      const idx = pidToIdx[entry.playerId];
       cumulativeScores[entry.playerId] = (cumulativeScores[entry.playerId] || 0) + entry.totalScore;
-      scoreProgression[entry.playerId]?.push({ turn: entry.turnNumber, score: cumulativeScores[entry.playerId] });
+      scoreProgression[idx]?.push({ turn: entry.turnNumber, score: cumulativeScores[entry.playerId] });
       if (entry.action === 'play' && (entry.tilesPlayed?.length || 0) === 7) {
-        turnEvents.push({ turn: entry.turnNumber, playerId: entry.playerId, type: 'bingo' });
+        turnEvents.push({ turn: entry.turnNumber, pIdx: idx, type: 'bingo' });
       } else if (entry.action === 'pass') {
-        turnEvents.push({ turn: entry.turnNumber, playerId: entry.playerId, type: 'pass' });
+        turnEvents.push({ turn: entry.turnNumber, pIdx: idx, type: 'pass' });
       } else if (entry.action === 'exchange') {
-        turnEvents.push({ turn: entry.turnNumber, playerId: entry.playerId, type: 'exchange' });
+        turnEvents.push({ turn: entry.turnNumber, pIdx: idx, type: 'exchange' });
       }
     }
     // Add final data points reflecting post-deduction scores
     const lastTurn = game.turnHistory.length > 0 ? game.turnHistory[game.turnHistory.length - 1].turnNumber : 0;
     const finalTurnNum = lastTurn + 1;
     for (const p of game.players) {
-      const arr = scoreProgression[p.id];
+      const idx = pidToIdx[p.id];
+      const arr = scoreProgression[idx];
       const lastPt = arr?.[arr.length - 1];
       if (lastPt && lastPt.score !== p.score) {
         arr.push({ turn: finalTurnNum, score: p.score });
       }
     }
 
+    // Compact turnHistory: replace playerId with pIdx, abbreviate action
+    const actionMap: Record<string, string> = { play: 'p', pass: 's', exchange: 'x' };
+    const compactTurnHistory = game.turnHistory.map((t: any) => {
+      const { playerId, username, ...rest } = t;
+      return { ...rest, action: actionMap[rest.action] || rest.action, pIdx: pidToIdx[playerId] };
+    });
+
     const firstTurn = game.turnHistory[0];
     const lastActiveTurn = [...game.turnHistory].reverse().find(t => t.action === 'play' || t.action === 'pass' || t.action === 'exchange');
     const totalTimeUsed = (firstTurn && lastActiveTurn && firstTurn !== lastActiveTurn)
-      ? Math.round((new Date(lastActiveTurn.timestamp).getTime() - new Date(firstTurn.timestamp).getTime()) / 1000)
+      ? Math.round((lastActiveTurn.timestamp.getTime() - firstTurn.timestamp.getTime()) / 1000)
       : 0;
 
     const savedReason = reason === 'resign' ? 'resign'
@@ -1102,8 +1115,7 @@ export class GameManager {
     saveGameRecord({
       gameId: game.roomId,
       players: playerRecords,
-      winnerId: winner.id,
-      winnerUsername: winner.username,
+      winnerIdx: pidToIdx[winner.id],
       reason: savedReason,
       gameSummary: {
         totalTurns: game.turnHistory.length,
@@ -1116,15 +1128,17 @@ export class GameManager {
         totalExchanges,
         totalTilesUsed,
         totalTimeUsed,
-        bestWord: overallBestWord ? { word: overallBestWord.word, score: overallBestWord.score, player: overallBestWordPlayer?.username || '' } : null,
-        bestTurn: overallBestTurn ? { turnNumber: overallBestTurn.turnNumber, score: overallBestTurn.totalScore, player: overallBestTurn.username } : null,
-        longestWord: overallLongestWord ? { word: overallLongestWord.word, length: overallLongestWord.word.length, player: overallLongestWordPlayer?.username || '' } : null,
+        bestWord: overallBestWord ? { word: overallBestWord.word, score: overallBestWord.score, pIdx: overallBestWordPlayer ? pidToIdx[overallBestWordPlayer.playerId] : 0 } : null,
+        bestTurn: overallBestTurn ? { turnNumber: overallBestTurn.turnNumber, score: overallBestTurn.totalScore, pIdx: pidToIdx[overallBestTurn.playerId] } : null,
+        longestWord: overallLongestWord ? { word: overallLongestWord.word, length: overallLongestWord.word.length, pIdx: overallLongestWordPlayer ? pidToIdx[overallLongestWordPlayer.playerId] : 0 } : null,
       },
       scoreProgression,
       turnEvents,
-      turnHistory: game.turnHistory,
-      settings: (({ gameType, ...rest }) => rest)(game.settings),
-      timeoutMode: game.settings.timeLimit === 0 ? 'N/A' : (game.settings.timeoutMode === 'penalty' ? 'OT' : 'SD'),
+      turnHistory: compactTurnHistory,
+      settings: {
+        ...(({ gameType, timeoutMode, ...rest }) => rest)(game.settings),
+        timeoutMode: game.settings.timeLimit === 0 ? 'N/A' : (game.settings.timeoutMode === 'penalty' ? 'OT' : 'SD'),
+      },
       isSolo: game.players.filter(p => !p.isAI).length === 1 && game.players.some(p => p.isAI),
       endedAt: new Date(),
     });

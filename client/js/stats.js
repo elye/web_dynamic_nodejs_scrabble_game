@@ -232,7 +232,8 @@ function renderGames(games) {
 
     const tl = game.settings?.timeLimit;
     const timeVal = tl === 0 || tl === undefined ? 'U' : `${tl}`;
-    const toVal = game.timeoutMode === 'OT' || game.timeoutMode === 'penalty' ? 'OT' : game.timeoutMode === 'SD' || game.timeoutMode === 'sudden' ? 'SD' : '-';
+    const tm = game.settings.timeoutMode;
+    const toVal = tm === 'OT' || tm === 'penalty' ? 'OT' : tm === 'SD' || tm === 'sudden' ? 'SD' : '-';
     const timeType = `${timeVal}/${toVal}`;
 
     tr.innerHTML = `
