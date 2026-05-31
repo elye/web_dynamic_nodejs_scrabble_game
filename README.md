@@ -172,6 +172,22 @@ The application follows a **client-server** architecture with WebSocket-based re
 
 The AI uses a trie built from the SOWPODS dictionary to efficiently generate valid moves. It finds anchor squares (empty cells adjacent to existing tiles), then recursively extends words through them while validating cross-words.
 
+### AI Characters
+
+Each AI opponent has a unique personality and play style. Moves are sorted by score descending, and each character picks from a different range:
+
+| Character | Emoji | Strategy | Access |
+|-----------|-------|----------|--------|
+| **Sloppy** | 😅 | Picks randomly from the bottom 50% of moves | Guest |
+| **Okie** | 👌 | Picks randomly from the middle 25%–75% of moves | Guest |
+| **Goody** | 😊 | Picks randomly from the top 50% of moves | Guest |
+| **Lucky** | 🍀 | Picks completely at random from all available moves | Premium |
+| **Smarty** | 🧠 | Picks randomly from the top 25% of moves | Premium |
+| **Wisey** | 🦉 | Picks randomly from the top 10% of moves | Premium |
+| **Greaty** | ⭐ | Always picks the highest-scoring move | Premium |
+
+Guest players can use Sloppy, Okie, and Goody. Signed-in users get access to all 7 characters.
+
 ### Timer Modes
 
 | Mode | Behavior |
@@ -281,6 +297,26 @@ All messages are JSON objects with a `type` field. Key message flows:
 - All formed words (including cross-words) must be valid SOWPODS words
 - End-game rack deductions: unplayed tile points subtracted from each player's score
 - Game ends when: tile bag is empty and a player uses all tiles, all players pass consecutively, a timer runs out, or a player resigns
+
+## Simulation Scripts
+
+Two scripts simulate AI-vs-AI games for testing and benchmarking character balance. Both skip the 1–3 second AI thinking delay used in real games.
+
+### 4-Player Shared Board (`simulate-ai.ts`)
+
+Runs 10 games with 4 characters (Wisey, Smarty, Okie, Sloppy) on a shared board. Turn order is shuffled each game to eliminate first-mover bias. Verifies that average scores follow the expected ranking: Wisey > Smarty > Okie > Sloppy.
+
+```bash
+npx ts-node server/simulate-ai.ts
+```
+
+### Round-Robin Tournament (`simulate-tournament.ts`)
+
+All 7 AI characters play 1v1 against every other character. Each matchup plays 10 games with randomized starting turn. Outputs a 2D wins table, leaderboard, and average scores. Board states are dumped as text files to `_output_/` (format: `NamexNamexGameNum.txt`).
+
+```bash
+npx ts-node server/simulate-tournament.ts
+```
 
 ## License
 
