@@ -79,7 +79,7 @@ async function getLogtoMgmtToken(): Promise<string> {
       grant_type: 'client_credentials',
       client_id: LOGTO_M2M_APP_ID!,
       client_secret: LOGTO_M2M_APP_SECRET!,
-      resource: 'https://ag7reu.logto.app/api',
+      resource: `${logtoConfig.endpoint}/api`,
       scope: 'all',
     }),
   });
