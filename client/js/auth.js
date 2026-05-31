@@ -66,8 +66,6 @@ async function showUsernameSetup(userData) {
     } catch {
       input.value = suggested;
     }
-    // Trigger the input event so availability check runs on the pre-filled value
-    input.dispatchEvent(new Event('input'));
   }
 
   let checkTimeout = null;
@@ -114,6 +112,11 @@ async function showUsernameSetup(userData) {
       statusEl.classList.remove('hidden');
     }, 400);
   });
+
+  // Trigger availability check on pre-filled value (listener is now registered)
+  if (input.value.trim().length >= 2) {
+    input.dispatchEvent(new Event('input'));
+  }
 
   return new Promise((resolve) => {
     btn.addEventListener('click', async () => {
