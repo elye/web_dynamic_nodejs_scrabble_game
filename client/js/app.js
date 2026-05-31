@@ -380,6 +380,10 @@ let gameOverProgression = null;
 let gameOverTurnEvents = null;
 
 function handleGameOver(msg) {
+  // Ignore stale GAME_OVER from a previous game if already back in lobby or playing a new game
+  if (gameStatus === 'lobby') {
+    return;
+  }
   gameStatus = 'finished';
   gameOverStats = msg.stats || null;
   gameOverSummary = msg.gameSummary || null;
@@ -533,6 +537,11 @@ function initGameActions() {
     }
     showScreen('lobby-screen');
     gameStatus = 'lobby';
+    // Clear stale game-over state so it doesn't leak into the next game
+    gameOverStats = null;
+    gameOverSummary = null;
+    gameOverProgression = null;
+    gameOverTurnEvents = null;
   });
   
   // Submit
@@ -614,6 +623,11 @@ function initGameActions() {
     window.history.replaceState({}, '', url);
     showScreen('lobby-screen');
     gameStatus = 'lobby';
+    // Clear stale game-over state so it doesn't leak into the next game
+    gameOverStats = null;
+    gameOverSummary = null;
+    gameOverProgression = null;
+    gameOverTurnEvents = null;
   });
   
   document.getElementById('rematch-btn').addEventListener('click', () => {

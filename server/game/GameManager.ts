@@ -142,6 +142,9 @@ export class GameManager {
   // --- Solo game (atomic: create + add AI + start) ---
 
   createSoloGame(playerId: string, socket: WebSocket, username: string, avatar: string, aiDifficulty: 'easy' | 'medium' | 'hard' | 'genius', timeLimit: number, gameType: 'friendly' | 'formal' = 'friendly', randomOrder: boolean = false, aiCount: number = 1, allowHint: boolean = false): Room {
+    // Clean up any existing room association (e.g. unfinished previous game)
+    this.cleanupPlayerRoom(playerId);
+
     const clampedAiCount = Math.min(3, Math.max(1, aiCount));
     const settings: GameSettings = {
       maxPlayers: 1 + clampedAiCount,
@@ -634,7 +637,21 @@ export class GameManager {
       return;
     }
 
-    if (room.game.status !== 'waiting') return; // Can only leave during waiting
+    if (room.game.status === 'playing') {
+      // For in-progress games, remove the player from the room
+      const player = room.game.players.find(p => p.id === playerId);
+      if (player) player.connected = false;
+      this.playerRooms.delete(playerId);
+      this.updateSessionRoom(playerId, undefined);
+
+      // For solo games, end the game immediately since the human left
+      if (room.isSolo) {
+        room.game.endGame('resign', playerId);
+      }
+      return;
+    }
+
+    if (room.game.status !== 'waiting') return;
 
     room.game.removePlayer(playerId);
     this.playerRooms.delete(playerId);
