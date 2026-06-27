@@ -19,6 +19,31 @@ function stopHttpKeepAlive() {
   httpKeepAliveInterval = null;
 }
 
+function exitFullscreenIfActive() {
+  if (document.exitFullscreen && document.fullscreenElement) {
+    document.exitFullscreen();
+  } else if (document.webkitExitFullscreen && document.webkitFullscreenElement) {
+    document.webkitExitFullscreen();
+  } else if (document.mozCancelFullScreen && document.mozFullScreenElement) {
+    document.mozCancelFullScreen();
+  } else if (document.msExitFullscreen && document.msFullscreenElement) {
+    document.msExitFullscreen();
+  }
+}
+
+function returnToLobby() {
+  const url = new URL(window.location);
+  url.searchParams.delete('room');
+  window.history.replaceState({}, '', url);
+  exitFullscreenIfActive();
+  showScreen('lobby-screen');
+  gameStatus = 'lobby';
+  gameOverStats = null;
+  gameOverSummary = null;
+  gameOverProgression = null;
+  gameOverTurnEvents = null;
+}
+
 function getSessionId() {
   let sessionId = sessionStorage.getItem('scrabble_session_id');
   if (!sessionId) {
@@ -535,13 +560,7 @@ function initGameActions() {
         window.ws.send(JSON.stringify({ type: 'RESIGN' }));
       }
     }
-    showScreen('lobby-screen');
-    gameStatus = 'lobby';
-    // Clear stale game-over state so it doesn't leak into the next game
-    gameOverStats = null;
-    gameOverSummary = null;
-    gameOverProgression = null;
-    gameOverTurnEvents = null;
+    returnToLobby();
   });
   
   // Submit
@@ -618,16 +637,7 @@ function initGameActions() {
     if (window.ws && window.ws.readyState === WebSocket.OPEN) {
       window.ws.send(JSON.stringify({ type: 'LEAVE_ROOM' }));
     }
-    const url = new URL(window.location);
-    url.searchParams.delete('room');
-    window.history.replaceState({}, '', url);
-    showScreen('lobby-screen');
-    gameStatus = 'lobby';
-    // Clear stale game-over state so it doesn't leak into the next game
-    gameOverStats = null;
-    gameOverSummary = null;
-    gameOverProgression = null;
-    gameOverTurnEvents = null;
+    returnToLobby();
   });
   
   document.getElementById('rematch-btn').addEventListener('click', () => {
